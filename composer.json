@@ -1,15 +1,21 @@
 {
-  "name": "wilr/silverstripe-algolia",
-  "description": "Algolia Indexer and Search Functionality",
+  "name": "silverstripe/silverstripe-search-service",
+  "description": "Elastic App Search Functionality",
   "type": "silverstripe-vendormodule",
   "license": "BSD-3-Clause",
-  "authors": [{
-      "name": "Will Rossiter",
-      "email": "will@fullscreen.io"
-  }],
+  "authors": [
+	{
+      		"name": "Will Rossiter",
+      		"email": "will@fullscreen.io"
+  	},
+	{
+		"name": "Aaron Carlino",
+		"email": "aaron@silverstripe.com"
+	}
+  ],
   "require": {
       "symbiote/silverstripe-queuedjobs": "^4.0.0",
-      "algolia/algoliasearch-client-php": "^2"
+      "elastic/app-search": "^7.6"
   },
   "require-dev": {
       "phpunit/phpunit": "^5.7",
@@ -23,15 +29,12 @@
   "extra": {
       "branch-alias": {
           "dev-master": "1.x-dev"
-      },
-      "expose": [
-          "client"
-      ]
+      }
   },
   "autoload": {
       "psr-4": {
-          "Wilr\\Silverstripe\\Algolia\\": "src/",
-          "Wilr\\Silverstripe\\Algolia\\Tests\\": "tests/"
+          "Silverstripe\\SearchService\\": "src/",
+          "Silverstripe\\SearchService\\Tests\\": "tests/"
       }
   },
   "prefer-stable": true,
