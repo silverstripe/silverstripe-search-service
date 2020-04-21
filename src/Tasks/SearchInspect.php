@@ -1,14 +1,14 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tasks;
+namespace SilverStripe\SearchService\Tasks;
 
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaIndexer;
+use SilverStripe\SearchService\Service\Indexer;
 
-class AlgoliaInspect extends BuildTask
+class SearchInspect extends BuildTask
 {
-    private static $segment = 'AlgoliaInspect';
+    private static $segment = 'SearchInspect';
 
     public function run($request)
     {
@@ -27,8 +27,8 @@ class AlgoliaInspect extends BuildTask
             exit();
         }
 
-        $indexer = Injector::inst()->create(AlgoliaIndexer::class);
-        $indexer->getService()->syncSettings();
+        $indexer = Injector::inst()->create(Indexer::class);
+        $indexer->getService()->build();
 
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';

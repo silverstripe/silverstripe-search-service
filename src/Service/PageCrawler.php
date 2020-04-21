@@ -1,6 +1,6 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Service;
+namespace SilverStripe\SearchService\Service;
 
 use DOMDocument;
 use DOMXPath;
@@ -19,7 +19,7 @@ use SilverStripe\Core\Injector\Injector;
  *
  * @todo allow filtering
  */
-class AlgoliaPageCrawler
+class PageCrawler
 {
     use Configurable;
 

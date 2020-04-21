@@ -1,16 +1,17 @@
 <?php
 
-namespace Wilr\Silverstripe\Algolia\Jobs;
+namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
 /**
- * Index an item (or multiple items) into Algolia async. This method works well
+ * Index an item (or multiple items) into search async. This method works well
  * for performance and batching large indexes
  */
-class AlgoliaIndexItemJob extends AbstractQueuedJob implements QueuedJob
+class IndexItemJob extends AbstractQueuedJob implements QueuedJob
 {
     /**
      * @param string $itemClass
@@ -44,7 +45,7 @@ class AlgoliaIndexItemJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         return sprintf(
-            'Algolia reindex %s (%s)',
+            'Search service reindex %s (%s)',
             $this->itemClass,
             implode(', ', $this->itemIds)
         );
@@ -96,10 +97,11 @@ class AlgoliaIndexItemJob extends AbstractQueuedJob implements QueuedJob
 
         $id = array_shift($remainingChildren);
 
+        /* @var SearchServiceExtension|DataObject $obj */
         $obj = DataObject::get_by_id($this->itemClass, $id);
 
         if ($obj) {
-            $obj->doImmediateIndexInAlgolia();
+            $obj->doImmediateIndexInSearch();
 
             unset($obj);
         }

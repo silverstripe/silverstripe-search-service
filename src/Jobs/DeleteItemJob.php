@@ -1,19 +1,19 @@
 <?php
 
-namespace Wilr\Silverstripe\Algolia\Jobs;
+namespace SilverStripe\SearchService\Jobs;
 
 use Exception;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaIndexer;
+use SilverStripe\SearchService\Service\Indexer;
 
 /**
- * Remove an item from Algolia async. This method works well
+ * Remove an item from search async. This method works well
  * for performance and batching large operations
  */
-class AlgoliaDeleteItemJob extends AbstractQueuedJob implements QueuedJob
+class DeleteItemJob extends AbstractQueuedJob implements QueuedJob
 {
     /**
      * @param string $itemClass
@@ -38,7 +38,7 @@ class AlgoliaDeleteItemJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         return sprintf(
-            'Algolia remove %s',
+            'Search service remove %s',
             $this->itemID
         );
     }
@@ -73,7 +73,7 @@ class AlgoliaDeleteItemJob extends AbstractQueuedJob implements QueuedJob
     public function process()
     {
         try {
-            $indexer = Injector::inst()->create(AlgoliaIndexer::class);
+            $indexer = Injector::inst()->create(Indexer::class);
             $indexer->deleteItem($this->itemClass, $this->itemID);
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);

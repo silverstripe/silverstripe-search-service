@@ -1,6 +1,6 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Service;
+namespace SilverStripe\SearchService\Service;
 
 use Algolia\AlgoliaSearch\SearchClient;
 use Exception;
@@ -9,7 +9,7 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 
-class AlgoliaService
+class SearchService
 {
     use Injectable;
 

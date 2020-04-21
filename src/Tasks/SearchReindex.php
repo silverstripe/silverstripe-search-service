@@ -1,6 +1,6 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tasks;
+namespace SilverStripe\SearchService\Tasks;
 
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -12,16 +12,16 @@ use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaIndexer;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaService;
+use SilverStripe\SearchService\Service\Indexer;
+use Wilr\SilverStripe\Algolia\Service\SearchService;
 
-class AlgoliaReindex extends BuildTask
+class SearchReindex extends BuildTask
 {
-    protected $title = 'Algolia Reindex';
+    protected $title = 'Search Service Reindex';
 
-    protected $description = 'Algolia Reindex';
+    protected $description = 'Search Service Reindex';
 
-    private static $segment = 'AlgoliaReindex';
+    private static $segment = 'SearchReindex';
 
     private static $batch_size = 20;
 
@@ -30,7 +30,6 @@ class AlgoliaReindex extends BuildTask
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
 
-        $algoliaService = Injector::inst()->create(AlgoliaService::class);
         $targetClass = SiteTree::class;
         $additionalFiltering = '';
 
@@ -54,7 +53,7 @@ class AlgoliaReindex extends BuildTask
                 'Live',
                 ($additionalFiltering)
                     ? $additionalFiltering
-                    : 'AlgoliaIndexed IS NULL OR AlgoliaIndexed < (NOW() - INTERVAL 2 HOUR)'
+                    : 'SearchIndexed IS NULL OR SearchIndexed < (NOW() - INTERVAL 2 HOUR)'
             );
         }
 
@@ -64,7 +63,7 @@ class AlgoliaReindex extends BuildTask
         $total = $items->count();
         $batchSize = $this->config()->get('batch_size');
         $batchesTotal = ($total > 0) ? (ceil($total / $batchSize)) : 0;
-        $indexer = Injector::inst()->create(AlgoliaIndexer::class);
+        $indexer = Injector::inst()->create(Indexer::class);
 
         echo sprintf(
             'Found %s pages remaining to index, will export in batches of %s, grouped by type. %s',
@@ -97,7 +96,7 @@ class AlgoliaReindex extends BuildTask
                 // fetch the actual instance
                 $instance = DataObject::get_by_id($item->ClassName, $item->ID);
 
-                if (!$instance || !$instance->canIndexInAlgolia()) {
+                if (!$instance || !$instance->canIndexInSearch()) {
                     $skipped++;
 
                     continue;
@@ -110,7 +109,7 @@ class AlgoliaReindex extends BuildTask
                 }
 
                 $currentBatches[$batchKey][] = $indexer->exportAttributesFromObject($item)->toArray();
-                $item->touchAlgoliaIndexedDate();
+                $item->touchSearchIndexedDate();
                 $count++;
 
                 if (count($currentBatches[$batchKey]) >= $batchSize) {
@@ -138,12 +137,6 @@ class AlgoliaReindex extends BuildTask
             $skipped
         ));
 
-        Debug::message(sprintf(
-            "See index at <a href='https://www.algolia.com/apps/%s/explorer/indices' target='_blank'>".
-            "algolia.com/apps/%s/explorer/indices</a>",
-            $algoliaService->applicationId,
-            $algoliaService->applicationId
-        ));
     }
 
     /**
@@ -155,7 +148,7 @@ class AlgoliaReindex extends BuildTask
      */
     public function indexBatch($items)
     {
-        $indexes = Injector::inst()->create(AlgoliaService::class)->initIndexes($items[0]);
+        $indexes = Injector::inst()->create(SearchService::class)->initIndexes($items[0]);
 
         try {
             foreach ($indexes as $index) {

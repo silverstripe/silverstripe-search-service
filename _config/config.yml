@@ -1,6 +1,6 @@
 ---
-Name: silverstripe-algolia
+Name: silverstripe-search-service
 ---
 SilverStripe\CMS\Model\SiteTree:
   extensions:
-    - Wilr\SilverStripe\Algolia\Extensions\AlgoliaObjectExtension
+    - SilverStripe\SearchService\Extensions\SearchServiceExtension

@@ -1,10 +1,10 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tests;
+namespace SilverStripe\SearchService\Tests;
 
 use SilverStripe\Dev\TestOnly;
 
-class TestAlgoliaServiceIndex implements TestOnly
+class TestServiceIndex implements TestOnly
 {
     public function setSettings($settings)
     {

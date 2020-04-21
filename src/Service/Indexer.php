@@ -1,8 +1,7 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Service;
+namespace SilverStripe\SearchService\Service;
 
-use Algolia\AlgoliaSearch\Exceptions\NotFoundException;
 use Exception;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Injector\Injector;
@@ -13,17 +12,15 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\ORM\FieldType\DBDatetime;
-use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\Map;
 use SilverStripe\ORM\RelationList;
-use stdClass;
 
 /**
- * Handles all the index management and communication with Algolia. Note that
+ * Handles all the index management and communication with the search service. Note that
  * any checking of records should be performed by the caller of these methods as
  * no permission checking is done by this class
  */
-class AlgoliaIndexer
+class Indexer
 {
     use Configurable;
 
@@ -38,11 +35,15 @@ class AlgoliaIndexer
      * @config
      */
     private static $attributes_blacklisted = [
-        'ID', 'Title', 'ClassName', 'LastEdited', 'Created'
+        'ID',
+        'Title',
+        'ClassName',
+        'LastEdited',
+        'Created'
     ];
 
     /**
-     * Add the provided item to the Algolia index.
+     * Add the provided item to the search index.
      *
      * Callee should check whether this object should be indexed at all. Calls
      * {@link exportAttributesFromObject()} to determine what data should be
@@ -66,7 +67,7 @@ class AlgoliaIndexer
 
     public function getService()
     {
-        return Injector::inst()->get(AlgoliaService::class);
+        return Injector::inst()->get(SearchService::class);
     }
 
     /**
@@ -114,7 +115,7 @@ class AlgoliaIndexer
 
         if ($this->config()->get('include_page_content')) {
             $toIndex['objectForTemplate'] =
-                Injector::inst()->create(AlgoliaPageCrawler::class, $item)->getMainContent();
+                Injector::inst()->create(PageCrawler::class, $item)->getMainContent();
         }
 
         $item->invokeWithExtensions('onBeforeAttributesFromObject');
@@ -125,7 +126,7 @@ class AlgoliaIndexer
             $attributes->push($k, $v);
         }
 
-        $specs = $item->config()->get('algolia_index_fields');
+        $specs = $item->config()->get('search_index_fields');
 
         if ($specs) {
             foreach ($specs as $attributeName) {
@@ -159,7 +160,7 @@ class AlgoliaIndexer
             }
         }
 
-        $item->invokeWithExtensions('updateAlgoliaAttributes', $attributes);
+        $item->invokeWithExtensions('updateSearchAttributes', $attributes);
 
         return $attributes;
     }
@@ -189,8 +190,8 @@ class AlgoliaIndexer
                     $relationshipAttributes->push('objectID', $relatedObj->ID);
                     $relationshipAttributes->push('objectTitle', $relatedObj->Title);
 
-                    if ($item->hasMethod('updateAlgoliaRelationshipAttributes')) {
-                        $item->updateAlgoliaRelationshipAttributes($relationshipAttributes, $relatedObj);
+                    if ($item->hasMethod('updateSearchRelationshipAttributes')) {
+                        $item->updateSearchRelationshipAttributes($relationshipAttributes, $relatedObj);
                     }
 
                     $data[] = $relationshipAttributes->toArray();
@@ -200,8 +201,8 @@ class AlgoliaIndexer
                 $relationshipAttributes->push('objectID', $related->ID);
                 $relationshipAttributes->push('Title', $related->Title);
 
-                if ($item->hasMethod('updateAlgoliaRelationshipAttributes')) {
-                    $item->updateAlgoliaRelationshipAttributes($relationshipAttributes, $related);
+                if ($item->hasMethod('updateSearchRelationshipAttributes')) {
+                    $item->updateSearchRelationshipAttributes($relationshipAttributes, $related);
                 }
 
                 $data = $relationshipAttributes->toArray();
@@ -261,7 +262,7 @@ class AlgoliaIndexer
                 if ($output) {
                     return $output;
                 }
-            } catch (NotFoundException $ex) {
+            } catch (Exception $ex) {
             }
         }
     }

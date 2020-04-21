@@ -1,36 +1,36 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tests;
+namespace SilverStripe\SearchService\Tests;
 
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObjectSchema;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaIndexer;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaService;
+use Wilr\SilverStripe\Algolia\Service\Indexer;
+use Wilr\SilverStripe\Algolia\Service\SearchService;
 
-class AlgoliaIndexerTest extends SapphireTest
+class IndexerTest extends SapphireTest
 {
     protected $usesDatabase = true;
 
     protected static $extra_dataobjects = [
-        AlgoliaTestObject::class
+        SearchTestObject::class
     ];
 
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
 
-        // mock AlgoliaService
+        // mock SearchService
         Injector::inst()->get(DataObjectSchema::class)->reset();
-        Injector::inst()->registerService(new TestAlgoliaService(), AlgoliaService::class);
+        Injector::inst()->registerService(new TestSearchService(), SearchService::class);
     }
 
     public function testExportAttributesForObject()
     {
-        $object = AlgoliaTestObject::create();
+        $object = SearchTestObject::create();
         $object->Title = 'Foobar';
         $object->write();
-        $indexer = Injector::inst()->get(AlgoliaIndexer::class);
+        $indexer = Injector::inst()->get(Indexer::class);
         $map = $indexer->exportAttributesFromObject($object)->toArray();
 
         $this->assertArrayHasKey('objectID', $map);

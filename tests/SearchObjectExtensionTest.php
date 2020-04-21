@@ -1,33 +1,33 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tests;
+namespace SilverStripe\SearchService\Tests;
 
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
-use Wilr\SilverStripe\Algolia\Service\AlgoliaService;
+use Wilr\SilverStripe\Algolia\Service\SearchService;
 
-class AlgoliaObjectExtensionTest extends SapphireTest
+class SearchObjectExtensionTest extends SapphireTest
 {
     protected $usesDatabase = true;
 
     protected static $extra_dataobjects = [
-        AlgoliaTestObject::class
+        SearchTestObject::class
     ];
 
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
 
-        // mock AlgoliaService
+        // mock SearchService
         Injector::inst()->get(DataObjectSchema::class)->reset();
-        Injector::inst()->registerService(new TestAlgoliaService(), AlgoliaService::class);
+        Injector::inst()->registerService(new TestSearchService(), SearchService::class);
     }
 
     public function testIndexInAlgolia()
     {
-        $object = AlgoliaTestObject::create();
+        $object = SearchTestObject::create();
         $object->Active = false;
         $object->write();
 
@@ -41,13 +41,13 @@ class AlgoliaObjectExtensionTest extends SapphireTest
 
     public function testTouchAlgoliaIndexedDate()
     {
-        $object = AlgoliaTestObject::create();
+        $object = SearchTestObject::create();
         $object->write();
 
         $object->touchAlgoliaIndexedDate();
 
         $this->assertNotNull(DB::query(sprintf(
-            'SELECT AlgoliaIndexed FROM AlgoliaTestObject WHERE ID = %s',
+            'SELECT AlgoliaIndexed FROM SearchTestObject WHERE ID = %s',
             $object->ID
         )));
     }

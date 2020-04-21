@@ -1,14 +1,14 @@
 <?php
 
-namespace Wilr\SilverStripe\Algolia\Tests;
+namespace SilverStripe\SearchService\Tests;
 
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
-use Wilr\SilverStripe\Algolia\Extensions\AlgoliaObjectExtension;
+use Wilr\SilverStripe\Algolia\Extensions\SearchServiceExtension;
 
-class AlgoliaTestObject extends DataObject implements TestOnly
+class SearchTestObject extends DataObject implements TestOnly
 {
     private static $db = [
         'Title' => 'Varchar',
@@ -22,7 +22,7 @@ class AlgoliaTestObject extends DataObject implements TestOnly
     ];
 
     private static $many_many = [
-        'RelatedTestObjects' => AlgoliaTestObject::class
+        'RelatedTestObjects' => SearchTestObject::class
     ];
 
     private static $algolia_index_fields = [
@@ -31,10 +31,10 @@ class AlgoliaTestObject extends DataObject implements TestOnly
     ];
 
     private static $extensions = [
-        AlgoliaObjectExtension::class
+        SearchServiceExtension::class
     ];
 
-    private static $table_name = 'AlgoliaTestObject';
+    private static $table_name = 'SearchTestObject';
 
     public function AbsoluteLink()
     {
