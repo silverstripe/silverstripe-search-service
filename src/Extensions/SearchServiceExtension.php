@@ -5,36 +5,60 @@ namespace SilverStripe\SearchService\Extensions;
 use Exception;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
+use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use SilverStripe\SearchService\Jobs\DeleteItemJob;
 use SilverStripe\SearchService\Jobs\IndexItemJob;
 use SilverStripe\SearchService\Service\Indexer;
-use SilverStripe\SearchService\Service\SearchService;
 
+/**
+ * The extension that provides implicit indexing features to dataobjects
+ *
+ * @property DataObject|SearchServiceExtension $owner
+ */
 class SearchServiceExtension extends DataExtension
 {
     use Configurable;
+    use Injectable;
 
     /**
-     *
+     * @var bool
+     * @config
      */
     private static $enable_indexer = true;
 
     /**
-     *
+     * @var bool
+     * @config
      */
     private static $use_queued_indexing = false;
 
     private static $db = [
         'SearchIndexed' => 'Datetime'
     ];
+
+    /**
+     * @var SearchServiceInterface
+     */
+    private $searchService;
+
+    /**
+     * SearchServiceExtension constructor.
+     * @param SearchServiceInterface $searchService
+     */
+    public function __construct(SearchServiceInterface $searchService)
+    {
+        parent::__construct();
+        $this->setSearchService($searchService);
+    }
 
     /**
      * @return bool
@@ -45,7 +69,7 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * @param FieldList
+     * @param FieldList $fields
      */
     public function updateCMSFields(FieldList $fields)
     {
@@ -61,8 +85,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function requireDefaultRecords()
     {
-        $search = Injector::inst()->create(SearchService::class);
-        $search->build();
+        $this->getSearchService()->configure();
     }
 
     /**
@@ -107,6 +130,7 @@ class SearchServiceExtension extends DataExtension
      * Index this record into search or queue if configured to do so
      *
      * @return bool
+     * @throws Exception
      */
     public function indexInSearch(): bool
     {
@@ -131,10 +155,8 @@ class SearchServiceExtension extends DataExtension
      */
     public function doImmediateIndexInSearch()
     {
-        $indexer = Injector::inst()->get(Indexer::class);
-
         try {
-            $indexer->indexItem($this->owner);
+            $this->getSearchService()->addDocument($this->owner);
 
             $this->touchSearchIndexedDate();
 
@@ -161,14 +183,12 @@ class SearchServiceExtension extends DataExtension
      */
     public function removeFromSearch()
     {
-        $indexer = Injector::inst()->get(Indexer::class);
-
         if ($this->config()->get('use_queued_indexing')) {
             $indexDeleteJob = new DeleteItemJob(get_class($this->owner), $this->owner->ID);
             QueuedJobService::singleton()->queueJob($indexDeleteJob);
         } else {
             try {
-                $indexer->deleteItem(get_class($this->owner), $this->owner->ID);
+                $this->getSearchService()->removeDocument($this->owner);
 
                 $this->touchSearchIndexedDate();
             } catch (Exception $e) {
@@ -188,12 +208,22 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * @return array
+     * @return SearchServiceInterface
      */
-    public function getSearchIndexes()
+    public function getSearchService(): SearchServiceInterface
     {
-        $indexer = Injector::inst()->get(Indexer::class);
-
-        return $indexer->getService()->initIndexes($this->owner);
+        return $this->searchService;
     }
+
+    /**
+     * @param SearchServiceInterface $searchService
+     * @return SearchServiceExtension
+     */
+    public function setSearchService(SearchServiceInterface $searchService): SearchServiceExtension
+    {
+        $this->searchService = $searchService;
+        return $this;
+    }
+
+
 }

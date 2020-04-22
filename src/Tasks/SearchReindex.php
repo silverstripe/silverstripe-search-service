@@ -11,9 +11,12 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\SearchService\Service\Indexer;
-use Wilr\SilverStripe\Algolia\Service\SearchService;
+use SilverStripe\SearchService\Service\SearchService;
 
 class SearchReindex extends BuildTask
 {
@@ -24,6 +27,17 @@ class SearchReindex extends BuildTask
     private static $segment = 'SearchReindex';
 
     private static $batch_size = 20;
+
+    /**
+     * @var SearchServiceInterface
+     */
+    private $searchService;
+
+    public function __construct(SearchServiceInterface $searchService)
+    {
+        $this->setSearchService($searchService);
+    }
+
 
     public function run($request)
     {
@@ -44,13 +58,13 @@ class SearchReindex extends BuildTask
         if ($request->getVar('forceAll')) {
             $items = Versioned::get_by_stage(
                 $targetClass,
-                'Live',
+                Versioned::LIVE,
                 $additionalFiltering
             );
         } else {
             $items = Versioned::get_by_stage(
                 $targetClass,
-                'Live',
+                Versioned::LIVE,
                 ($additionalFiltering)
                     ? $additionalFiltering
                     : 'SearchIndexed IS NULL OR SearchIndexed < (NOW() - INTERVAL 2 HOUR)'
@@ -63,7 +77,6 @@ class SearchReindex extends BuildTask
         $total = $items->count();
         $batchSize = $this->config()->get('batch_size');
         $batchesTotal = ($total > 0) ? (ceil($total / $batchSize)) : 0;
-        $indexer = Injector::inst()->create(Indexer::class);
 
         echo sprintf(
             'Found %s pages remaining to index, will export in batches of %s, grouped by type. %s',
@@ -84,6 +97,7 @@ class SearchReindex extends BuildTask
         for ($i = 0; $i < $batchesTotal; $i++) {
             $limitedSize = $items->sort('ID', 'DESC')->limit($batchSize, $i * $batchSize);
 
+            /* @var DataObject|SearchServiceExtension $item */
             foreach ($limitedSize as $item) {
                 $pos++;
 
@@ -94,6 +108,7 @@ class SearchReindex extends BuildTask
                 }
 
                 // fetch the actual instance
+                /* @var DataObject|SearchServiceExtension $instance */
                 $instance = DataObject::get_by_id($item->ClassName, $item->ID);
 
                 if (!$instance || !$instance->canIndexInSearch()) {
@@ -108,7 +123,8 @@ class SearchReindex extends BuildTask
                     $currentBatches[$batchKey] = [];
                 }
 
-                $currentBatches[$batchKey][] = $indexer->exportAttributesFromObject($item)->toArray();
+                $attributes = DocumentBuilder::create($item)->exportAttributes()->toArray();
+                $currentBatches[$batchKey][] = $attributes;
                 $item->touchSearchIndexedDate();
                 $count++;
 
@@ -148,13 +164,10 @@ class SearchReindex extends BuildTask
      */
     public function indexBatch($items)
     {
-        $indexes = Injector::inst()->create(SearchService::class)->initIndexes($items[0]);
+        $service = $this->getSearchService();
 
         try {
-            foreach ($indexes as $index) {
-                $index->saveObjects($items);
-            }
-
+            $service->addDocuments($items);
             return true;
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
@@ -166,4 +179,24 @@ class SearchReindex extends BuildTask
             return false;
         }
     }
+
+    /**
+     * @return SearchServiceInterface
+     */
+    public function getSearchService(): SearchServiceInterface
+    {
+        return $this->searchService;
+    }
+
+    /**
+     * @param SearchServiceInterface $searchService
+     * @return SearchReindex
+     */
+    public function setSearchService(SearchServiceInterface $searchService): SearchReindex
+    {
+        $this->searchService = $searchService;
+        return $this;
+    }
+
+
 }

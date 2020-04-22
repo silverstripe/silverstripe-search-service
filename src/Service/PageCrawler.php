@@ -10,6 +10,7 @@ use SilverStripe\CMS\Controllers\ModelAsController;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Fetches the main content off the page to index. This handles more complex
@@ -34,7 +35,11 @@ class PageCrawler
      */
     private static $content_xpath_selector = '//main';
 
-    public function __construct($item)
+    /**
+     * PageCrawler constructor.
+     * @param DataObject $item
+     */
+    public function __construct(DataObject $item)
     {
         $this->item = $item;
     }

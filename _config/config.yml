@@ -4,3 +4,17 @@ Name: silverstripe-search-service
 SilverStripe\CMS\Model\SiteTree:
   extensions:
     - SilverStripe\SearchService\Extensions\SearchServiceExtension
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Extensions\SearchServiceExtension:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+---
+Name: silverstripe-search-service-appsearch
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Interfaces\SearchServiceInterface:
+    class: SilverStripe\SearchService\Services\AppSearch\AppSearchService
+    constructor:
+      client: '%$Elastic\AppSearch\Client\Client'
+  Elastic\AppSearch\Client\Client:
+    factory: SilverStripe\SearchService\Services\AppSearch\ClientFactory

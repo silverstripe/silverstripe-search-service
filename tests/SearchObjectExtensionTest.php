@@ -6,7 +6,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
-use Wilr\SilverStripe\Algolia\Service\SearchService;
+use SilverStripe\SearchService\Service\SearchService;
 
 class SearchObjectExtensionTest extends SapphireTest
 {

@@ -2,13 +2,23 @@
 
 namespace SilverStripe\SearchService\Tasks;
 
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
-use SilverStripe\SearchService\Service\Indexer;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 
 class SearchInspect extends BuildTask
 {
     private static $segment = 'SearchInspect';
+
+    /**
+     * @var SearchServiceInterface
+     */
+    private $searchService;
+
+    public function __construct(SearchServiceInterface $searchService)
+    {
+        $this->setSearchService($searchService);
+    }
 
     public function run($request)
     {
@@ -20,6 +30,7 @@ class SearchInspect extends BuildTask
             exit();
         }
 
+        /* @var DataObject|null $item */
         $item = $itemClass::get()->byId($itemId);
 
         if (!$item || !$item->canView()) {
@@ -27,8 +38,7 @@ class SearchInspect extends BuildTask
             exit();
         }
 
-        $indexer = Injector::inst()->create(Indexer::class);
-        $indexer->getService()->build();
+        $this->getSearchService()->configure();
 
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';
@@ -38,10 +48,30 @@ class SearchInspect extends BuildTask
         print_r($indexer->getObject($item));
 
         echo '### INDEX SETTINGS ### '. PHP_EOL;
-        foreach ($item->getAlgoliaIndexes() as $index) {
+        foreach ($item->getSearchIndexes() as $index) {
             print_r($index->getSettings());
         }
 
         echo PHP_EOL . 'Done.' . PHP_EOL;
     }
+
+    /**
+     * @return SearchServiceInterface
+     */
+    public function getSearchService(): SearchServiceInterface
+    {
+        return $this->searchService;
+    }
+
+    /**
+     * @param SearchServiceInterface $searchService
+     * @return SearchInspect
+     */
+    public function setSearchService(SearchServiceInterface $searchService): SearchInspect
+    {
+        $this->searchService = $searchService;
+        return $this;
+    }
+
+
 }
