@@ -36,21 +36,16 @@ class PageCrawler
     private static $content_xpath_selector = '//main';
 
     /**
-     * PageCrawler constructor.
      * @param DataObject $item
+     * @return string
      */
-    public function __construct(DataObject $item)
+    public function getMainContent(DataObject $item)
     {
-        $this->item = $item;
-    }
-
-    public function getMainContent()
-    {
-        if (!$this->item instanceof SiteTree) {
+        if (!$item instanceof SiteTree) {
             return '';
         }
 
-        $controller = ModelAsController::controller_for($this->item);
+        $controller = ModelAsController::controller_for($item);
         $page = '';
 
         try {

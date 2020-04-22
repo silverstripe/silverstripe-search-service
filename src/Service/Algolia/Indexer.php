@@ -95,20 +95,6 @@ class Indexer
     }
 
     /**
-     * Generates a unique ID for this item. If using a single index with
-     * different dataobjects such as products and pages they potentially would
-     * have the same ID. Uses the classname and the ID.
-     *
-     * @param DataObject $item
-     *
-     * @return string
-     */
-    public function generateUniqueID($item)
-    {
-        return strtolower(str_replace('\\', '_', get_class($item)) . '_'. $item->ID);
-    }
-
-    /**
      * @param DataObject $item
      *
      * @return array

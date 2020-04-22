@@ -6,6 +6,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use SilverStripe\SearchService\Service\SearchService;
+use SilverStripe\SearchService\Service\ServiceAware;
 
 /**
  * Syncs index settings to a search service.
@@ -15,16 +16,14 @@ use SilverStripe\SearchService\Service\SearchService;
  */
 class SearchConfigure extends BuildTask
 {
+    use ServiceAware;
+
     protected $title = 'Search Service Configure';
 
     protected $description = 'Sync search index configuration';
 
     private static $segment = 'SearchConfigure';
 
-    /**
-     * @var SearchServiceInterface
-     */
-    private $searchService;
 
     public function __construct(SearchServiceInterface $searchService)
     {
@@ -35,24 +34,6 @@ class SearchConfigure extends BuildTask
     {
         $this->getSearchService()->configure();
         echo 'Done.';
-    }
-
-    /**
-     * @return SearchServiceInterface
-     */
-    public function getSearchService(): SearchServiceInterface
-    {
-        return $this->searchService;
-    }
-
-    /**
-     * @param SearchServiceInterface $searchService
-     * @return SearchConfigure
-     */
-    public function setSearchService(SearchServiceInterface $searchService): SearchConfigure
-    {
-        $this->searchService = $searchService;
-        return $this;
     }
 
 }

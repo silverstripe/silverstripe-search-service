@@ -26,6 +26,7 @@ class DocumentBuilder
     use Extensible;
     use Configurable;
     use Injectable;
+
     /**
      * Include rendered markup from the object's `Link` method in the index.
      *
@@ -65,7 +66,6 @@ class DocumentBuilder
     public function __construct(DataObject $object)
     {
         $this->setDataObject($object);
-        $this->setPageCrawler(Injector::inst()->create(PageCrawler::class, $object));
     }
 
     /**
@@ -76,10 +76,10 @@ class DocumentBuilder
     {
         $item = $this->getDataObject();
         $toIndex = [
-            'objectID' => $this->generateUniqueID(),
-            'objectSilverstripeUUID' => $item->ID,
+            'objectSilverstripeID' => $item->ID,
             'objectTitle' => (string) $item->Title,
             'objectClassName' => get_class($item),
+            'objectType' => $item->baseClass(),
             'objectClassNameHierarchy' => array_values(ClassInfo::ancestry(get_class($item))),
             'objectLastEdited' => $item->dbObject('LastEdited')->getTimestamp(),
             'objectCreated' => $item->dbObject('Created')->getTimestamp(),
@@ -87,7 +87,7 @@ class DocumentBuilder
         ];
 
         if ($this->getPageCrawler() && $this->config()->get('include_page_content')) {
-            $toIndex['objectForTemplate'] = $this->getPageCrawler()->getMainContent();
+            $toIndex['objectForTemplate'] = $this->getPageCrawler()->getMainContent($item);
         }
 
         $item->invokeWithExtensions('onBeforeAttributesFromObject');

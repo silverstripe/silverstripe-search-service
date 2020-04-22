@@ -14,12 +14,13 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use SilverStripe\SearchService\Service\DocumentBuilder;
+use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Versioned\Versioned;
-use SilverStripe\SearchService\Service\Indexer;
-use SilverStripe\SearchService\Service\SearchService;
 
 class SearchReindex extends BuildTask
 {
+    use ServiceAware;
+
     protected $title = 'Search Service Reindex';
 
     protected $description = 'Search Service Reindex';
@@ -29,10 +30,9 @@ class SearchReindex extends BuildTask
     private static $batch_size = 20;
 
     /**
-     * @var SearchServiceInterface
+     * SearchReindex constructor.
+     * @param SearchServiceInterface $searchService
      */
-    private $searchService;
-
     public function __construct(SearchServiceInterface $searchService)
     {
         $this->setSearchService($searchService);
@@ -158,11 +158,11 @@ class SearchReindex extends BuildTask
     /**
      * Index a batch of changes
      *
-     * @param array $items
+     * @param DataObject[] $items
      *
      * @return bool
      */
-    public function indexBatch($items)
+    public function indexBatch(array $items): bool
     {
         $service = $this->getSearchService();
 
@@ -178,24 +178,6 @@ class SearchReindex extends BuildTask
 
             return false;
         }
-    }
-
-    /**
-     * @return SearchServiceInterface
-     */
-    public function getSearchService(): SearchServiceInterface
-    {
-        return $this->searchService;
-    }
-
-    /**
-     * @param SearchServiceInterface $searchService
-     * @return SearchReindex
-     */
-    public function setSearchService(SearchServiceInterface $searchService): SearchReindex
-    {
-        $this->searchService = $searchService;
-        return $this;
     }
 
 

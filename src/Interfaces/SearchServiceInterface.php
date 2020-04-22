@@ -20,11 +20,28 @@ interface SearchServiceInterface
     public function addDocument(DataObject $item): self;
 
     /**
-     * @param string $class
-     * @param int $id
+     * @param DataObject $item
      * @return $this
      */
-    public function removeDocument(string $class, int $id): self;
+    public function removeDocument(DataObject $item): self;
+
+    /**
+     * @param DataObject[] $items
+     * @return $this
+     */
+    public function removeDocuments(array $items): self;
+
+    /**
+     * @param string $id
+     * @return array|null
+     */
+    public function getDocument(string $id): ?array;
+
+    /**
+     * @param array $ids
+     * @return $this
+     */
+    public function getDocuments(array $ids): array;
 
     /**
      * A hook for configuring the search service

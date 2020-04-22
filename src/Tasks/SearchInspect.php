@@ -5,15 +5,14 @@ namespace SilverStripe\SearchService\Tasks;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\DocumentBuilder;
+use SilverStripe\SearchService\Service\ServiceAware;
 
 class SearchInspect extends BuildTask
 {
-    private static $segment = 'SearchInspect';
+    use ServiceAware;
 
-    /**
-     * @var SearchServiceInterface
-     */
-    private $searchService;
+    private static $segment = 'SearchInspect';
 
     public function __construct(SearchServiceInterface $searchService)
     {
@@ -39,10 +38,10 @@ class SearchInspect extends BuildTask
         }
 
         $this->getSearchService()->configure();
-
+        $builder = DocumentBuilder::create($item);
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';
-        print_r($indexer->exportAttributesFromObject($item));
+        print_r($builder->exportAttributes());
 
         echo '### REMOTE FIELDS ###' . PHP_EOL;
         print_r($indexer->getObject($item));
@@ -54,24 +53,5 @@ class SearchInspect extends BuildTask
 
         echo PHP_EOL . 'Done.' . PHP_EOL;
     }
-
-    /**
-     * @return SearchServiceInterface
-     */
-    public function getSearchService(): SearchServiceInterface
-    {
-        return $this->searchService;
-    }
-
-    /**
-     * @param SearchServiceInterface $searchService
-     * @return SearchInspect
-     */
-    public function setSearchService(SearchServiceInterface $searchService): SearchInspect
-    {
-        $this->searchService = $searchService;
-        return $this;
-    }
-
 
 }

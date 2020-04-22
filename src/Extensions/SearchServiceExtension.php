@@ -13,11 +13,11 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use SilverStripe\SearchService\Jobs\DeleteItemJob;
 use SilverStripe\SearchService\Jobs\IndexItemJob;
-use SilverStripe\SearchService\Service\Indexer;
 
 /**
  * The extension that provides implicit indexing features to dataobjects
@@ -28,6 +28,7 @@ class SearchServiceExtension extends DataExtension
 {
     use Configurable;
     use Injectable;
+    use ServiceAware;
 
     /**
      * @var bool
@@ -45,10 +46,7 @@ class SearchServiceExtension extends DataExtension
         'SearchIndexed' => 'Datetime'
     ];
 
-    /**
-     * @var SearchServiceInterface
-     */
-    private $searchService;
+    private $hasConfigured = false;
 
     /**
      * SearchServiceExtension constructor.
@@ -85,7 +83,10 @@ class SearchServiceExtension extends DataExtension
      */
     public function requireDefaultRecords()
     {
-        $this->getSearchService()->configure();
+        if (!$this->hasConfigured) {
+            $this->getSearchService()->configure();
+            $this->hasConfigured = true;
+        }
     }
 
     /**
@@ -198,6 +199,18 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
+     * Generates a unique ID for this item. If using a single index with
+     * different dataobjects such as products and pages they potentially would
+     * have the same ID. Uses the classname and the ID.
+     **
+     * @return string
+     */
+    public function generateSearchUUID(): string
+    {
+        return strtolower(str_replace('\\', '_', get_class($this->owner)) . '_'. $this->owner->ID);
+    }
+
+    /**
      * Before deleting this record ensure that it is removed from search.
      */
     public function onBeforeDelete()
@@ -206,24 +219,5 @@ class SearchServiceExtension extends DataExtension
             $this->removeFromSearch();
         }
     }
-
-    /**
-     * @return SearchServiceInterface
-     */
-    public function getSearchService(): SearchServiceInterface
-    {
-        return $this->searchService;
-    }
-
-    /**
-     * @param SearchServiceInterface $searchService
-     * @return SearchServiceExtension
-     */
-    public function setSearchService(SearchServiceInterface $searchService): SearchServiceExtension
-    {
-        $this->searchService = $searchService;
-        return $this;
-    }
-
 
 }
