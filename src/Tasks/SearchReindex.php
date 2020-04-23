@@ -13,7 +13,6 @@ use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Versioned\Versioned;
 
@@ -123,9 +122,7 @@ class SearchReindex extends BuildTask
                     $currentBatches[$batchKey] = [];
                 }
 
-                $attributes = DocumentBuilder::create($item)->exportAttributes()->toArray();
-                $currentBatches[$batchKey][] = $attributes;
-                $item->touchSearchIndexedDate();
+                $currentBatches[$batchKey][] = $item;
                 $count++;
 
                 if (count($currentBatches[$batchKey]) >= $batchSize) {
@@ -168,6 +165,9 @@ class SearchReindex extends BuildTask
 
         try {
             $service->addDocuments($items);
+            foreach ($items as $item) {
+                $item->touchSearchIndexedDate();
+            }
             return true;
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);

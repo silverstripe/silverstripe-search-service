@@ -4,6 +4,7 @@ namespace SilverStripe\SearchService\Extensions;
 
 use Exception;
 use Psr\Log\LoggerInterface;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
@@ -165,6 +166,10 @@ class SearchServiceExtension extends DataExtension
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
 
+            if (Director::isDev()) {
+                throw $e;
+            }
+
             return false;
         }
     }
@@ -194,6 +199,9 @@ class SearchServiceExtension extends DataExtension
                 $this->touchSearchIndexedDate();
             } catch (Exception $e) {
                 Injector::inst()->create(LoggerInterface::class)->error($e);
+                if (Director::isDev()) {
+                    throw $e;
+                }
             }
         }
     }

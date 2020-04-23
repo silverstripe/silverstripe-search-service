@@ -8,8 +8,22 @@ SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Extensions\SearchServiceExtension:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+  SilverStripe\SearchService\Tasks\SearchConfigure:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+  SilverStripe\SearchService\Tasks\SearchReindex:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+  SilverStripe\SearchService\Tasks\SearchInspect:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+
+
+
 ---
 Name: silverstripe-search-service-appsearch
+Only:
+  envvarset: 'APP_SEARCH_API_KEY'
 ---
 SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Interfaces\SearchServiceInterface:
@@ -18,3 +32,9 @@ SilverStripe\Core\Injector\Injector:
       client: '%$Elastic\AppSearch\Client\Client'
   Elastic\AppSearch\Client\Client:
     factory: SilverStripe\SearchService\Services\AppSearch\ClientFactory
+    constructor:
+      endpoint: '`APP_SEARCH_ENDPOINT`'
+      apiKey: '`APP_SEARCH_API_KEY`'
+  SilverStripe\SearchService\Service\DocumentBuilder:
+    properties:
+      fieldFormatter: [SilverStripe\SearchService\Services\AppSearch\AppSearchService, 'formatField']

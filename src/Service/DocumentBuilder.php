@@ -60,6 +60,11 @@ class DocumentBuilder
     private $dataObject;
 
     /**
+     * @var callable|null
+     */
+    private $fieldFormatter;
+
+    /**
      * DocumentBuilder constructor.
      * @param DataObject $object
      */
@@ -95,7 +100,7 @@ class DocumentBuilder
         $attributes = new Map(ArrayList::create());
 
         foreach ($toIndex as $k => $v) {
-            $attributes->push($k, $v);
+            $attributes->push($this->formatField($k), $v);
         }
 
         $specs = $item->config()->get('search_index_fields');
@@ -163,8 +168,8 @@ class DocumentBuilder
             if (is_iterable($related)) {
                 foreach ($related as $relatedObj) {
                     $relationshipAttributes = new Map(ArrayList::create());
-                    $relationshipAttributes->push('objectID', $relatedObj->ID);
-                    $relationshipAttributes->push('objectTitle', $relatedObj->Title);
+                    $relationshipAttributes->push($this->formatField('objectID'), $relatedObj->ID);
+                    $relationshipAttributes->push($this->formatField('objectTitle'), $relatedObj->Title);
 
                     if ($item->hasMethod('updateSearchRelationshipAttributes')) {
                         $item->updateSearchRelationshipAttributes($relationshipAttributes, $relatedObj);
@@ -174,8 +179,8 @@ class DocumentBuilder
                 }
             } else {
                 $relationshipAttributes = new Map(ArrayList::create());
-                $relationshipAttributes->push('objectID', $related->ID);
-                $relationshipAttributes->push('Title', $related->Title);
+                $relationshipAttributes->push($this->formatField('objectID'), $related->ID);
+                $relationshipAttributes->push($this->formatField('Title'), $related->Title);
 
                 if ($item->hasMethod('updateSearchRelationshipAttributes')) {
                     $item->updateSearchRelationshipAttributes($relationshipAttributes, $related);
@@ -184,10 +189,23 @@ class DocumentBuilder
                 $data = $relationshipAttributes->toArray();
             }
 
-            $attributes->push($relationship, $data);
+            $attributes->push($this->formatField($relationship), $data);
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
         }
+    }
+
+    /**
+     * @param string $field
+     * @return string
+     */
+    private function formatField(string $field): string
+    {
+        if ($this->fieldFormatter && is_callable($this->fieldFormatter)) {
+            return call_user_func_array($this->fieldFormatter, [$field]);
+        }
+
+        return $field;
     }
 
 
@@ -227,4 +245,24 @@ class DocumentBuilder
         $this->dataObject = $dataObject;
         return $this;
     }
+
+    /**
+     * @return callable|null
+     */
+    public function getFieldFormatter(): ?callable
+    {
+        return $this->fieldFormatter;
+    }
+
+    /**
+     * @param callable|null $fieldFormatter
+     * @return DocumentBuilder
+     */
+    public function setFieldFormatter(?callable $fieldFormatter): DocumentBuilder
+    {
+        $this->fieldFormatter = $fieldFormatter;
+        return $this;
+    }
+
+
 }

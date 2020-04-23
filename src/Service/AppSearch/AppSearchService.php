@@ -59,6 +59,7 @@ class AppSearchService implements SearchServiceInterface
         /* @var DataObject|SearchServiceExtension $item */
         foreach ($items as $item) {
             if (!$item instanceof DataObject || !$item->hasExtension(SearchServiceExtension::class)) {
+                var_dump($item);
                 throw new InvalidArgumentException(sprintf(
                     '%s not passed a DataObject or an item does not have the %s extension',
                     __FUNCTION__,
@@ -80,7 +81,7 @@ class AppSearchService implements SearchServiceInterface
         try {
             foreach ($documentMap as $indexName => $docsToAdd) {
                 $result = $this->getClient()->indexDocuments(static::environmentizeIndex($indexName), $docsToAdd);
-
+                $this->handleError($result);
             }
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
@@ -131,7 +132,8 @@ class AppSearchService implements SearchServiceInterface
 
         try {
             foreach ($documentMap as $indexName => $documentIds) {
-                $this->getClient()->deleteDocuments(static::environmentizeIndex($indexName), $documentIds);
+                $result = $this->getClient()->deleteDocuments(static::environmentizeIndex($indexName), $documentIds);
+                $this->handleError($result);
             }
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
@@ -166,6 +168,7 @@ class AppSearchService implements SearchServiceInterface
             foreach (array_keys($this->config()->get('indexes')) as $indexName) {
                 try {
                     $response = $this->getClient()->getDocuments(static::environmentizeIndex($indexName), [$docID]);
+                    $this->handleError($response);
                     if ($response) {
                         $docs[$docID] = $response;
                         break;
@@ -189,9 +192,13 @@ class AppSearchService implements SearchServiceInterface
         );
 
         foreach ($indexes as $index) {
-            $result = $this->getClient()->getEngine($index);
-            if (empty($result)) {
-                $this->getClient()->createEngine($index);
+            $engines = $this->getClient()->listEngines();
+            $this->handleError($engines);
+            $results = $engines['results'] ?? [];
+            $allEngines = array_column($results, 'name');
+            if (!in_array($index, $allEngines)) {
+                $result = $this->getClient()->createEngine($index);
+                $this->handleError($result);
             }
         }
     }
@@ -214,6 +221,33 @@ class AppSearchService implements SearchServiceInterface
         }
 
         return $matches;
+    }
+
+    /**
+     * @param array|null $result
+     * @throws Exception
+     */
+    private function handleError(?array $result)
+    {
+        if (!is_array($result)) {
+            return;
+        }
+
+        $errors = array_column($result, 'errors');
+        if (empty($errors)) {
+            return;
+        }
+        $allErrors = [];
+        foreach ($errors as $errorGroup) {
+            $allErrors = array_merge($allErrors, $errorGroup);
+        }
+        if (empty($allErrors)) {
+            return;
+        }
+        throw new Exception(sprintf(
+            'AppSearch API error: %s',
+            json_encode($allErrors)
+        ));
     }
 
     /**
@@ -244,6 +278,18 @@ class AppSearchService implements SearchServiceInterface
         return sprintf("%s-%s", Director::get_environment_type(), $indexName);
     }
 
+    /**
+     * @param string $field
+     * @return string
+     */
+    public static function formatField(string $field): string
+    {
+        $clean = preg_replace('/[^A-Za-z_\-0-9]/', '', $field);
+        $clean = preg_replace('/([a-z])([A-Z])/', '\1-\2', $clean);
+        $clean = str_replace('-', '_', $clean);
+        $clean = strtolower($clean);
 
+        return $clean;
+    }
 
 }

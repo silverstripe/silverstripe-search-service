@@ -2,10 +2,8 @@
 
 namespace SilverStripe\SearchService\Tasks;
 
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\SearchService;
 use SilverStripe\SearchService\Service\ServiceAware;
 
 /**
