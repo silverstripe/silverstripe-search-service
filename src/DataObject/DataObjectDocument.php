@@ -1,83 +1,102 @@
 <?php
 
 
-namespace SilverStripe\SearchService\Service;
+namespace SilverStripe\SearchService\DataObject;
 
 
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\ClassInfo;
-use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\Map;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
+use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
-use Exception;
 
-class DocumentBuilder
+class DataObjectDocument implements DocumentInterface
 {
-    use Extensible;
-    use Configurable;
     use Injectable;
+    use Extensible;
 
     /**
-     * Include rendered markup from the object's `Link` method in the index.
-     *
-     * @config
-     */
-    private static $include_page_content = true;
-
-    /**
-     * @config
-     */
-    private static $attributes_blacklisted = [
-        'ID',
-        'Title',
-        'ClassName',
-        'LastEdited',
-        'Created'
-    ];
-
-    private static $dependencies = [
-        'PageCrawler' => '%$' . PageCrawler::class,
-    ];
-
-    /**
-     * @var PageCrawler
-     */
-    private $pageCrawler;
-
-    /**
-     * @var DataObject|SearchServiceExtension
+     * @var DataObject&SearchServiceExtension
      */
     private $dataObject;
 
     /**
-     * @var callable|null
+     * @var SearchServiceInterface
      */
-    private $fieldFormatter;
+    private $service;
 
     /**
-     * DocumentBuilder constructor.
-     * @param DataObject $object
+     * @var array
      */
-    public function __construct(DataObject $object)
+    private static $dependencies = [
+        'Service' => '%$' . SearchServiceInterface::class,
+    ];
+
+    /**
+     * DataObjectDocument constructor.
+     * @param DataObject $dataObject
+     */
+    public function __construct(DataObject $dataObject)
     {
-        $this->setDataObject($object);
+        $this->setDataObject($dataObject);
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdentifier(): string
+    {
+        return $this->getDataObject()->generateSearchUUID();
+    }
+
+    /**
+     * @return bool
+     */
+    public function shouldIndex(): bool
+    {
+        if ($this->getDataObject()->hasField('ShowInSearch')) {
+            return $this->getDataObject()->ShowInSearch;
+        }
+
+        return true;
+    }
+
+    public function markIndexed(): void
+    {
+        $schema = DataObject::getSchema();
+        $table = $schema->tableForField($this->getDataObject()->ClassName, 'SearchIndexed');
+
+        if ($table) {
+            DB::query(sprintf('UPDATE %s SET SearchIndexed = NOW() WHERE ID = %s', $table, $this->getDataObject()->ID));
+
+            if ($this->getDataObject()->hasExtension(Versioned::class) && $this->getDataObject()->hasStages()) {
+                DB::query(sprintf(
+                    'UPDATE %s_Live SET SearchIndexed = NOW() WHERE ID = %s',
+                    $table,
+                    $this->getDataObject()->ID
+                ));
+            }
+        }
     }
 
     /**
      * Generates a map of all the fields and values which will be sent.
-     * @return Map
+     * @return array
      */
-    public function exportAttributes(): Map
+    public function toArray(): array
     {
         $item = $this->getDataObject();
         $toIndex = [
@@ -142,7 +161,7 @@ class DocumentBuilder
         // Universal customisation
         $this->extend('updateSearchAttributes', $attributes);
 
-        return $attributes;
+        return $attributes->toArray();
     }
 
     /**
@@ -195,41 +214,10 @@ class DocumentBuilder
         }
     }
 
-    /**
-     * @param string $field
-     * @return string
-     */
-    private function formatField(string $field): string
-    {
-        if ($this->fieldFormatter && is_callable($this->fieldFormatter)) {
-            return call_user_func_array($this->fieldFormatter, [$field]);
-        }
-
-        return $field;
-    }
 
 
     /**
-     * @param PageCrawler $crawler
-     * @return $this
-     */
-    public function setPageCrawler(PageCrawler $crawler): self
-    {
-        $this->pageCrawler = $crawler;
-
-        return $this;
-    }
-
-    /**
-     * @return PageCrawler|null
-     */
-    public function getPageCrawler(): ?PageCrawler
-    {
-        return $this->pageCrawler;
-    }
-
-    /**
-     * @return DataObject
+     * @return DataObject&SearchServiceExtension
      */
     public function getDataObject(): DataObject
     {
@@ -237,32 +225,40 @@ class DocumentBuilder
     }
 
     /**
-     * @param DataObject $dataObject
-     * @return DocumentBuilder
+     * @param DataObject&SearchServiceExtension $dataObject
+     * @return DataObjectDocument
      */
-    public function setDataObject(DataObject $dataObject): DocumentBuilder
+    public function setDataObject(DataObject $dataObject)
     {
         $this->dataObject = $dataObject;
         return $this;
     }
 
     /**
-     * @return callable|null
+     * @return SearchServiceInterface
      */
-    public function getFieldFormatter(): ?callable
+    public function getService(): SearchServiceInterface
     {
-        return $this->fieldFormatter;
+        return $this->service;
     }
 
     /**
-     * @param callable|null $fieldFormatter
-     * @return DocumentBuilder
+     * @param SearchServiceInterface $service
+     * @return DataObjectDocument
      */
-    public function setFieldFormatter(?callable $fieldFormatter): DocumentBuilder
+    public function setService(SearchServiceInterface $service): DataObjectDocument
     {
-        $this->fieldFormatter = $fieldFormatter;
+        $this->service = $service;
         return $this;
     }
 
+    /**
+     * @param string $field
+     * @return string
+     */
+    private function formatField(string $field): string
+    {
+        return $this->getService()->formatField($field);
+    }
 
 }

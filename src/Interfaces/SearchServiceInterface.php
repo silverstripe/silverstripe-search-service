@@ -48,5 +48,14 @@ interface SearchServiceInterface
      */
     public function configure(): void;
 
+    /**
+     * @return string[]
+     */
+    public function getSearchableClasses(): array;
 
+    /**
+     * @param string $field
+     * @return array
+     */
+    public function normaliseField(string $field): array;
 }

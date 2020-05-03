@@ -2,8 +2,13 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
+use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
@@ -11,31 +16,43 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  * Index an item (or multiple items) into search async. This method works well
  * for performance and batching large indexes
  */
-class IndexItemJob extends AbstractQueuedJob implements QueuedJob
+class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
+    use Injectable;
+    use ServiceAware;
+
     /**
-     * @param string $itemClass
-     * @param array|int $itemIds
+     * @var array
      */
-    public function __construct($itemClass = null, $itemIds = null)
+    private static $dependencies = [
+        'SearchService' => '%$' . SearchServiceInterface::class,
+    ];
+
+    /**
+     * @var DocumentInterface[]
+     */
+    private $documents = [];
+
+    /**
+     * @var DocumentInterface[]
+     */
+    private $chunks = [];
+
+    /**
+     * @var SearchServiceInterface
+     */
+    private $service;
+
+    /**
+     * @param DocumentInterface[] $documents
+     * @paramn int $batchSize
+     */
+    public function __construct(array $documents = [], int $batchSize = 20)
     {
-        // this value is automatically persisted between processing requests for
-        // this job
-        if ($itemClass) {
-            $this->itemClass = $itemClass;
-        }
-
-        if ($itemIds) {
-            if (!is_array($itemIds)) {
-                $this->itemIds = [$itemIds];
-            } else {
-                $this->itemIds = $itemIds;
-            }
-        }
-
-        $this->remainingIds = $this->itemIds;
+        $this->documents = $documents;
+        $this->chunks = array_chunk($documents, $batchSize);
+        $this->totalSteps = sizeof($this->chunks);
     }
-
 
     /**
      * Defines the title of the job.
@@ -45,9 +62,9 @@ class IndexItemJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         return sprintf(
-            'Search service reindex %s (%s)',
-            $this->itemClass,
-            implode(', ', $this->itemIds)
+            'Search service reindex %s documents in %s chunks',
+            sizeof($this->documents),
+            sizeof($this->chunks)
         );
     }
 
@@ -56,8 +73,6 @@ class IndexItemJob extends AbstractQueuedJob implements QueuedJob
      */
     public function getJobType()
     {
-        $this->totalSteps = count($this->itemIds);
-
         return QueuedJob::IMMEDIATE;
     }
 
@@ -73,11 +88,7 @@ class IndexItemJob extends AbstractQueuedJob implements QueuedJob
      */
     public function setup()
     {
-        if (!count($this->remainingIds)) {
-            $this->isComplete = true;
-
-            return;
-        }
+        $this->isComplete = !count($this->documents);
     }
 
     /**
@@ -85,7 +96,7 @@ class IndexItemJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
-        $remainingChildren = $this->remainingIds;
+        $remainingChildren = $this->chunks;
 
         if (!count($remainingChildren)) {
             $this->isComplete = true;
@@ -94,23 +105,14 @@ class IndexItemJob extends AbstractQueuedJob implements QueuedJob
         }
 
         $this->currentStep++;
-
-        $id = array_shift($remainingChildren);
-
-        /* @var SearchServiceExtension|DataObject $obj */
-        $obj = DataObject::get_by_id($this->itemClass, $id);
-
-        if ($obj) {
-            $obj->doImmediateIndexInSearch();
-
-            unset($obj);
-        }
-
-        $this->remainingChildren = $remainingChildren;
+        $documents = array_shift($remainingChildren);
+        $this->getSearchService()->addDocuments($documents);
+        $this->chunks = $remainingChildren;
 
         if (!count($remainingChildren)) {
             $this->isComplete = true;
             return;
         }
     }
+
 }

@@ -10,9 +10,16 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\Limitable;
+use SilverStripe\ORM\Sortable;
+use SilverStripe\ORM\SS_List;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\DocumentFetcherRegistry;
 use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Versioned\Versioned;
 
@@ -26,7 +33,17 @@ class SearchReindex extends BuildTask
 
     private static $segment = 'SearchReindex';
 
+    /**
+     * @var int
+     * @config
+     */
     private static $batch_size = 20;
+
+    /**
+     * @var bool
+     * @config
+     */
+    private static $use_queued_indexing = false;
 
     /**
      * SearchReindex constructor.
@@ -43,103 +60,80 @@ class SearchReindex extends BuildTask
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
 
-        $targetClass = SiteTree::class;
-        $additionalFiltering = '';
+        $service = $this->getSearchService();
+        $targetClass = $request->getVar('onlyClass');
+        $classes = $targetClass ? [$targetClass] : $service->getSearchableClasses();
 
-        if ($request->getVar('onlyClass')) {
-            $targetClass = $request->getVar('onlyClass');
-        }
-
-        if ($request->getVar('filter')) {
-            $additionalFiltering = $request->getVar('filter');
-        }
-
-        if ($request->getVar('forceAll')) {
-            $items = Versioned::get_by_stage(
-                $targetClass,
-                Versioned::LIVE,
-                $additionalFiltering
-            );
-        } else {
-            $items = Versioned::get_by_stage(
-                $targetClass,
-                Versioned::LIVE,
-                ($additionalFiltering)
-                    ? $additionalFiltering
-                    : 'SearchIndexed IS NULL OR SearchIndexed < (NOW() - INTERVAL 2 HOUR)'
-            );
+        /* @var DocumentFetcherRegistry $registry */
+        $registry = Injector::inst()->get(DocumentFetcherRegistry::class);
+        /* @var DocumentFetcherInterface[] $fetchers */
+        $fetchers = [];
+        foreach ($classes as $class) {
+            $fetcher = $registry->getFetcherForType($class);
+            if ($fetcher) {
+                $fetchers[$class] = $fetcher;
+            }
         }
 
         $count = 0;
         $skipped = 0;
         $errored = 0;
-        $total = $items->count();
         $batchSize = $this->config()->get('batch_size');
-        $batchesTotal = ($total > 0) ? (ceil($total / $batchSize)) : 0;
+        foreach ($fetchers as $class => $fetcher) {
+            $total = $fetcher->getTotalDocuments($class);
+            echo sprintf('Building %s documents for %s', $total, $class) . PHP_EOL;
+            $batchesTotal = ($total > 0) ? (ceil($total / $batchSize)) : 0;
 
-        echo sprintf(
-            'Found %s pages remaining to index, will export in batches of %s, grouped by type. %s',
-            $total,
-            $batchSize,
-            $batchesTotal,
-            PHP_EOL
-        );
+            echo sprintf(
+                'Found %s documents remaining to index, will export in batches of %s, grouped by type. (%s total) %s',
+                $total,
+                $batchSize,
+                $batchesTotal,
+                PHP_EOL
+            );
 
-        $pos = 0;
+            $pos = 0;
 
-        if ($total < 1) {
-            return;
-        }
+            if ($total < 1) {
+                return;
+            }
 
-        $currentBatches = [];
+            $currentBatches = [];
 
-        for ($i = 0; $i < $batchesTotal; $i++) {
-            $limitedSize = $items->sort('ID', 'DESC')->limit($batchSize, $i * $batchSize);
+            for ($i = 0; $i < $batchesTotal; $i++) {
+                $batch = $fetcher->fetch($class, $batchSize, $i * $batchSize);
+                foreach ($batch as $document) {
+                    $pos++;
+                    echo '.';
+                    if ($pos % 50 == 0) {
+                        echo sprintf(' [%s/%s]%s', $pos, $total, PHP_EOL);
+                    }
+                    if (!$document->shouldIndex()) {
+                        $skipped++;
+                        continue;
+                    }
 
-            /* @var DataObject|SearchServiceExtension $item */
-            foreach ($limitedSize as $item) {
-                $pos++;
+                    $batchKey = get_class($document);
 
-                echo '.';
+                    if (!isset($currentBatches[$batchKey])) {
+                        $currentBatches[$batchKey] = [];
+                    }
 
-                if ($pos % 50 == 0) {
-                    echo sprintf(' [%s/%s]%s', $pos, $total, PHP_EOL);
-                }
+                    $currentBatches[$batchKey][] = $document;
+                    $count++;
 
-                // fetch the actual instance
-                /* @var DataObject|SearchServiceExtension $instance */
-                $instance = DataObject::get_by_id($item->ClassName, $item->ID);
-
-                if (!$instance || !$instance->canIndexInSearch()) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $batchKey = get_class($item);
-
-                if (!isset($currentBatches[$batchKey])) {
-                    $currentBatches[$batchKey] = [];
-                }
-
-                $currentBatches[$batchKey][] = $item;
-                $count++;
-
-                if (count($currentBatches[$batchKey]) >= $batchSize) {
-                    $this->indexBatch($currentBatches[$batchKey]);
-
-                    unset($currentBatches[$batchKey]);
-
-                    sleep(1);
+                    if (count($currentBatches[$batchKey]) >= $batchSize) {
+                        $this->indexBatch($currentBatches[$batchKey]);
+                        unset($currentBatches[$batchKey]);
+                        sleep(1);
+                    }
                 }
             }
-        }
 
-        foreach ($currentBatches as $class => $records) {
-            if (count($currentBatches[$class]) > 0) {
-                $this->indexbatch($currentBatches[$class]);
-
-                sleep(1);
+            foreach ($currentBatches as $class => $documents) {
+                if (count($currentBatches[$class]) > 0) {
+                    $this->indexbatch($currentBatches[$class]);
+                }
             }
         }
 
@@ -155,18 +149,18 @@ class SearchReindex extends BuildTask
     /**
      * Index a batch of changes
      *
-     * @param DataObject[] $items
+     * @param DocumentInterface[] $documents
      *
      * @return bool
      */
-    public function indexBatch(array $items): bool
+    public function indexBatch(array $documents): bool
     {
         $service = $this->getSearchService();
 
         try {
-            $service->addDocuments($items);
-            foreach ($items as $item) {
-                $item->touchSearchIndexedDate();
+            $service->addDocuments($documents);
+            foreach ($documents as $document) {
+                $document->markIndexed();
             }
             return true;
         } catch (Exception $e) {
@@ -179,6 +173,5 @@ class SearchReindex extends BuildTask
             return false;
         }
     }
-
 
 }

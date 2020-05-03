@@ -13,7 +13,7 @@ use SilverStripe\SearchService\Service\Indexer;
  * Remove an item from search async. This method works well
  * for performance and batching large operations
  */
-class DeleteItemJob extends AbstractQueuedJob implements QueuedJob
+class DeleteJob extends AbstractQueuedJob implements QueuedJob
 {
     /**
      * @param string $itemClass

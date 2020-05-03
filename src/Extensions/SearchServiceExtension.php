@@ -17,8 +17,8 @@ use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
-use SilverStripe\SearchService\Jobs\DeleteItemJob;
-use SilverStripe\SearchService\Jobs\IndexItemJob;
+use SilverStripe\SearchService\Jobs\DeleteJob;
+use SilverStripe\SearchService\Jobs\IndexJob;
 
 /**
  * The extension that provides implicit indexing features to dataobjects
@@ -91,41 +91,12 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * Returns whether this object should be indexed search.
-     */
-    public function canIndexInSearch(): bool
-    {
-        if ($this->owner->hasField('ShowInSearch')) {
-            return $this->owner->ShowInSearch;
-        }
-
-        return true;
-    }
-
-    /**
      * When publishing the page, push this data to Indexer. The data
      * which is sent to search is the rendered template from the front end.
      */
     public function onAfterPublish()
     {
         $this->owner->indexInSearch();
-    }
-
-    /**
-     * Update the indexed date for this object.
-     */
-    public function touchSearchIndexedDate()
-    {
-        $schema = DataObject::getSchema();
-        $table = $schema->tableForField($this->owner->ClassName, 'SearchIndexed');
-
-        if ($table) {
-            DB::query(sprintf('UPDATE %s SET SearchIndexed = NOW() WHERE ID = %s', $table, $this->owner->ID));
-
-            if ($this->owner->hasExtension(Versioned::class) && $this->owner->hasStages()) {
-                DB::query(sprintf('UPDATE %s_Live SET SearchIndexed = NOW() WHERE ID = %s', $table, $this->owner->ID));
-            }
-        }
     }
 
     /**
@@ -141,7 +112,7 @@ class SearchServiceExtension extends DataExtension
         }
 
         if ($this->config()->get('use_queued_indexing')) {
-            $indexJob = new IndexItemJob(get_class($this->owner), $this->owner->ID);
+            $indexJob = new IndexJob(get_class($this->owner), $this->owner->ID);
             QueuedJobService::singleton()->queueJob($indexJob);
 
             return true;
@@ -190,7 +161,7 @@ class SearchServiceExtension extends DataExtension
     public function removeFromSearch()
     {
         if ($this->config()->get('use_queued_indexing')) {
-            $indexDeleteJob = new DeleteItemJob(get_class($this->owner), $this->owner->ID);
+            $indexDeleteJob = new DeleteJob(get_class($this->owner), $this->owner->ID);
             QueuedJobService::singleton()->queueJob($indexDeleteJob);
         } else {
             try {

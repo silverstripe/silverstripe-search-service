@@ -17,6 +17,9 @@ SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Tasks\SearchInspect:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+  SilverStripe\SearchService\Service\DocumentFetcherRegistry:
+    constructor:
+      dataObject: '%$SilverStripe\SearchService\DataObject\DataObjectFetcher`
 
 
 
@@ -35,6 +38,3 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       endpoint: '`APP_SEARCH_ENDPOINT`'
       apiKey: '`APP_SEARCH_API_KEY`'
-  SilverStripe\SearchService\Service\DocumentBuilder:
-    properties:
-      fieldFormatter: [SilverStripe\SearchService\Services\AppSearch\AppSearchService, 'formatField']

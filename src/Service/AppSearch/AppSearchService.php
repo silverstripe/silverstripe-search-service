@@ -9,8 +9,9 @@ use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\DocumentBuilder;
+use SilverStripe\SearchService\Service\DataObjectBuilder;
 use InvalidArgumentException;
 use Exception;
 
@@ -49,32 +50,31 @@ class AppSearchService implements SearchServiceInterface
     }
 
     /**
-     * @param array $items
+     * @param DocumentInterface[] $items
      * @return SearchServiceInterface
      * @throws Exception
      */
     public function addDocuments(array $items): SearchServiceInterface
     {
         $documentMap = [];
-        /* @var DataObject|SearchServiceExtension $item */
+        /* @var DocumentInterface $item */
         foreach ($items as $item) {
-            if (!$item instanceof DataObject || !$item->hasExtension(SearchServiceExtension::class)) {
-                var_dump($item);
+            if (!$item instanceof DocumentInterface) {
                 throw new InvalidArgumentException(sprintf(
-                    '%s not passed a DataObject or an item does not have the %s extension',
+                    '%s not passed an instance of %s',
                     __FUNCTION__,
-                    SearchServiceExtension::class
+                    DocumentInterface::class
                 ));
             }
 
-            $fields = DocumentBuilder::create($item)->exportAttributes();
-            $fields->push('id', $item->generateSearchUUID());
+            $fields = $item->toArray();
+            $fields['id'] = $item->getIdentifier();
 
             foreach ($this->getIndexesForObject($item) as $indexName) {
                 if (!isset($documentMap[$indexName])) {
                     $documentMap[$indexName] = [];
                 }
-                $documentMap[$indexName][] = $fields->toArray();
+                $documentMap[$indexName][] = $fields;
             }
         }
 
@@ -204,6 +204,30 @@ class AppSearchService implements SearchServiceInterface
     }
 
     /**
+     * @return array
+     */
+    public function getSearchableClasses(): array
+    {
+        return array_reduce($this->config()->get('indexes'), function ($all, $curr) {
+            return array_merge($all, $curr['includeClasses'] ?? []);
+        }, []);
+    }
+
+    /**
+     * @param string $field
+     * @return string
+     */
+    public function formatField(string $field): string
+    {
+        $clean = preg_replace('/[^A-Za-z_\-0-9]/', '', $field);
+        $clean = preg_replace('/([a-z])([A-Z])/', '\1-\2', $clean);
+        $clean = str_replace('-', '_', $clean);
+        $clean = strtolower($clean);
+
+        return $clean;
+    }
+
+    /**
      * @param DataObject $item
      * @return array
      */
@@ -276,20 +300,6 @@ class AppSearchService implements SearchServiceInterface
     public static function environmentizeIndex($indexName)
     {
         return sprintf("%s-%s", Director::get_environment_type(), $indexName);
-    }
-
-    /**
-     * @param string $field
-     * @return string
-     */
-    public static function formatField(string $field): string
-    {
-        $clean = preg_replace('/[^A-Za-z_\-0-9]/', '', $field);
-        $clean = preg_replace('/([a-z])([A-Z])/', '\1-\2', $clean);
-        $clean = str_replace('-', '_', $clean);
-        $clean = strtolower($clean);
-
-        return $clean;
     }
 
 }

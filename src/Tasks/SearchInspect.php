@@ -6,7 +6,7 @@ use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\DocumentBuilder;
+use SilverStripe\SearchService\Service\DataObjectBuilder;
 use SilverStripe\SearchService\Service\ServiceAware;
 
 class SearchInspect extends BuildTask
@@ -39,7 +39,7 @@ class SearchInspect extends BuildTask
         }
 
         $this->getSearchService()->configure();
-        $builder = DocumentBuilder::create($item);
+        $builder = DataObjectBuilder::create($item);
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';
         print_r($builder->exportAttributes()->toArray());
