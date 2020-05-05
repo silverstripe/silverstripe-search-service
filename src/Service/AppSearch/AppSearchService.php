@@ -8,10 +8,10 @@ use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\ORM\DataObjectInterface;
+use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\DataObjectBuilder;
 use InvalidArgumentException;
 use Exception;
 
@@ -40,21 +40,21 @@ class AppSearchService implements SearchServiceInterface
     }
 
     /**
-     * @param DataObject $item
+     * @param DocumentInterface $item
      * @return SearchServiceInterface
      * @throws Exception
      */
-    public function addDocument(DataObject $item): SearchServiceInterface
+    public function addDocument(DocumentInterface $item): SearchServiceInterface
     {
         return $this->addDocuments([$item]);
     }
 
     /**
      * @param DocumentInterface[] $items
-     * @return SearchServiceInterface
+     * @return BatchDocumentInterface
      * @throws Exception
      */
-    public function addDocuments(array $items): SearchServiceInterface
+    public function addDocuments(array $items): BatchDocumentInterface
     {
         $documentMap = [];
         /* @var DocumentInterface $item */
@@ -65,6 +65,9 @@ class AppSearchService implements SearchServiceInterface
                     __FUNCTION__,
                     DocumentInterface::class
                 ));
+            }
+            if (!$item->shouldIndex()) {
+                continue;
             }
 
             $fields = $item->toArray();
@@ -95,30 +98,30 @@ class AppSearchService implements SearchServiceInterface
     }
 
     /**
-     * @param DataObject $item
+     * @param string $id
      * @return SearchServiceInterface
      * @throws Exception
      */
-    public function removeDocument(DataObject $item): SearchServiceInterface
+    public function removeDocument(string $id): SearchServiceInterface
     {
-        return $this->removeDocuments([$item]);
+        return $this->removeDocuments([$id]);
     }
 
     /**
      * @param array $items
-     * @return SearchServiceInterface
+     * @return BatchDocumentInterface
      * @throws Exception
      */
-    public function removeDocuments(array $items): SearchServiceInterface
+    public function removeDocuments(array $items): BatchDocumentInterface
     {
         $documentMap = [];
-        /* @var DataObject|SearchServiceExtension $item */
+        /* @var DataObjectInterface $item */
         foreach ($items as $item) {
-            if (!$item instanceof DataObject || !$item->hasExtension(SearchServiceExtension::class)) {
+            if (!$item instanceof DataObjectInterface) {
                 throw new InvalidArgumentException(sprintf(
-                    '%s not passed a DataObject or an item does not have the %s extension',
+                    '%s not passed a %s',
                     __FUNCTION__,
-                    SearchServiceExtension::class
+                    DataObjectInterface::class
                 ));
             }
 
@@ -217,7 +220,7 @@ class AppSearchService implements SearchServiceInterface
      * @param string $field
      * @return string
      */
-    public function formatField(string $field): string
+    public function normaliseField(string $field): string
     {
         $clean = preg_replace('/[^A-Za-z_\-0-9]/', '', $field);
         $clean = preg_replace('/([a-z])([A-Z])/', '\1-\2', $clean);

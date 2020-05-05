@@ -20,6 +20,9 @@ use SilverStripe\ORM\RelationList;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\IndexConfiguration;
+use SilverStripe\SearchService\Service\PageCrawler;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
 
@@ -27,6 +30,7 @@ class DataObjectDocument implements DocumentInterface
 {
     use Injectable;
     use Extensible;
+    use ConfigurationAware;
 
     /**
      * @var DataObject&SearchServiceExtension
@@ -39,10 +43,17 @@ class DataObjectDocument implements DocumentInterface
     private $service;
 
     /**
+     * @var PageCrawler
+     */
+    private $pageCrawler;
+
+    /**
      * @var array
      */
     private static $dependencies = [
         'Service' => '%$' . SearchServiceInterface::class,
+        'PageCrawler' => '%$' . PageCrawler::class,
+        'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
     /**
@@ -67,13 +78,19 @@ class DataObjectDocument implements DocumentInterface
      */
     public function shouldIndex(): bool
     {
-        if ($this->getDataObject()->hasField('ShowInSearch')) {
-            return $this->getDataObject()->ShowInSearch;
+        if ($this->getDataObject()->hasField('ShowInSearch') && !$this->getDataObject()->ShowInSearch) {
+            return false;
+        }
+        if (!$this->getConfiguration()->isIndexing()) {
+            return false;
         }
 
-        return true;
+        return min($this->getDataObject()->invokeWithExtensions('canIndexInSearch')) != false;
     }
 
+    /**
+     *
+     */
     public function markIndexed(): void
     {
         $schema = DataObject::getSchema();
@@ -214,8 +231,6 @@ class DataObjectDocument implements DocumentInterface
         }
     }
 
-
-
     /**
      * @return DataObject&SearchServiceExtension
      */
@@ -253,12 +268,31 @@ class DataObjectDocument implements DocumentInterface
     }
 
     /**
+     * @param PageCrawler $crawler
+     * @return $this
+     */
+    public function setPageCrawler(PageCrawler $crawler): self
+    {
+        $this->pageCrawler = $crawler;
+
+        return $this;
+    }
+
+    /**
+     * @return PageCrawler|null
+     */
+    public function getPageCrawler(): ?PageCrawler
+    {
+        return $this->pageCrawler;
+    }
+
+    /**
      * @param string $field
      * @return string
      */
     private function formatField(string $field): string
     {
-        return $this->getService()->formatField($field);
+        return $this->getService()->normaliseField($field);
     }
 
 }

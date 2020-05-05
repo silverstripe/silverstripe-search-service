@@ -4,28 +4,27 @@ namespace SilverStripe\SearchService\Tasks;
 
 use Exception;
 use Psr\Log\LoggerInterface;
-use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Director;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
-use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\Limitable;
-use SilverStripe\ORM\Sortable;
-use SilverStripe\ORM\SS_List;
-use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
-use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
-use SilverStripe\SearchService\Service\DocumentFetcherRegistry;
+use SilverStripe\SearchService\Service\BatchProcessorAware;
+use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
-use SilverStripe\Versioned\Versioned;
+use InvalidArgumentException;
 
 class SearchReindex extends BuildTask
 {
     use ServiceAware;
+    use ConfigurationAware;
+    use BatchProcessorAware;
 
     protected $title = 'Search Service Reindex';
 
@@ -34,27 +33,31 @@ class SearchReindex extends BuildTask
     private static $segment = 'SearchReindex';
 
     /**
-     * @var int
-     * @config
+     * @var BatchDocumentInterface
      */
-    private static $batch_size = 20;
-
-    /**
-     * @var bool
-     * @config
-     */
-    private static $use_queued_indexing = false;
+    private $batchProcessor;
 
     /**
      * SearchReindex constructor.
      * @param SearchServiceInterface $searchService
+     * @param IndexConfiguration $config
+     * @param BatchDocumentInterface $batchProcesor
      */
-    public function __construct(SearchServiceInterface $searchService)
+    public function __construct(
+        SearchServiceInterface $searchService,
+        IndexConfiguration $config,
+        BatchDocumentInterface $batchProcesor
+    )
     {
+        parent::__construct();
         $this->setSearchService($searchService);
+        $this->setConfiguration($config);
+        $this->setBatchProcessor($batchProcesor);
     }
 
-
+    /**
+     * @param HTTPRequest $request
+     */
     public function run($request)
     {
         Environment::increaseMemoryLimitTo();
@@ -64,113 +67,91 @@ class SearchReindex extends BuildTask
         $targetClass = $request->getVar('onlyClass');
         $classes = $targetClass ? [$targetClass] : $service->getSearchableClasses();
 
-        /* @var DocumentFetcherRegistry $registry */
-        $registry = Injector::inst()->get(DocumentFetcherRegistry::class);
+        /* @var DocumentFetchCreatorRegistry $registry */
+        $registry = Injector::inst()->get(DocumentFetchCreatorRegistry::class);
+
+        $until = strtotime(time(), '-' . $this->getConfiguration()->getSyncInterval());
+
         /* @var DocumentFetcherInterface[] $fetchers */
         $fetchers = [];
         foreach ($classes as $class) {
-            $fetcher = $registry->getFetcherForType($class);
+            $fetcher = $registry->getFetcher($class, $until);
             if ($fetcher) {
                 $fetchers[$class] = $fetcher;
             }
         }
 
         $count = 0;
-        $skipped = 0;
         $errored = 0;
-        $batchSize = $this->config()->get('batch_size');
+        $batchSize = $this->getConfiguration()->getBatchSize();
+
+        $allDocumentTotal = array_reduce($fetchers, function ($total, $fetcher) {
+            /* @var DocumentFetcherInterface $fetcher */
+            return $total + $fetcher->getTotalDocuments();
+        }, 0);
+
+        echo sprintf(
+            "Syncing %s total documents across %s content types%s",
+            $allDocumentTotal,
+            sizeof($fetchers),
+            PHP_EOL
+        );
+
         foreach ($fetchers as $class => $fetcher) {
-            $total = $fetcher->getTotalDocuments($class);
+            $total = $fetcher->getTotalDocuments();
             echo sprintf('Building %s documents for %s', $total, $class) . PHP_EOL;
             $batchesTotal = ($total > 0) ? (ceil($total / $batchSize)) : 0;
-
-            echo sprintf(
-                'Found %s documents remaining to index, will export in batches of %s, grouped by type. (%s total) %s',
-                $total,
-                $batchSize,
-                $batchesTotal,
-                PHP_EOL
-            );
-
-            $pos = 0;
-
-            if ($total < 1) {
-                return;
-            }
-
-            $currentBatches = [];
-
-            for ($i = 0; $i < $batchesTotal; $i++) {
-                $batch = $fetcher->fetch($class, $batchSize, $i * $batchSize);
-                foreach ($batch as $document) {
-                    $pos++;
-                    echo '.';
-                    if ($pos % 50 == 0) {
-                        echo sprintf(' [%s/%s]%s', $pos, $total, PHP_EOL);
-                    }
-                    if (!$document->shouldIndex()) {
-                        $skipped++;
-                        continue;
-                    }
-
-                    $batchKey = get_class($document);
-
-                    if (!isset($currentBatches[$batchKey])) {
-                        $currentBatches[$batchKey] = [];
-                    }
-
-                    $currentBatches[$batchKey][] = $document;
-                    $count++;
-
-                    if (count($currentBatches[$batchKey]) >= $batchSize) {
-                        $this->indexBatch($currentBatches[$batchKey]);
-                        unset($currentBatches[$batchKey]);
-                        sleep(1);
+            $pos = 1;
+            foreach ($this->chunk($fetcher, $batchSize) as $chunk) {
+                echo sprintf(' [%s/%s]%s', $pos, $batchesTotal, PHP_EOL);
+                try {
+                    $this->getBatchProcessor()->addDocuments($chunk);
+                    $count += $batchSize;
+                } catch (Exception $e) {
+                    $errored++;
+                    echo sprintf("ERROR: %s", $e->getMessage());
+                    if (!Director::isDev()) {
+                        Injector::inst()->get(LoggerInterface::class)
+                            ->error($e);
                     }
                 }
-            }
-
-            foreach ($currentBatches as $class => $documents) {
-                if (count($currentBatches[$class]) > 0) {
-                    $this->indexbatch($currentBatches[$class]);
-                }
+                $pos++;
             }
         }
 
         Debug::message(sprintf(
-            "Number of objects indexed: %s, Errors: %s, Skipped %s",
+            "Number of objects indexed: %s, Errors: %s",
             $count,
             $errored,
-            $skipped
         ));
-
     }
 
     /**
-     * Index a batch of changes
-     *
-     * @param DocumentInterface[] $documents
-     *
-     * @return bool
+     * @param DocumentFetcherInterface $fetcher
+     * @param int $chunkSize
+     * @return iterable
+     * @see https://github.com/silverstripe/silverstripe-framework/pull/8940/files
      */
-    public function indexBatch(array $documents): bool
+    private function chunk(DocumentFetcherInterface $fetcher, int $chunkSize = 100): iterable
     {
-        $service = $this->getSearchService();
+        if ($chunkSize < 1) {
+            throw new InvalidArgumentException(sprintf(
+                '%s::%s: chunkSize must be greater than or equal to 1',
+                __CLASS__,
+                __METHOD__
+            ));
+        }
 
-        try {
-            $service->addDocuments($documents);
-            foreach ($documents as $document) {
-                $document->markIndexed();
+        $currentChunk = 0;
+        while ($chunk = $fetcher->fetch($chunkSize, $chunkSize * $currentChunk)) {
+            foreach ($chunk as $item) {
+                yield $item;
             }
-            return true;
-        } catch (Exception $e) {
-            Injector::inst()->create(LoggerInterface::class)->error($e);
 
-            if (Director::isDev()) {
-                Debug::message($e->getMessage());
+            if (sizeof($chunk) < $chunkSize) {
+                break;
             }
-
-            return false;
+            $currentChunk++;
         }
     }
 

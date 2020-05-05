@@ -3,22 +3,19 @@
 namespace SilverStripe\SearchService\Extensions;
 
 use Exception;
-use Psr\Log\LoggerInterface;
-use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DB;
+use SilverStripe\SearchService\DataObject\DataObjectDocument;
+use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\BatchProcessorAware;
+use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
-use SilverStripe\Versioned\Versioned;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
-use SilverStripe\SearchService\Jobs\DeleteJob;
-use SilverStripe\SearchService\Jobs\IndexJob;
 
 /**
  * The extension that provides implicit indexing features to dataobjects
@@ -30,6 +27,8 @@ class SearchServiceExtension extends DataExtension
     use Configurable;
     use Injectable;
     use ServiceAware;
+    use ConfigurationAware;
+    use BatchProcessorAware;
 
     /**
      * @var bool
@@ -38,33 +37,32 @@ class SearchServiceExtension extends DataExtension
     private static $enable_indexer = true;
 
     /**
-     * @var bool
-     * @config
+     * @var array
      */
-    private static $use_queued_indexing = false;
-
     private static $db = [
         'SearchIndexed' => 'Datetime'
     ];
 
+    /**
+     * @var bool
+     */
     private $hasConfigured = false;
 
     /**
      * SearchServiceExtension constructor.
      * @param SearchServiceInterface $searchService
+     * @param IndexConfiguration $config
+     * @param BatchDocumentInterface $batchProcessor
      */
-    public function __construct(SearchServiceInterface $searchService)
-    {
+    public function __construct(
+        SearchServiceInterface $searchService,
+        IndexConfiguration $config,
+        BatchDocumentInterface $batchProcessor
+    ) {
         parent::__construct();
         $this->setSearchService($searchService);
-    }
-
-    /**
-     * @return bool
-     */
-    public function indexEnabled(): bool
-    {
-        return $this->config('enable_indexer') ? true : false;
+        $this->setConfiguration($config);
+        $this->setBatchProcessor($batchProcessor);
     }
 
     /**
@@ -72,7 +70,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function updateCMSFields(FieldList $fields)
     {
-        if ($this->owner->indexEnabled()) {
+        if ($this->getConfiguration()->isIndexing()) {
             $fields->addFieldsToTab('Root.Main', [
                 ReadonlyField::create('SearchIndexed', _t(__CLASS__.'.LastIndexed', 'Last indexed in search'))
             ]);
@@ -91,90 +89,24 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * When publishing the page, push this data to Indexer. The data
-     * which is sent to search is the rendered template from the front end.
-     */
-    public function onAfterPublish()
-    {
-        $this->owner->indexInSearch();
-    }
-
-    /**
      * Index this record into search or queue if configured to do so
      *
-     * @return bool
+     * @return void
      * @throws Exception
      */
-    public function indexInSearch(): bool
+    public function indexInSearch(): void
     {
-        if ($this->owner->indexEnabled() && min($this->owner->invokeWithExtensions('canIndexInSearch')) == false) {
-            return false;
-        }
-
-        if ($this->config()->get('use_queued_indexing')) {
-            $indexJob = new IndexJob(get_class($this->owner), $this->owner->ID);
-            QueuedJobService::singleton()->queueJob($indexJob);
-
-            return true;
-        } else {
-            return $this->doImmediateIndexInSearch();
-        }
-    }
-
-    /**
-     * Index this record into search
-     *
-     * @return bool
-     */
-    public function doImmediateIndexInSearch()
-    {
-        try {
-            $this->getSearchService()->addDocument($this->owner);
-
-            $this->touchSearchIndexedDate();
-
-            return true;
-        } catch (Exception $e) {
-            Injector::inst()->create(LoggerInterface::class)->error($e);
-
-            if (Director::isDev()) {
-                throw $e;
-            }
-
-            return false;
-        }
-    }
-
-    /**
-     * When unpublishing this item, remove from search
-     */
-    public function onAfterUnpublish()
-    {
-        if ($this->owner->indexEnabled()) {
-            $this->removeFromSearch();
-        }
+        $document = DataObjectDocument::create($this->owner);
+        $this->getBatchProcessor()->addDocuments([$document]);
     }
 
     /**
      * Remove this item from search
      */
-    public function removeFromSearch()
+    public function removeFromSearch(): void
     {
-        if ($this->config()->get('use_queued_indexing')) {
-            $indexDeleteJob = new DeleteJob(get_class($this->owner), $this->owner->ID);
-            QueuedJobService::singleton()->queueJob($indexDeleteJob);
-        } else {
-            try {
-                $this->getSearchService()->removeDocument($this->owner);
-
-                $this->touchSearchIndexedDate();
-            } catch (Exception $e) {
-                Injector::inst()->create(LoggerInterface::class)->error($e);
-                if (Director::isDev()) {
-                    throw $e;
-                }
-            }
-        }
+        $document = DataObjectDocument::create($this->owner);
+        $this->getBatchProcessor()->removeDocuments([$document->getIdentifier()]);
     }
 
     /**
@@ -190,13 +122,30 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
+     * When publishing the page, push this data to Indexer. The data
+     * which is sent to search is the rendered template from the front end.
+     */
+    public function onAfterPublish()
+    {
+        $this->owner->indexInSearch();
+    }
+
+    /**
+     * When unpublishing this item, remove from search
+     * @throws Exception
+     */
+    public function onAfterUnpublish(): void
+    {
+        $this->owner->removeFromSearch();
+    }
+
+    /**
      * Before deleting this record ensure that it is removed from search.
+     * @throws Exception
      */
     public function onBeforeDelete()
     {
-        if ($this->owner->indexEnabled()) {
-            $this->removeFromSearch();
-        }
+        $this->owner->removeFromSearch();
     }
 
 }

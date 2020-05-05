@@ -2,15 +2,14 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
-use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
+use InvalidArgumentException;
 
 /**
  * Index an item (or multiple items) into search async. This method works well
@@ -20,6 +19,10 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ServiceAware;
+
+    const METHOD_DELETE = 0;
+
+    const METHOD_ADD = 1;
 
     /**
      * @var array
@@ -44,14 +47,22 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     private $service;
 
     /**
-     * @param DocumentInterface[] $documents
-     * @paramn int $batchSize
+     * @var int
      */
-    public function __construct(array $documents = [], int $batchSize = 20)
+    private $method;
+
+    /**
+     * @param DocumentInterface[] $documents
+     * @param int $method
+     * @param int $batchSize
+     */
+    public function __construct(array $documents = [], int $method = self::METHOD_ADD, ?int $batchSize = null)
     {
         $this->documents = $documents;
-        $this->chunks = array_chunk($documents, $batchSize);
+
+        $this->chunks = array_chunk($documents, $batchSize ?: IndexConfiguration::singleton()->getBatchSize());
         $this->totalSteps = sizeof($this->chunks);
+        $this->setMethod($method);
     }
 
     /**
@@ -106,13 +117,40 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
 
         $this->currentStep++;
         $documents = array_shift($remainingChildren);
-        $this->getSearchService()->addDocuments($documents);
+        $method = $this->getMethod() === static::METHOD_DELETE ? 'removeDocuments' : 'addDocuments';
+        $this->getSearchService()->$method($documents);
         $this->chunks = $remainingChildren;
 
         if (!count($remainingChildren)) {
             $this->isComplete = true;
             return;
         }
+    }
+
+    /**
+     * @param $method
+     * @return $this
+     */
+    public function setMethod($method): self
+    {
+        if (!in_array($method, [self::METHOD_ADD, self::METHOD_DELETE])) {
+            throw new InvalidArgumentException(sprintf(
+                'Invalid method: %s',
+                $method
+            ));
+        }
+
+        $this->method = $method;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMethod(): int
+    {
+        return $this->method;
     }
 
 }

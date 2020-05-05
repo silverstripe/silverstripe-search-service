@@ -4,6 +4,7 @@ namespace SilverStripe\SearchService\Tasks;
 
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use SilverStripe\SearchService\Service\DataObjectBuilder;
@@ -13,7 +14,7 @@ class SearchInspect extends BuildTask
 {
     use ServiceAware;
 
-    private static $segment = 'SearchInspect';
+    private static $segment = 'SearchInspectDataObject';
 
     public function __construct(SearchServiceInterface $searchService)
     {
@@ -39,10 +40,10 @@ class SearchInspect extends BuildTask
         }
 
         $this->getSearchService()->configure();
-        $builder = DataObjectBuilder::create($item);
+        $builder = DataObjectDocument::create($item);
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';
-        print_r($builder->exportAttributes()->toArray());
+        print_r($builder->toArray());
 
         echo '### REMOTE FIELDS ###' . PHP_EOL;
         print_r($this->getSearchService()->getDocument($item->generateSearchUUID()));

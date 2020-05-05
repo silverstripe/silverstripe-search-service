@@ -5,23 +5,35 @@ SilverStripe\CMS\Model\SiteTree:
   extensions:
     - SilverStripe\SearchService\Extensions\SearchServiceExtension
 SilverStripe\Core\Injector\Injector:
+
   SilverStripe\SearchService\Extensions\SearchServiceExtension:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+      batchProcessor: '%$SilverStripe\SearchService\Service\BatchProcessor'
+
   SilverStripe\SearchService\Tasks\SearchConfigure:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+
   SilverStripe\SearchService\Tasks\SearchReindex:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+      batchProcessor: '%$SilverStripe\SearchService\Service\BatchProcessor'
+
   SilverStripe\SearchService\Tasks\SearchInspect:
     constructor:
       searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
-  SilverStripe\SearchService\Service\DocumentFetcherRegistry:
+
+  SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry:
     constructor:
-      dataObject: '%$SilverStripe\SearchService\DataObject\DataObjectFetcher`
+      dataObject: '%$SilverStripe\SearchService\DataObject\DataObjectFetchCreator'
 
-
+  SilverStripe\SearchService\Service\BatchProcessor:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
 
 ---
 Name: silverstripe-search-service-appsearch
@@ -38,3 +50,11 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       endpoint: '`APP_SEARCH_ENDPOINT`'
       apiKey: '`APP_SEARCH_API_KEY`'
+
+---
+Name: silverstripe-search-service-queuedjobs
+Only:
+  moduleexists: 'symbiote/silverstripe-queuedjobs'
+---
+#SilverStripe\SearchService\Service\IndexConfiguration:
+#  use_queuedjobs: true

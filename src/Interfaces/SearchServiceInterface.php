@@ -2,34 +2,20 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
-use SilverStripe\ORM\DataObject;
-
-interface SearchServiceInterface
+interface SearchServiceInterface extends BatchDocumentInterface
 {
 
     /**
-     * @param DataObject[] $items
+     * @param DocumentInterface $item
      * @return $this
      */
-    public function addDocuments(array $items): self;
+    public function addDocument(DocumentInterface $item): self;
 
     /**
-     * @param DataObject $item
+     * @param string $id
      * @return $this
      */
-    public function addDocument(DataObject $item): self;
-
-    /**
-     * @param DataObject $item
-     * @return $this
-     */
-    public function removeDocument(DataObject $item): self;
-
-    /**
-     * @param DataObject[] $items
-     * @return $this
-     */
-    public function removeDocuments(array $items): self;
+    public function removeDocument(string $d): self;
 
     /**
      * @param string $id
@@ -39,7 +25,7 @@ interface SearchServiceInterface
 
     /**
      * @param array $ids
-     * @return $this
+     * @return array
      */
     public function getDocuments(array $ids): array;
 
@@ -57,5 +43,6 @@ interface SearchServiceInterface
      * @param string $field
      * @return array
      */
-    public function normaliseField(string $field): array;
+    public function normaliseField(string $field): string;
+
 }
