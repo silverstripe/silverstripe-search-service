@@ -70,7 +70,10 @@ class DataObjectDocument implements DocumentInterface
      */
     public function getIdentifier(): string
     {
-        return $this->getDataObject()->generateSearchUUID();
+        $type = str_replace('\\', '_', $this->getDataObject()->baseClass());
+        $id = $this->getDataObject()->ID;
+
+        return strtolower(sprintf('%s_%s', $type, $id));
     }
 
     /**
@@ -81,11 +84,17 @@ class DataObjectDocument implements DocumentInterface
         if ($this->getDataObject()->hasField('ShowInSearch') && !$this->getDataObject()->ShowInSearch) {
             return false;
         }
-        if (!$this->getConfiguration()->isIndexing()) {
+        if (!$this->getConfiguration()->isEnabled()) {
             return false;
         }
 
-        return min($this->getDataObject()->invokeWithExtensions('canIndexInSearch')) != false;
+        $results = $this->getDataObject()->invokeWithExtensions('canIndexInSearch');
+
+        if (!empty($results)) {
+            return min($results) != false;
+        }
+
+        return true;
     }
 
     /**
@@ -118,13 +127,7 @@ class DataObjectDocument implements DocumentInterface
         $item = $this->getDataObject();
         $toIndex = [
             'objectSilverstripeID' => $item->ID,
-            'objectTitle' => (string) $item->Title,
-            'objectClassName' => get_class($item),
             'objectType' => $item->baseClass(),
-            'objectClassNameHierarchy' => array_values(ClassInfo::ancestry(get_class($item))),
-            'objectLastEdited' => $item->dbObject('LastEdited')->getTimestamp(),
-            'objectCreated' => $item->dbObject('Created')->getTimestamp(),
-            'objectLink' => str_replace(['?stage=Stage', '?stage=Live'], '', $item->AbsoluteLink())
         ];
 
         if ($this->getPageCrawler() && $this->config()->get('include_page_content')) {
@@ -136,7 +139,8 @@ class DataObjectDocument implements DocumentInterface
         $attributes = new Map(ArrayList::create());
 
         foreach ($toIndex as $k => $v) {
-            $attributes->push($this->formatField($k), $v);
+            $this->getService()->validateField($k);
+            $attributes->push($k, $v);
         }
 
         $specs = $item->config()->get('search_index_fields');
@@ -204,8 +208,8 @@ class DataObjectDocument implements DocumentInterface
             if (is_iterable($related)) {
                 foreach ($related as $relatedObj) {
                     $relationshipAttributes = new Map(ArrayList::create());
-                    $relationshipAttributes->push($this->formatField('objectID'), $relatedObj->ID);
-                    $relationshipAttributes->push($this->formatField('objectTitle'), $relatedObj->Title);
+                    $relationshipAttributes->push('objectID', $relatedObj->ID);
+                    $relationshipAttributes->push('objectTitle', $relatedObj->Title);
 
                     if ($item->hasMethod('updateSearchRelationshipAttributes')) {
                         $item->updateSearchRelationshipAttributes($relationshipAttributes, $relatedObj);
@@ -215,8 +219,8 @@ class DataObjectDocument implements DocumentInterface
                 }
             } else {
                 $relationshipAttributes = new Map(ArrayList::create());
-                $relationshipAttributes->push($this->formatField('objectID'), $related->ID);
-                $relationshipAttributes->push($this->formatField('Title'), $related->Title);
+                $relationshipAttributes->push('objectID', $related->ID);
+                $relationshipAttributes->push('Title', $related->Title);
 
                 if ($item->hasMethod('updateSearchRelationshipAttributes')) {
                     $item->updateSearchRelationshipAttributes($relationshipAttributes, $related);

@@ -2,6 +2,8 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
+use SilverStripe\SearchService\Exception\IndexConfigurationException;
+
 interface SearchServiceInterface extends BatchDocumentInterface
 {
 
@@ -12,10 +14,10 @@ interface SearchServiceInterface extends BatchDocumentInterface
     public function addDocument(DocumentInterface $item): self;
 
     /**
-     * @param string $id
+     * @param DocumentInterface $doc
      * @return $this
      */
-    public function removeDocument(string $d): self;
+    public function removeDocument(DocumentInterface $doc): self;
 
     /**
      * @param string $id
@@ -41,8 +43,8 @@ interface SearchServiceInterface extends BatchDocumentInterface
 
     /**
      * @param string $field
-     * @return array
+     * @throws IndexConfigurationException
      */
-    public function normaliseField(string $field): string;
+    public function validateField(string $field): void;
 
 }

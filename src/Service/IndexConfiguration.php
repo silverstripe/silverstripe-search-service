@@ -17,7 +17,7 @@ class IndexConfiguration
      * @var bool
      * @config
      */
-    private static $enable_indexing = true;
+    private static $enabled = true;
 
     /**
      * @var bool
@@ -38,11 +38,17 @@ class IndexConfiguration
     private static $sync_interval = '2 hours';
 
     /**
+     * @var string
+     * @config
+     */
+    private static $index_variant = '`SS_ENVIRONMENT_TYPE`';
+
+    /**
      * @return bool
      */
-    public function isIndexing(): bool
+    public function isEnabled(): bool
     {
-        return $this->config()->get('enable_indexing');
+        return $this->config()->get('enabled');
     }
 
     /**
@@ -67,5 +73,13 @@ class IndexConfiguration
     public function getSyncInterval(): string
     {
         return $this->config()->get('sync_interval');
+    }
+
+    /**
+     * @return string
+     */
+    public function getIndexVariant(): string
+    {
+        return $this->config()->get('index_variant');
     }
 }

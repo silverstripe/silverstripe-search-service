@@ -70,7 +70,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function updateCMSFields(FieldList $fields)
     {
-        if ($this->getConfiguration()->isIndexing()) {
+        if ($this->getConfiguration()->isEnabled()) {
             $fields->addFieldsToTab('Root.Main', [
                 ReadonlyField::create('SearchIndexed', _t(__CLASS__.'.LastIndexed', 'Last indexed in search'))
             ]);
@@ -107,18 +107,6 @@ class SearchServiceExtension extends DataExtension
     {
         $document = DataObjectDocument::create($this->owner);
         $this->getBatchProcessor()->removeDocuments([$document->getIdentifier()]);
-    }
-
-    /**
-     * Generates a unique ID for this item. If using a single index with
-     * different dataobjects such as products and pages they potentially would
-     * have the same ID. Uses the classname and the ID.
-     **
-     * @return string
-     */
-    public function generateSearchUUID(): string
-    {
-        return strtolower(str_replace('\\', '_', get_class($this->owner)) . '_'. $this->owner->ID);
     }
 
     /**

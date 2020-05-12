@@ -73,7 +73,8 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         return sprintf(
-            'Search service reindex %s documents in %s chunks',
+            'Search service %s %s documents in %s chunks',
+            $this->getMethod() === self::METHOD_DELETE ? 'removing' : 'adding',
             sizeof($this->documents),
             sizeof($this->chunks)
         );

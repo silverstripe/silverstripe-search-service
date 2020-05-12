@@ -54,7 +54,7 @@ class BatchProcessor implements BatchDocumentInterface
     public function removeDocuments(array $documents): BatchDocumentInterface
     {
         if ($this->getConfiguration()->isUsingQueuedJobs()) {
-            $job = IndexJob::create($documents, IndexJob::METHOD_REMOVE);
+            $job = IndexJob::create($documents, IndexJob::METHOD_DELETE);
             QueuedJobService::singleton()->queueJob($job);
         } else {
             $this->getSearchService()->addDocuments($documents);

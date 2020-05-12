@@ -9,11 +9,13 @@ use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectInterface;
+use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
 use InvalidArgumentException;
 use Exception;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 
 class AppSearchService implements SearchServiceInterface
 {
@@ -46,7 +48,9 @@ class AppSearchService implements SearchServiceInterface
      */
     public function addDocument(DocumentInterface $item): SearchServiceInterface
     {
-        return $this->addDocuments([$item]);
+        $this->addDocuments([$item]);
+
+        return $this;
     }
 
     /**
@@ -83,7 +87,10 @@ class AppSearchService implements SearchServiceInterface
 
         try {
             foreach ($documentMap as $indexName => $docsToAdd) {
-                $result = $this->getClient()->indexDocuments(static::environmentizeIndex($indexName), $docsToAdd);
+                $result = $this->getClient()->indexDocuments(
+                    static::environmentizeIndex($indexName),
+                    $docsToAdd
+                );
                 $this->handleError($result);
             }
         } catch (Exception $e) {
@@ -98,30 +105,32 @@ class AppSearchService implements SearchServiceInterface
     }
 
     /**
-     * @param string $id
+     * @param DocumentInterface $doc
      * @return SearchServiceInterface
      * @throws Exception
      */
-    public function removeDocument(string $id): SearchServiceInterface
+    public function removeDocument(DocumentInterface $doc): SearchServiceInterface
     {
-        return $this->removeDocuments([$id]);
+        $this->removeDocuments([$doc]);
+
+        return $this;
     }
 
     /**
-     * @param array $items
+     * @param DocumentInterface[] $items
      * @return BatchDocumentInterface
      * @throws Exception
      */
     public function removeDocuments(array $items): BatchDocumentInterface
     {
         $documentMap = [];
-        /* @var DataObjectInterface $item */
+        /* @var DocumentInterface $item */
         foreach ($items as $item) {
-            if (!$item instanceof DataObjectInterface) {
+            if (!$item instanceof DocumentInterface) {
                 throw new InvalidArgumentException(sprintf(
                     '%s not passed a %s',
                     __FUNCTION__,
-                    DataObjectInterface::class
+                    DocumentInterface::class
                 ));
             }
 
@@ -129,13 +138,16 @@ class AppSearchService implements SearchServiceInterface
                 if (!isset($documentMap[$indexName])) {
                     $documentMap[$indexName] = [];
                 }
-                $documentMap[$indexName][] = $item->generateSearchUUID();
+                $documentMap[$indexName][] = $item->getIdentifier();
             }
         }
 
         try {
             foreach ($documentMap as $indexName => $documentIds) {
-                $result = $this->getClient()->deleteDocuments(static::environmentizeIndex($indexName), $documentIds);
+                $result = $this->getClient()->deleteDocuments(
+                    static::environmentizeIndex($indexName),
+                    $documentIds
+                );
                 $this->handleError($result);
             }
         } catch (Exception $e) {
@@ -170,7 +182,10 @@ class AppSearchService implements SearchServiceInterface
         foreach ($ids as $docID) {
             foreach (array_keys($this->config()->get('indexes')) as $indexName) {
                 try {
-                    $response = $this->getClient()->getDocuments(static::environmentizeIndex($indexName), [$docID]);
+                    $response = $this->getClient()->getDocuments(
+                        static::environmentizeIndex($indexName),
+                        [$docID]
+                    );
                     $this->handleError($response);
                     if ($response) {
                         $docs[$docID] = $response;
@@ -218,16 +233,16 @@ class AppSearchService implements SearchServiceInterface
 
     /**
      * @param string $field
-     * @return string
+     * @throws IndexConfigurationException
      */
-    public function normaliseField(string $field): string
+    public function validateField(string $field): void
     {
-        $clean = preg_replace('/[^A-Za-z_\-0-9]/', '', $field);
-        $clean = preg_replace('/([a-z])([A-Z])/', '\1-\2', $clean);
-        $clean = str_replace('-', '_', $clean);
-        $clean = strtolower($clean);
-
-        return $clean;
+        if (preg_match('/[^A-Za-z0-9_]/', $field)) {
+            throw new IndexConfigurationException(sprintf(
+                'Invalid field name: %s. Must contain only alphanumeric characters and underscores.',
+                $field
+            ));
+        }
     }
 
     /**
@@ -297,12 +312,16 @@ class AppSearchService implements SearchServiceInterface
 
     /**
      * @param string $indexName
-     *
      * @return string
      */
-    public static function environmentizeIndex($indexName)
+    public static function environmentizeIndex(string $indexName)
     {
-        return sprintf("%s-%s", Director::get_environment_type(), $indexName);
+        $variant = IndexConfiguration::singleton()->getIndexVariant();
+        if ($variant) {
+            return sprintf("%s-%s", $variant, $indexName);
+        }
+
+        return $indexName;
     }
 
 }

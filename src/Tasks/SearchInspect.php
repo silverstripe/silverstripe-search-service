@@ -18,6 +18,7 @@ class SearchInspect extends BuildTask
 
     public function __construct(SearchServiceInterface $searchService)
     {
+        parent::__construct();
         $this->setSearchService($searchService);
     }
 
@@ -46,7 +47,7 @@ class SearchInspect extends BuildTask
         print_r($builder->toArray());
 
         echo '### REMOTE FIELDS ###' . PHP_EOL;
-        print_r($this->getSearchService()->getDocument($item->generateSearchUUID()));
+        print_r($this->getSearchService()->getDocument($builder->getIdentifier()));
 
 //        echo '### INDEX SETTINGS ### '. PHP_EOL;
 //        foreach ($item->getSearchIndexes() as $index) {
