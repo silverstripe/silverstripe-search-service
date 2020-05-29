@@ -6,8 +6,7 @@ use DOMDocument;
 use DOMXPath;
 use Exception;
 use Psr\Log\LoggerInterface;
-use SilverStripe\CMS\Controllers\ModelAsController;
-use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
@@ -41,26 +40,23 @@ class PageCrawler
      */
     public function getMainContent(DataObject $item)
     {
-        if (!$item instanceof SiteTree) {
+        if (!$item->hasMethod('Link')) {
             return '';
         }
 
-        $controller = ModelAsController::controller_for($item);
-        $page = '';
-
+        $page = null;
         try {
-            $page = $controller->render();
+            $response = Director::test($item->Link());
+            $page = $response->getBody();
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
         }
-
         $output = '';
-
-        // just get the interal content for the page.
+        // just get the internal content for the page.
         if ($page) {
             libxml_use_internal_errors(true);
             $dom = new DOMDocument();
-            $dom->loadHTML($page->forTemplate());
+            $dom->loadHTML($page);
             $xpath = new DOMXPath($dom);
             $selector = $this->config()->get('content_xpath_selector');
             $nodes = $xpath->query($selector);

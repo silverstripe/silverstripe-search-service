@@ -6,7 +6,7 @@ use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\DataObjectBuilder;
 use SilverStripe\SearchService\Service\ServiceAware;
 
@@ -16,7 +16,7 @@ class SearchInspect extends BuildTask
 
     private static $segment = 'SearchInspectDataObject';
 
-    public function __construct(SearchServiceInterface $searchService)
+    public function __construct(IndexingInterface $searchService)
     {
         parent::__construct();
         $this->setSearchService($searchService);

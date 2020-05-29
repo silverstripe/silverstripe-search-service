@@ -4,31 +4,40 @@
 namespace SilverStripe\SearchService\Service;
 
 
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 
 trait ServiceAware
 {
     /**
-     * @var SearchServiceInterface
+     * @var IndexingInterface
      */
     private $searchService;
 
     /**
-     * @return SearchServiceInterface
+     * @return IndexingInterface
      */
-    public function getSearchService(): SearchServiceInterface
+    public function getSearchService(): IndexingInterface
     {
         return $this->searchService;
     }
 
     /**
-     * @param SearchServiceInterface $searchService
+     * @param IndexingInterface $searchService
      * @return $this
      */
-    public function setSearchService(SearchServiceInterface $searchService): self
+    public function setSearchService(IndexingInterface $searchService): self
     {
         $this->searchService = $searchService;
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasSearchService(): bool
+    {
+        return Injector::inst()->has(IndexingInterface::class);
     }
 
 

@@ -1,0 +1,12 @@
+---
+Name: silverstripe-search-service-extensions
+---
+SilverStripe\ORM\FieldType\DBField:
+  extensions:
+    - SilverStripe\SearchService\Extensions\DBFieldExtension
+SilverStripe\ORM\FieldType\DBDate:
+  extensions:
+    - SilverStripe\SearchService\Extensions\DBDateExtension
+SilverStripe\ORM\FieldType\DBBoolean:
+  extensions:
+    - SilverStripe\SearchService\Extensions\DBBooleanExtension

@@ -12,7 +12,7 @@ use SilverStripe\Dev\BuildTask;
 use SilverStripe\Dev\Debug;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\BatchProcessorAware;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
@@ -39,12 +39,12 @@ class SearchReindex extends BuildTask
 
     /**
      * SearchReindex constructor.
-     * @param SearchServiceInterface $searchService
+     * @param IndexingInterface $searchService
      * @param IndexConfiguration $config
      * @param BatchDocumentInterface $batchProcesor
      */
     public function __construct(
-        SearchServiceInterface $searchService,
+        IndexingInterface $searchService,
         IndexConfiguration $config,
         BatchDocumentInterface $batchProcesor
     )

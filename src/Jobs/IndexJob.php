@@ -4,7 +4,7 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
@@ -28,7 +28,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      * @var array
      */
     private static $dependencies = [
-        'SearchService' => '%$' . SearchServiceInterface::class,
+        'SearchService' => '%$' . IndexingInterface::class,
     ];
 
     /**
@@ -42,7 +42,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     private $chunks = [];
 
     /**
-     * @var SearchServiceInterface
+     * @var IndexingInterface
      */
     private $service;
 
@@ -58,6 +58,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function __construct(array $documents = [], int $method = self::METHOD_ADD, ?int $batchSize = null)
     {
+        parent::__construct();
         $this->documents = $documents;
 
         $this->chunks = array_chunk($documents, $batchSize ?: IndexConfiguration::singleton()->getBatchSize());

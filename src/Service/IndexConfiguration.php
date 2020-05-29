@@ -6,6 +6,7 @@ namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\ORM\DataObject;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class IndexConfiguration
@@ -29,7 +30,7 @@ class IndexConfiguration
      * @var int
      * @config
      */
-    private static $batch_size = 20;
+    private static $batch_size = 100;
 
     /**
      * @var string
@@ -38,10 +39,30 @@ class IndexConfiguration
     private static $sync_interval = '2 hours';
 
     /**
-     * @var string
+     * @var bool
      * @config
      */
-    private static $index_variant = '`SS_ENVIRONMENT_TYPE`';
+    private static $crawl_page_content = true;
+
+    /**
+     * @var array
+     * @config
+     */
+    private static $indexes = [];
+
+    /**
+     * @var string|null
+     */
+    private $indexVariant;
+
+    /**
+     * IndexConfiguration constructor.
+     * @param string|null $indexVariant
+     */
+    public function __construct(string $indexVariant = null)
+    {
+        $this->setIndexVariant($indexVariant);
+    }
 
     /**
      * @return bool
@@ -80,6 +101,97 @@ class IndexConfiguration
      */
     public function getIndexVariant(): string
     {
-        return $this->config()->get('index_variant');
+        return $this->indexVariant;
     }
+
+    /**
+     * @param string|null $variant
+     * @return $this
+     */
+    public function setIndexVariant(?string $variant): self
+    {
+        $this->indexVariant = $variant;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function shouldCrawlPageContent(): bool
+    {
+        return $this->config()->get('crawl_page_content');
+    }
+
+    /**
+     * @return array
+     * @config
+     */
+    public function getIndexes(): array
+    {
+        return $this->config()->get('indexes');
+    }
+
+    /**
+     * @param string $class
+     * @return array
+     */
+    public function getIndexesForClassName(string $class): array
+    {
+        $matches = [];
+        foreach ($this->getIndexes() as $indexName => $data) {
+            $classes = $data['includeClasses'] ?? [];
+            foreach ($classes as $candidate => $spec) {
+                if ($spec === false) {
+                    continue;
+                }
+                if ($class === $candidate || is_subclass_of($class, $candidate)) {
+                    $matches[$indexName] = $data;
+                    break;
+                }
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSearchableClasses(): array
+    {
+        $classes = [];
+        foreach ($this->getIndexes() as $config) {
+            $includedClasses = $config['includeClasses'] ?? [];
+            foreach ($includedClasses as $class => $spec) {
+                if ($spec === false) {
+                    continue;
+                }
+                $classes[$class] = true;
+            }
+        }
+
+        return array_keys($classes);
+    }
+
+    public function getFieldsForClass(string $class): ?array
+    {
+        foreach ($this->getIndexes() as $config) {
+            $includedClasses = $config['includeClasses'] ?? [];
+            if (!isset($includedClasses[$class])) {
+                continue;
+            }
+            $spec = $includedClasses[$class];
+            if ($spec === false) {
+                continue;
+            }
+            if (is_array($spec) && !empty($spec)) {
+                return $spec['fields'] ?? [];
+            }
+        }
+
+        return null;
+    }
+
+
 }

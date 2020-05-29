@@ -5,32 +5,56 @@ namespace SilverStripe\SearchService\DataObject;
 
 
 use Psr\Log\LoggerInterface;
-use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\FieldType\DBBoolean;
-use SilverStripe\ORM\FieldType\DBDate;
-use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\Map;
 use SilverStripe\ORM\RelationList;
+use SilverStripe\ORM\SS_List;
+use SilverStripe\SearchService\Exception\IndexConfigurationException;
+use SilverStripe\SearchService\Extensions\DBFieldExtension;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
+use Exception;
 
-class DataObjectDocument implements DocumentInterface
+class DataObjectDocument implements DocumentInterface, DependencyTracker
 {
     use Injectable;
     use Extensible;
+    use Configurable;
     use ConfigurationAware;
+
+    /**
+     * @var string
+     * @config
+     */
+    private static $id_field = 'record_id';
+
+    /**
+     * @var string
+     * @config
+     */
+    private static $base_class_field = 'record_base_class';
+
+    /**
+     * @var string
+     * @config
+     */
+    private static $page_content_field = 'page_content';
 
     /**
      * @var DataObject&SearchServiceExtension
@@ -38,7 +62,7 @@ class DataObjectDocument implements DocumentInterface
     private $dataObject;
 
     /**
-     * @var SearchServiceInterface
+     * @var IndexingInterface
      */
     private $service;
 
@@ -51,7 +75,7 @@ class DataObjectDocument implements DocumentInterface
      * @var array
      */
     private static $dependencies = [
-        'Service' => '%$' . SearchServiceInterface::class,
+        'Service' => '%$' . IndexingInterface::class,
         'PageCrawler' => '%$' . PageCrawler::class,
         'Configuration' => '%$' . IndexConfiguration::class,
     ];
@@ -119,22 +143,36 @@ class DataObjectDocument implements DocumentInterface
     }
 
     /**
+     * @return array
+     */
+    public function getIndexes(): array
+    {
+        return $this->getConfiguration()->getIndexesForClassName(
+            get_class($this->getDataObject())
+        );
+    }
+
+    /**
      * Generates a map of all the fields and values which will be sent.
      * @return array
+     * @throws IndexConfigurationException
      */
     public function toArray(): array
     {
-        $item = $this->getDataObject();
-        $toIndex = [
-            'objectSilverstripeID' => $item->ID,
-            'objectType' => $item->baseClass(),
-        ];
+        $idField = $this->config()->get('id_field');
+        $baseClassField = $this->config()->get('base_class_field');
+        $pageContentField = $this->config()->get('page_content_field');
+        $dataObject = $this->getDataObject();
 
-        if ($this->getPageCrawler() && $this->config()->get('include_page_content')) {
-            $toIndex['objectForTemplate'] = $this->getPageCrawler()->getMainContent($item);
+        $toIndex = [];
+        $toIndex[$idField] = $dataObject->ID;
+        $toIndex[$baseClassField] = $dataObject->baseClass();
+
+        if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
+            $toIndex[$pageContentField] = $this->getPageCrawler()->getMainContent($dataObject);
         }
 
-        $item->invokeWithExtensions('onBeforeAttributesFromObject');
+        $dataObject->invokeWithExtensions('onBeforeAttributesFromObject');
 
         $attributes = new Map(ArrayList::create());
 
@@ -143,41 +181,22 @@ class DataObjectDocument implements DocumentInterface
             $attributes->push($k, $v);
         }
 
-        $specs = $item->config()->get('search_index_fields');
-
-        if ($specs) {
-            foreach ($specs as $attributeName) {
-                if (in_array($attributeName, $this->config()->get('attributes_blacklisted'))) {
-                    continue;
-                }
-
-                $dbField = $item->relObject($attributeName);
-
-                if ($dbField && ($dbField->exists() || $dbField instanceof DBBoolean)) {
-                    if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
-                        // has-many, many-many, has-one
-                        $this->exportAttributesFromRelationship($attributeName, $attributes);
-                    } else {
-                        // db-field, if it's a date then use the timestamp since we need it
-                        switch (get_class($dbField)) {
-                            case DBDate::class:
-                            case DBDatetime::class:
-                                $value = $dbField->getTimestamp();
-                                break;
-                            case DBBoolean::class:
-                                $value = $dbField->getValue();
-                                break;
-                            default:
-                                $value = $dbField->forTemplate();
-                        }
-
-                        $attributes->push($attributeName, $value);
-                    }
+        foreach ($this->getIndexedFields() as $searchFieldName => $spec) {
+            /* @var DBField&DBFieldExtension $dbField */
+            $dbField = $this->toDBField($searchFieldName, $spec);
+            if ($dbField && ($dbField->exists() || $dbField instanceof DBBoolean)) {
+                if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
+                    // has-many, many-many, has-one
+                    $this->exportAttributesFromRelationship($searchFieldName, $attributes);
+                } else {
+                    $value = $dbField->getSearchValue();
+                    $attributes->push($searchFieldName, $value);
                 }
             }
         }
+
         // DataObject specific customisation
-        $item->invokeWithExtensions('updateSearchAttributes', $attributes);
+        $dataObject->invokeWithExtensions('updateSearchAttributes', $attributes);
 
         // Universal customisation
         $this->extend('updateSearchAttributes', $attributes);
@@ -204,34 +223,140 @@ class DataObjectDocument implements DocumentInterface
             if (!$related || !$related->exists()) {
                 return;
             }
-
-            if (is_iterable($related)) {
-                foreach ($related as $relatedObj) {
-                    $relationshipAttributes = new Map(ArrayList::create());
-                    $relationshipAttributes->push('objectID', $relatedObj->ID);
-                    $relationshipAttributes->push('objectTitle', $relatedObj->Title);
-
-                    if ($item->hasMethod('updateSearchRelationshipAttributes')) {
-                        $item->updateSearchRelationshipAttributes($relationshipAttributes, $relatedObj);
-                    }
-
-                    $data[] = $relationshipAttributes->toArray();
-                }
-            } else {
-                $relationshipAttributes = new Map(ArrayList::create());
-                $relationshipAttributes->push('objectID', $related->ID);
-                $relationshipAttributes->push('Title', $related->Title);
-
-                if ($item->hasMethod('updateSearchRelationshipAttributes')) {
-                    $item->updateSearchRelationshipAttributes($relationshipAttributes, $related);
-                }
-
-                $data = $relationshipAttributes->toArray();
+            $relatedRecords = is_iterable($related) ? $related : [$related];
+            foreach ($relatedRecords as $relatedObj) {
+                $document = DataObjectDocument::create($relatedObj);
+                $data[] = $document->toArray();
             }
-
-            $attributes->push($this->formatField($relationship), $data);
+            $attributes->push($relationship, $data);
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
+        }
+    }
+
+    /**
+     * @return array
+     * @throws IndexConfigurationException
+     */
+    public function getDependentDocuments(): array
+    {
+        $dependencies = [];
+        $data = $this->toArray();
+        $idField = $this->config()->get('id_field');
+        $dependencies[] = $data[$idField];
+        foreach ($this->getIndexedFields() as $searchFieldName => $spec) {
+            $dbField = $this->toDBField($searchFieldName, $spec);
+            if (!$dbField) {
+                continue;
+            }
+            if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
+                $relations = $dbField instanceof DataObject ? [$dbField] : $dbField;
+                foreach ($relations as $relatedRecord) {
+                    $dependencies[] = $
+                    $doc = DataObjectDocument::create($relatedRecord);
+                    $dependencies = array_merge($dependencies, $doc->getDependentDocuments());
+                }
+            }
+        }
+
+        return $dependencies;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIndexedFields(): array
+    {
+        $candidate = get_class($this->dataObject);
+        $specs = null;
+        while (!$specs && $candidate !== DataObject::class) {
+            $specs = $this->getConfiguration()->getFieldsForClass($candidate);
+            $candidate = get_parent_class($candidate);
+        }
+
+        $fields = [];
+        if ($specs) {
+            foreach ($specs as $searchFieldName => $spec) {
+                if ($spec === false) {
+                    continue;
+                }
+                $fields[$searchFieldName] = $spec;
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @param string $fieldName
+     * @return DBField|null
+     */
+    private function resolveField(string $fieldName): ?DBField
+    {
+        // First try a match on a field or method
+        $dataObject = $this->getDataObject();
+        $result = $dataObject->obj($fieldName);
+        if ($result && $result instanceof DBField) {
+            return $result->getValue();
+        }
+        $normalFields = array_keys(
+            DataObject::getSchema()
+                ->fieldSpecs($dataObject, DataObjectSchema::DB_ONLY)
+        );
+
+        $lowercaseFields = array_map('strtolower', $normalFields);
+        $lookup = array_combine($lowercaseFields, $normalFields);
+        $fieldName = $lookup[strtolower($fieldName)] ?? null;
+
+        return $fieldName ? $dataObject->obj($fieldName) : null;
+    }
+
+    /**
+     * @param string $searchFieldName
+     * @param $spec
+     * @return DBField|DataObject|SS_List
+     */
+    public function toDBField(string $searchFieldName, $spec)
+    {
+        if (is_array($spec) && isset($spec['property'])) {
+            /* @var DBField&DBFieldExtension $result */
+            return $this->getDataObject()->obj($spec['property']);
+        }
+
+        return $this->resolveField($searchFieldName);
+    }
+
+    public function getRefererDataObjects()
+    {
+        $searchableClasses = $this->getConfiguration()->getSearchableClasses();
+        $dataObjectClasses = array_filter($searchableClasses, function ($class) {
+            return is_subclass_of($class, DataObject::class);
+        });
+        foreach ($dataObjectClasses as $class) {
+            $dataobject = Injector::inst()->get($class);
+            $document = DataObjectDocument::create($dataobject);
+            $fields = $this->getConfiguration()->getFieldsForClass($class);
+            foreach ($fields as $searchFieldName => $spec) {
+                $dbField = $document->toDBField($searchFieldName, $spec);
+                if ($dbField instanceof RelationList) {
+                    /* @var RelationList $dbField */
+                    $relatedObj = Injector::inst()->get($dbField->dataClass());
+                    if (!$dataobject instanceof $relatedObj) {
+                        continue;
+                    }
+                    if (!$dbField->filter('ID', $dataobject->ID)->exists()) {
+                        continue;
+                    }
+
+                    yield $document->getDataObject();
+                } else if ($dbField instanceof DataObject) {
+                    $objectClass = get_class($dbField);
+                    if (!$dataobject instanceof $objectClass) {
+                        continue;
+                    }
+                    yield $document->getDataObject();
+                }
+            }
         }
     }
 
@@ -254,18 +379,18 @@ class DataObjectDocument implements DocumentInterface
     }
 
     /**
-     * @return SearchServiceInterface
+     * @return IndexingInterface
      */
-    public function getService(): SearchServiceInterface
+    public function getService(): IndexingInterface
     {
         return $this->service;
     }
 
     /**
-     * @param SearchServiceInterface $service
+     * @param IndexingInterface $service
      * @return DataObjectDocument
      */
-    public function setService(SearchServiceInterface $service): DataObjectDocument
+    public function setService(IndexingInterface $service): DataObjectDocument
     {
         $this->service = $service;
         return $this;
@@ -290,13 +415,5 @@ class DataObjectDocument implements DocumentInterface
         return $this->pageCrawler;
     }
 
-    /**
-     * @param string $field
-     * @return string
-     */
-    private function formatField(string $field): string
-    {
-        return $this->getService()->normaliseField($field);
-    }
 
 }

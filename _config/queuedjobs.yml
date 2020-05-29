@@ -1,0 +1,7 @@
+---
+Name: silverstripe-search-service-queuedjobs
+Only:
+  moduleexists: 'symbiote/silverstripe-queuedjobs'
+---
+SilverStripe\SearchService\Service\IndexConfiguration:
+  use_queuedjobs: true

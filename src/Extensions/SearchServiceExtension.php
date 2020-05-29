@@ -5,13 +5,15 @@ namespace SilverStripe\SearchService\Extensions;
 use Exception;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\RelationList;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\BatchProcessorAware;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
@@ -50,12 +52,12 @@ class SearchServiceExtension extends DataExtension
 
     /**
      * SearchServiceExtension constructor.
-     * @param SearchServiceInterface $searchService
+     * @param IndexingInterface $searchService
      * @param IndexConfiguration $config
      * @param BatchDocumentInterface $batchProcessor
      */
     public function __construct(
-        SearchServiceInterface $searchService,
+        IndexingInterface $searchService,
         IndexConfiguration $config,
         BatchDocumentInterface $batchProcessor
     ) {
@@ -94,28 +96,48 @@ class SearchServiceExtension extends DataExtension
      * @return void
      * @throws Exception
      */
-    public function indexInSearch(): void
+    public function addToIndexes(): void
     {
         $document = DataObjectDocument::create($this->owner);
-        $this->getBatchProcessor()->addDocuments([$document]);
+        $docs = [$document];
+        foreach ($document->getRefererDataObjects() as $dataObject) {
+            $docs[] = DataObjectDocument::create($dataObject);
+        }
+        $this->getBatchProcessor()->addDocuments($docs);
     }
 
     /**
      * Remove this item from search
      */
-    public function removeFromSearch(): void
+    public function removeFromIndexes(): void
     {
         $document = DataObjectDocument::create($this->owner);
-        $this->getBatchProcessor()->removeDocuments([$document->getIdentifier()]);
+        $docs = [$document->getIdentifier()];
+        $this->getBatchProcessor()->removeDocuments($docs);
     }
 
     /**
      * When publishing the page, push this data to Indexer. The data
      * which is sent to search is the rendered template from the front end.
+     * @throws Exception
      */
     public function onAfterPublish()
     {
-        $this->owner->indexInSearch();
+        $this->owner->addToIndexes();
+    }
+
+    /**
+     * Capture the referring documents before this goes unpublished and they become
+     * unretrievable
+     */
+    public function onBeforeUnpublish(): void
+    {
+        $document = DataObjectDocument::create($this->owner);
+        $docs = [];
+        foreach ($document->getRefererDataObjects() as $dataObject) {
+            $docs[] = DataObjectDocument::create($dataObject)->getIdentifier();
+        }
+        $this->getBatchProcessor()->removeDocuments($docs);
     }
 
     /**
@@ -124,7 +146,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function onAfterUnpublish(): void
     {
-        $this->owner->removeFromSearch();
+        $this->owner->removeFromIndexes();
     }
 
     /**
@@ -133,7 +155,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function onBeforeDelete()
     {
-        $this->owner->removeFromSearch();
+        $this->owner->removeFromIndexes();
     }
 
 }

@@ -4,7 +4,7 @@ namespace SilverStripe\SearchService\Interfaces;
 
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 
-interface SearchServiceInterface extends BatchDocumentInterface
+interface IndexingInterface extends BatchDocumentInterface
 {
 
     /**
@@ -32,14 +32,9 @@ interface SearchServiceInterface extends BatchDocumentInterface
     public function getDocuments(array $ids): array;
 
     /**
-     * A hook for configuring the search service
+     * A hook for configuring the index service
      */
     public function configure(): void;
-
-    /**
-     * @return string[]
-     */
-    public function getSearchableClasses(): array;
 
     /**
      * @param string $field

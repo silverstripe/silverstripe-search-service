@@ -3,7 +3,7 @@
 namespace SilverStripe\SearchService\Tasks;
 
 use SilverStripe\Dev\BuildTask;
-use SilverStripe\SearchService\Interfaces\SearchServiceInterface;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\ServiceAware;
 
 /**
@@ -23,8 +23,9 @@ class SearchConfigure extends BuildTask
     private static $segment = 'SearchConfigure';
 
 
-    public function __construct(SearchServiceInterface $searchService)
+    public function __construct(IndexingInterface $searchService)
     {
+        parent::__construct();
         $this->setSearchService($searchService);
     }
 
