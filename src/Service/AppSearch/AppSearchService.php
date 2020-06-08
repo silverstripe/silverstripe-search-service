@@ -10,7 +10,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
-use SilverStripe\SearchService\Exception\SearchServiceException;
+use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
@@ -46,7 +46,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param DocumentInterface $item
      * @return IndexingInterface
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      */
     public function addDocument(DocumentInterface $item): IndexingInterface
     {
@@ -58,7 +58,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param DocumentInterface[] $items
      * @return BatchDocumentInterface
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      */
     public function addDocuments(array $items): BatchDocumentInterface
     {
@@ -212,7 +212,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param string $indexName
      * @return int
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      */
     public function getDocumentTotal(string $indexName): int
     {
@@ -221,14 +221,19 @@ class AppSearchService implements IndexingInterface
             static::environmentizeIndex($indexName),
         );
         $this->handleError($response);
-        $meta = $response['meta']['page'] ?? [];
+        $total = $response['meta']['page']['total_results'] ?? null;
+        if ($total === null) {
+            throw new IndexingServiceException(sprintf(
+                'Total results not provided in meta content'
+            ));
+        }
 
-        return $meta['total_results'] ?? 0;
+        return $total;
     }
 
     /**
      * Ensure all the engines exist
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      * @throws IndexConfigurationException
      */
     public function configure(): void
@@ -297,7 +302,7 @@ class AppSearchService implements IndexingInterface
 
     /**
      * @param string $index
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      */
     private function findOrMakeIndex(string $index)
     {
@@ -313,7 +318,7 @@ class AppSearchService implements IndexingInterface
 
     /**
      * @param array|null $result
-     * @throws SearchServiceException
+     * @throws IndexingServiceException
      */
     private function handleError(?array $result)
     {
@@ -332,7 +337,7 @@ class AppSearchService implements IndexingInterface
         if (empty($allErrors)) {
             return;
         }
-        throw new SearchServiceException(sprintf(
+        throw new IndexingServiceException(sprintf(
             'AppSearch API error: %s',
             print_r($allErrors, true)
         ));

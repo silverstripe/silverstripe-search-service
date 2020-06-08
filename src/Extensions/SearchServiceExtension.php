@@ -13,6 +13,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\SearchService\DataObject\DataObjectBatchProcessor;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
+use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\BatchProcessorAware;
@@ -63,7 +64,7 @@ class SearchServiceExtension extends DataExtension
         DataObjectBatchProcessor $batchProcessor
     ) {
         parent::__construct();
-        $this->setSearchService($searchService);
+        $this->setIndexService($searchService);
         $this->setConfiguration($config);
         $this->setBatchProcessor($batchProcessor);
     }
@@ -82,11 +83,12 @@ class SearchServiceExtension extends DataExtension
 
     /**
      * On dev/build ensure that the indexer settings are up to date.
+     * @throws IndexingServiceException
      */
     public function requireDefaultRecords()
     {
         if (!$this->hasConfigured) {
-            $this->getSearchService()->configure();
+            $this->getIndexService()->configure();
             $this->hasConfigured = true;
         }
     }
@@ -95,7 +97,6 @@ class SearchServiceExtension extends DataExtension
      * Index this record into search or queue if configured to do so
      *
      * @return void
-     * @throws Exception
      */
     public function addToIndexes(): void
     {
@@ -125,7 +126,6 @@ class SearchServiceExtension extends DataExtension
 
     /**
      * When unpublishing this item, remove from search
-     * @throws Exception
      */
     public function onBeforeUnpublish(): void
     {

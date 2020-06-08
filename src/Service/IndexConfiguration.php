@@ -22,12 +22,6 @@ class IndexConfiguration
     private static $enabled = true;
 
     /**
-     * @var bool
-     * @config
-     */
-    private static $use_queuedjobs = false;
-
-    /**
      * @var int
      * @config
      */
@@ -71,14 +65,6 @@ class IndexConfiguration
     public function isEnabled(): bool
     {
         return $this->config()->get('enabled');
-    }
-
-    /**
-     * @return bool
-     */
-    public function isUsingQueuedJobs(): bool
-    {
-        return $this->config()->get('use_queuedjobs') && class_exists(QueuedJobService::class);
     }
 
     /**

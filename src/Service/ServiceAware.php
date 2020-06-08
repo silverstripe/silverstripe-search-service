@@ -12,30 +12,30 @@ trait ServiceAware
     /**
      * @var IndexingInterface
      */
-    private $searchService;
+    private $indexService;
 
     /**
      * @return IndexingInterface
      */
-    public function getSearchService(): IndexingInterface
+    public function getIndexService(): IndexingInterface
     {
-        return $this->searchService;
+        return $this->indexService;
     }
 
     /**
-     * @param IndexingInterface $searchService
+     * @param IndexingInterface $indexService
      * @return $this
      */
-    public function setSearchService(IndexingInterface $searchService): self
+    public function setIndexService(IndexingInterface $indexService): self
     {
-        $this->searchService = $searchService;
+        $this->indexService = $indexService;
         return $this;
     }
 
     /**
      * @return bool
      */
-    public function hasSearchService(): bool
+    public function hasIndexService(): bool
     {
         return Injector::inst()->has(IndexingInterface::class);
     }

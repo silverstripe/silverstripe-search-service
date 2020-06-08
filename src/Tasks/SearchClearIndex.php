@@ -50,7 +50,7 @@ class SearchClearIndex extends BuildTask
     )
     {
         parent::__construct();
-        $this->setSearchService($searchService);
+        $this->setIndexService($searchService);
         $this->setConfiguration($config);
         $this->setBatchProcessor($batchProcesor);
     }
@@ -63,7 +63,7 @@ class SearchClearIndex extends BuildTask
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
 
-        $service = $this->getSearchService();
+        $service = $this->getIndexService();
         $targetIndex = $request->getVar('index');
         if (!$targetIndex) {
             echo "Must specify an index in the 'index' parameter." . PHP_EOL;

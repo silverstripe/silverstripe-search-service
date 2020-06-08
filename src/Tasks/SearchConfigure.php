@@ -26,12 +26,12 @@ class SearchConfigure extends BuildTask
     public function __construct(IndexingInterface $searchService)
     {
         parent::__construct();
-        $this->setSearchService($searchService);
+        $this->setIndexService($searchService);
     }
 
     public function run($request)
     {
-        $this->getSearchService()->configure();
+        $this->getIndexService()->configure();
         echo 'Done.';
     }
 

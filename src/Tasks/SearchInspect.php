@@ -19,7 +19,7 @@ class SearchInspect extends BuildTask
     public function __construct(IndexingInterface $searchService)
     {
         parent::__construct();
-        $this->setSearchService($searchService);
+        $this->setIndexService($searchService);
     }
 
     public function run($request)
@@ -40,14 +40,14 @@ class SearchInspect extends BuildTask
             exit();
         }
 
-        $this->getSearchService()->configure();
+        $this->getIndexService()->configure();
         $builder = DataObjectDocument::create($item);
         echo '### LOCAL FIELDS' . PHP_EOL;
         echo '<pre>';
         print_r($builder->toArray());
 
         echo '### REMOTE FIELDS ###' . PHP_EOL;
-        print_r($this->getSearchService()->getDocument($builder->getIdentifier()));
+        print_r($this->getIndexService()->getDocument($builder->getIdentifier()));
 
 //        echo '### INDEX SETTINGS ### '. PHP_EOL;
 //        foreach ($item->getSearchIndexes() as $index) {

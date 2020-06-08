@@ -54,7 +54,7 @@ class SearchReindex extends BuildTask
     )
     {
         parent::__construct();
-        $this->setSearchService($searchService);
+        $this->setIndexService($searchService);
         $this->setConfiguration($config);
         $this->setBatchProcessor($batchProcesor);
     }

@@ -37,7 +37,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      * @var array
      */
     private static $dependencies = [
-        'SearchService' => '%$' . IndexingInterface::class,
+        'IndexService' => '%$' . IndexingInterface::class,
     ];
 
     /**
@@ -126,7 +126,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         $this->currentStep++;
         $documents = array_shift($remainingChildren);
         if ($this->method === static::METHOD_DELETE) {
-            $this->getSearchService()->removeDocuments($documents);
+            $this->getIndexService()->removeDocuments($documents);
         } else {
             $toRemove = [];
             $toUpdate = [];
@@ -139,10 +139,10 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
                 }
             }
             if (!empty($toUpdate)) {
-                $this->getSearchService()->addDocuments($toUpdate);
+                $this->getIndexService()->addDocuments($toUpdate);
             }
             if (!empty($toRemove)) {
-                $this->getSearchService()->removeDocuments($toUpdate);
+                $this->getIndexService()->removeDocuments($toUpdate);
             }
 
         }
