@@ -7,6 +7,7 @@ namespace SilverStripe\SearchService\Service;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Schema\Field;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class IndexConfiguration
@@ -156,6 +157,22 @@ class IndexConfiguration
     }
 
     /**
+     * @param string $index
+     * @return array
+     */
+    public function getClassesForIndex(string $index): array
+    {
+        $index = $this->getIndexes()[$index] ?? null;
+        if (!$index) {
+            return [];
+        }
+
+        $classes = $index['includeClasses'] ?? [];
+
+        return array_keys($classes);
+    }
+
+    /**
      * @return array
      */
     public function getSearchableClasses(): array
@@ -174,6 +191,10 @@ class IndexConfiguration
         return array_keys($classes);
     }
 
+    /**
+     * @param string $class
+     * @return Field[]|null
+     */
     public function getFieldsForClass(string $class): ?array
     {
         foreach ($this->getIndexes() as $config) {
@@ -186,11 +207,36 @@ class IndexConfiguration
                 continue;
             }
             if (is_array($spec) && !empty($spec)) {
-                return $spec['fields'] ?? [];
+                $fields = $spec['fields'] ?? [];
+                $fieldObjs = [];
+                foreach ($fields as $searchName => $data) {
+                    if ($data === false) {
+                        continue;
+                    }
+                    $config = (array) $data;
+                    $fieldObjs[] = new Field(
+                        $searchName,
+                        $config['property'] ?? null,
+                        $config['options'] ?? []
+                    );
+                }
+
+                return $fieldObjs;
             }
         }
 
         return null;
+    }
+
+    public function getFieldsForIndex(string $index): array
+    {
+        $fields = [];
+        $classes = $this->getClassesForIndex($index);
+        foreach ($classes as $class) {
+            $fields = array_merge($fields, $this->getFieldsForClass($class));
+        }
+
+        return $fields;
     }
 
 

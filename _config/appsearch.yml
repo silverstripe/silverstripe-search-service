@@ -6,7 +6,7 @@ After:
   - 'silverstripe-search-service-dataobject'
 ---
 SilverStripe\Core\Injector\Injector:
-  SilverStripe\SearchService\Interfaces\SearchServiceInterface:
+  SilverStripe\SearchService\Interfaces\IndexingInterface:
     class: SilverStripe\SearchService\Services\AppSearch\AppSearchService
     constructor:
       client: '%$Elastic\AppSearch\Client\Client'

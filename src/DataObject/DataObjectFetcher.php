@@ -84,7 +84,7 @@ class DataObjectFetcher implements DocumentFetcherInterface
      * @param int|null $offset
      * @return DataList
      */
-    private function createDataList(?int $limit, ?int $offset): DataList
+    private function createDataList(?int $limit = null, ?int $offset = null): DataList
     {
         /* @var DBDatetime $since */
         $since = DBField::create_field('Datetime', $this->until);

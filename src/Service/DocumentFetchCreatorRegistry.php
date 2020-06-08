@@ -34,7 +34,7 @@ class DocumentFetchCreatorRegistry
      * @param DocumentFetchCreatorInterface $creator
      * @return $this
      */
-    public function addFetcher(DocumentFetchCreatorInterface $creator): self
+    public function addFetchCreator(DocumentFetchCreatorInterface $creator): self
     {
         $this->fetchCreators[] = $creator;
 
@@ -45,7 +45,7 @@ class DocumentFetchCreatorRegistry
      * @param DocumentFetchCreatorInterface $creator
      * @return $this
      */
-    public function removeFetcher(DocumentFetchCreatorInterface $creator): self
+    public function removeFetchCreator(DocumentFetchCreatorInterface $creator): self
     {
         $class = get_class($creator);
         $this->fetchCreators = array_filter($this->fetchCreators, function ($creator) use ($class) {

@@ -18,20 +18,26 @@ use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\Map;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\ORM\SS_List;
+use SilverStripe\ORM\UnsavedRelationList;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Extensions\DBFieldExtension;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
+use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\DocumentChunkFetcher;
+use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
+use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
 use Exception;
+use Serializable;
 
-class DataObjectDocument implements DocumentInterface, DependencyTracker
+class DataObjectDocument implements DocumentInterface, DependencyTracker, Serializable
 {
     use Injectable;
     use Extensible;
@@ -105,14 +111,29 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
      */
     public function shouldIndex(): bool
     {
-        if ($this->getDataObject()->hasField('ShowInSearch') && !$this->getDataObject()->ShowInSearch) {
+        $dataObject = $this->getDataObject();
+
+        // If an anonymous user can't view it
+        $isPublic = Member::actAs(null, function () use ($dataObject) {
+            return $dataObject->canView();
+        });
+
+        if (!$isPublic) {
             return false;
         }
+
+        // "ShowInSearch" field
+        if ($dataObject->hasField('ShowInSearch') && !$dataObject->ShowInSearch) {
+            return false;
+        }
+
+        // Indexing is globally disabled
         if (!$this->getConfiguration()->isEnabled()) {
             return false;
         }
 
-        $results = $this->getDataObject()->invokeWithExtensions('canIndexInSearch');
+        // Extension override
+        $results = $dataObject->invokeWithExtensions('canIndexInSearch');
 
         if (!empty($results)) {
             return min($results) != false;
@@ -181,16 +202,16 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
             $attributes->push($k, $v);
         }
 
-        foreach ($this->getIndexedFields() as $searchFieldName => $spec) {
+        foreach ($this->getIndexedFields() as $field) {
             /* @var DBField&DBFieldExtension $dbField */
-            $dbField = $this->toDBField($searchFieldName, $spec);
+            $dbField = $this->toDBField($field);
             if ($dbField && ($dbField->exists() || $dbField instanceof DBBoolean)) {
                 if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
                     // has-many, many-many, has-one
-                    $this->exportAttributesFromRelationship($searchFieldName, $attributes);
+                    $this->exportAttributesFromRelationship($field->getSearchFieldName(), $attributes);
                 } else {
                     $value = $dbField->getSearchValue();
-                    $attributes->push($searchFieldName, $value);
+                    $attributes->push($field->getSearchFieldName(), $value);
                 }
             }
         }
@@ -235,53 +256,15 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
     }
 
     /**
-     * @return array
-     * @throws IndexConfigurationException
-     */
-    public function getDependentDocuments(): array
-    {
-        $dependencies = [];
-        $data = $this->toArray();
-        $idField = $this->config()->get('id_field');
-        $dependencies[] = $data[$idField];
-        foreach ($this->getIndexedFields() as $searchFieldName => $spec) {
-            $dbField = $this->toDBField($searchFieldName, $spec);
-            if (!$dbField) {
-                continue;
-            }
-            if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
-                $relations = $dbField instanceof DataObject ? [$dbField] : $dbField;
-                foreach ($relations as $relatedRecord) {
-                    $dependencies[] = $
-                    $doc = DataObjectDocument::create($relatedRecord);
-                    $dependencies = array_merge($dependencies, $doc->getDependentDocuments());
-                }
-            }
-        }
-
-        return $dependencies;
-    }
-
-    /**
-     * @return array
+     * @return Field[]
      */
     public function getIndexedFields(): array
     {
         $candidate = get_class($this->dataObject);
-        $specs = null;
-        while (!$specs && $candidate !== DataObject::class) {
-            $specs = $this->getConfiguration()->getFieldsForClass($candidate);
+        $fields = null;
+        while (!$fields && $candidate !== DataObject::class) {
+            $fields = $this->getConfiguration()->getFieldsForClass($candidate);
             $candidate = get_parent_class($candidate);
-        }
-
-        $fields = [];
-        if ($specs) {
-            foreach ($specs as $searchFieldName => $spec) {
-                if ($spec === false) {
-                    continue;
-                }
-                $fields[$searchFieldName] = $spec;
-            }
         }
 
         return $fields;
@@ -289,19 +272,27 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
 
     /**
      * @param string $fieldName
-     * @return DBField|null
+     * @return DBField|RelationList|null
      */
-    private function resolveField(string $fieldName): ?DBField
+    private function resolveField(string $fieldName)
     {
         // First try a match on a field or method
         $dataObject = $this->getDataObject();
         $result = $dataObject->obj($fieldName);
         if ($result && $result instanceof DBField) {
-            return $result->getValue();
+            return $result;
         }
-        $normalFields = array_keys(
-            DataObject::getSchema()
-                ->fieldSpecs($dataObject, DataObjectSchema::DB_ONLY)
+        $normalFields = array_merge(
+            array_keys(
+                DataObject::getSchema()
+                    ->fieldSpecs($dataObject, DataObjectSchema::DB_ONLY)
+            ),
+            array_keys(
+                $dataObject->hasMany()
+            ),
+            array_keys(
+                $dataObject->manyMany()
+            )
         );
 
         $lowercaseFields = array_map('strtolower', $normalFields);
@@ -312,49 +303,82 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
     }
 
     /**
-     * @param string $searchFieldName
-     * @param $spec
+     * @param Field $field
      * @return DBField|DataObject|SS_List
      */
-    public function toDBField(string $searchFieldName, $spec)
+    public function toDBField(Field $field)
     {
-        if (is_array($spec) && isset($spec['property'])) {
-            /* @var DBField&DBFieldExtension $result */
-            return $this->getDataObject()->obj($spec['property']);
+        if ($field->getProperty()) {
+            return $this->getDataObject()->obj($field->getProperty());
         }
 
-        return $this->resolveField($searchFieldName);
+        return $this->resolveField($field->getSearchFieldName());
     }
 
-    public function getRefererDataObjects()
+    /**
+     * @return iterable
+     */
+    public function getDependentDocuments(): iterable
     {
         $searchableClasses = $this->getConfiguration()->getSearchableClasses();
         $dataObjectClasses = array_filter($searchableClasses, function ($class) {
             return is_subclass_of($class, DataObject::class);
         });
+        $docs = [];
+        $ownedDataObject = $this->getDataObject();
         foreach ($dataObjectClasses as $class) {
-            $dataobject = Injector::inst()->get($class);
-            $document = DataObjectDocument::create($dataobject);
+            // Start with a singleton to look at the model first, then get real records if needed
+            $owningDataObject = Injector::inst()->get($class);
+
+            $document = DataObjectDocument::create($owningDataObject);
             $fields = $this->getConfiguration()->getFieldsForClass($class);
-            foreach ($fields as $searchFieldName => $spec) {
-                $dbField = $document->toDBField($searchFieldName, $spec);
-                if ($dbField instanceof RelationList) {
+
+            $registry = DocumentFetchCreatorRegistry::singleton();
+            $fetcher = $registry->getFetcher($class, time());
+            if (!$fetcher) {
+                continue;
+            }
+            $chunker = DocumentChunkFetcher::create($fetcher);
+            foreach ($fields as $field) {
+                $dbField = $document->toDBField($field);
+                if ($dbField instanceof RelationList || $dbField instanceof UnsavedRelationList) {
                     /* @var RelationList $dbField */
                     $relatedObj = Injector::inst()->get($dbField->dataClass());
-                    if (!$dataobject instanceof $relatedObj) {
+                    if (!$relatedObj instanceof $ownedDataObject) {
                         continue;
                     }
-                    if (!$dbField->filter('ID', $dataobject->ID)->exists()) {
-                        continue;
-                    }
+                    // Now that we know a record of this type could possibly own this one,
+                    // we can fetch.
+                    /* @var DataObjectDocument $candidateDocument */
+                    foreach ($chunker->chunk(100) as $candidateDocument) {
+                        $list = $candidateDocument->toDBField($field);
+                        // Singleton returns a list, but record doesn't. Conceivable, but rare.
+                        if (!$list || !$list instanceof RelationList) {
+                            continue;
+                        }
+                        // Now test if this record actually appears in the list.
+                        if ($list->filter('ID', $ownedDataObject->ID)->exists()) {
+                            yield $candidateDocument;
+                        }
 
-                    yield $document->getDataObject();
+                    }
                 } else if ($dbField instanceof DataObject) {
                     $objectClass = get_class($dbField);
-                    if (!$dataobject instanceof $objectClass) {
+                    if (!$ownedDataObject instanceof $objectClass) {
                         continue;
                     }
-                    yield $document->getDataObject();
+                    // Now that we have a static confirmation, test each record.
+                    /* @var DataObjectDocument $candidateDocument */
+                    foreach ($chunker->chunk(100) as $candidateDocument) {
+                        $relatedObj = $candidateDocument->toDBField($field);
+                        // Singleton returned a dataobject, but this record did not. Rare, but possible.
+                        if (!$relatedObj instanceof $objectClass) {
+                            continue;
+                        }
+                        if ($relatedObj->ID == $ownedDataObject->ID) {
+                            yield $document;
+                        }
+                    }
                 }
             }
         }
@@ -415,5 +439,30 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker
         return $this->pageCrawler;
     }
 
+    public function serialize(): ?string
+    {
+        return serialize([
+            'className' => $this->getDataObject()->baseClass(),
+            'id' => $this->getDataObject()->ID,
+        ]);
+    }
+
+    /**
+     * @param string $serialized
+     * @throws Exception
+     */
+    public function unserialize($serialized): void
+    {
+        $data = unserialize($serialized);
+        $dataObject = DataObject::get_by_id($data['className'], $data['id']);
+        if (!$dataObject) {
+            throw new Exception(sprintf('DataObject %s : %s does not exist', $data['className'], $data['id']));
+        }
+        $this->setDataObject($dataObject);
+        foreach (static::config()->get('dependencies') as $name => $service) {
+            $method = 'set' . $name;
+            $this->$method(Injector::inst()->get($service));
+        }
+    }
 
 }

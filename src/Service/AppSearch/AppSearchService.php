@@ -10,11 +10,13 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
+use SilverStripe\SearchService\Exception\SearchServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use InvalidArgumentException;
 use Exception;
+use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 
@@ -44,7 +46,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param DocumentInterface $item
      * @return IndexingInterface
-     * @throws Exception
+     * @throws SearchServiceException
      */
     public function addDocument(DocumentInterface $item): IndexingInterface
     {
@@ -56,7 +58,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param DocumentInterface[] $items
      * @return BatchDocumentInterface
-     * @throws Exception
+     * @throws SearchServiceException
      */
     public function addDocuments(array $items): BatchDocumentInterface
     {
@@ -85,22 +87,13 @@ class AppSearchService implements IndexingInterface
             }
         }
 
-        try {
-            foreach ($documentMap as $indexName => $docsToAdd) {
-                $result = $this->getClient()->indexDocuments(
-                    static::environmentizeIndex($indexName),
-                    $docsToAdd
-                );
-                $this->handleError($result);
-            }
-        } catch (Exception $e) {
-            Injector::inst()->create(LoggerInterface::class)->error($e);
-
-            if (Director::isDev()) {
-                throw $e;
-            }
+        foreach ($documentMap as $indexName => $docsToAdd) {
+            $result = $this->getClient()->indexDocuments(
+                static::environmentizeIndex($indexName),
+                $docsToAdd
+            );
+            $this->handleError($result);
         }
-
         return $this;
     }
 
@@ -142,20 +135,12 @@ class AppSearchService implements IndexingInterface
             }
         }
 
-        try {
-            foreach ($documentMap as $indexName => $documentIds) {
-                $result = $this->getClient()->deleteDocuments(
-                    static::environmentizeIndex($indexName),
-                    $documentIds
-                );
-                $this->handleError($result);
-            }
-        } catch (Exception $e) {
-            Injector::inst()->create(LoggerInterface::class)->error($e);
-
-            if (Director::isDev()) {
-                throw $e;
-            }
+        foreach ($documentMap as $indexName => $documentIds) {
+            $result = $this->getClient()->deleteDocuments(
+                static::environmentizeIndex($indexName),
+                $documentIds
+            );
+            $this->handleError($result);
         }
 
         return $this;
@@ -175,91 +160,104 @@ class AppSearchService implements IndexingInterface
     /**
      * @param array $ids
      * @return array
+     * @throws Exce
      */
     public function getDocuments(array $ids): array
     {
         $docs = [];
-        foreach ($ids as $docID) {
-            foreach (array_keys($this->getConfiguration()->getIndexes()) as $indexName) {
-                try {
-                    $response = $this->getClient()->getDocuments(
-                        static::environmentizeIndex($indexName),
-                        [$docID]
-                    );
-                    $this->handleError($response);
-                    if ($response) {
-                        $docs[$docID] = $response;
-                        break;
-                    }
-                } catch (Exception $e) {
+        foreach (array_keys($this->getConfiguration()->getIndexes()) as $indexName) {
+            $response = $this->getClient()->getDocuments(
+                static::environmentizeIndex($indexName),
+                $ids
+            );
+            $this->handleError($response);
+            if ($response) {
+                foreach ($response as $doc) {
+                    $docs[$doc['id']] = $response;
                 }
             }
         }
 
-        return $docs;
+
+        return array_values($docs);
+    }
+
+    /**
+     * @param string $indexName
+     * @param int|null $limit
+     * @param int $offset
+     * @return array
+     * @throws Exception
+     */
+    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    {
+        try {
+            $response = $this->getClient()->listDocuments(
+                static::environmentizeIndex($indexName),
+                $offset,
+                $limit
+            );
+            $this->handleError($response);
+            if ($response) {
+                return array_map(function ($doc) {
+                    return $doc['id'];
+                }, $response['results']);
+            }
+        } catch (Exception $e) {
+        }
+
+        return [];
+    }
+
+    /**
+     * @param string $indexName
+     * @return int
+     * @throws SearchServiceException
+     */
+    public function getDocumentTotal(string $indexName): int
+    {
+
+        $response = $this->getClient()->listDocuments(
+            static::environmentizeIndex($indexName),
+        );
+        $this->handleError($response);
+        $meta = $response['meta']['page'] ?? [];
+
+        return $meta['total_results'] ?? 0;
     }
 
     /**
      * Ensure all the engines exist
-     * @throws Exception
+     * @throws SearchServiceException
+     * @throws IndexConfigurationException
      */
     public function configure(): void
     {
-        $indexes = array_map(
-            [static::class, 'environmentizeIndex'],
-            array_keys($this->getConfiguration()->getIndexes())
-        );
+        foreach ($this->getConfiguration()->getIndexes() as $indexName => $config) {
+            $this->validateIndex($indexName);
 
-        foreach ($indexes as $index) {
-            $engines = $this->getClient()->listEngines();
-            $this->handleError($engines);
-            $results = $engines['results'] ?? [];
-            $allEngines = array_column($results, 'name');
-            if (!in_array($index, $allEngines)) {
-                $result = $this->getClient()->createEngine($index);
-                $this->handleError($result);
+            $envIndex = static::environmentizeIndex($indexName);
+            $this->findOrMakeIndex($envIndex);
+
+            $result = $this->getClient()->getSchema($envIndex);
+            $this->handleError($result);
+
+            $fields = $this->getConfiguration()->getFieldsForIndex($indexName);
+            $definedSchema = $this->getSchemaForFields($fields);
+            $needsUpdate = false;
+            foreach ($result as $fieldName => $type) {
+                $definedType = $definedSchema[$fieldName] ?? null;
+                if (!$definedType) {
+                    continue;
+                }
+                if ($definedType !== $type) {
+                    $needsUpdate = true;
+                    break;
+                }
             }
-        }
-
-        $classes = $this->getConfiguration()->getSearchableClasses();
-        foreach ($classes as $class) {
-            $indexes = array_keys($this->getConfiguration()->getIndexesForClassName($class));
-            $indexes = array_map([static::class, 'environmentizeIndex'], $indexes);
-            $fields = $this->getConfiguration()->getFieldsForClass($class);
-            if (!$fields) {
-                continue;
-            }
-            $definedSchema = $this->getSchemaForFieldSpecs($fields);
-            foreach ($indexes as $indexname) {
-                $result = $this->getClient()->getSchema($indexname);
-                $this->handleError($result);
-                foreach ($definedSchema as $fieldName => $type) {
-                    if (!isset($result[$fieldName])) {
-                        $result[$fieldName] = self::DEFAULT_FIELD_TYPE;
-                    }
-                }
-                foreach ($result as $fieldName => $type) {
-                    $definedType = $definedSchema[$fieldName] ?? null;
-                    if (!$definedType) {
-                        continue;
-                    }
-                    if ($definedType !== $type) {
-                        $needsUpdate = true;
-                        break;
-                    }
-                }
-                if ($needsUpdate) {
-                    try {
-                        $response = $this->getClient()->updateSchema($indexname, $definedSchema);
-                        $this->handleError($response);
-                    } catch (Exception $e) {
-                        Injector::inst()->create(LoggerInterface::class)->error($e);
-
-                        if (Director::isDev()) {
-                            throw $e;
-                        }
-                    }
-                }
+            if ($needsUpdate) {
+                $response = $this->getClient()->updateSchema($envIndex, $definedSchema);
+                $this->handleError($response);
             }
         }
     }
@@ -297,10 +295,25 @@ class AppSearchService implements IndexingInterface
         return $this;
     }
 
+    /**
+     * @param string $index
+     * @throws SearchServiceException
+     */
+    private function findOrMakeIndex(string $index)
+    {
+        $engines = $this->getClient()->listEngines();
+        $this->handleError($engines);
+        $results = $engines['results'] ?? [];
+        $allEngines = array_column($results, 'name');
+        if (!in_array($index, $allEngines)) {
+            $result = $this->getClient()->createEngine($index);
+            $this->handleError($result);
+        }
+    }
 
     /**
      * @param array|null $result
-     * @throws Exception
+     * @throws SearchServiceException
      */
     private function handleError(?array $result)
     {
@@ -319,34 +332,66 @@ class AppSearchService implements IndexingInterface
         if (empty($allErrors)) {
             return;
         }
-        throw new Exception(sprintf(
+        throw new SearchServiceException(sprintf(
             'AppSearch API error: %s',
-            json_encode($allErrors)
+            print_r($allErrors, true)
         ));
     }
 
-    private function getSchemaForFieldSpecs(array $specs): array
+    /**
+     * @param Field[] $fields
+     * @return array
+     */
+    private function getSchemaForFields(array $fields): array
     {
         $definedSpecs = [];
+        foreach ($fields as $field) {
+            $explicitFieldType = $field->getOption('type') ?? self::DEFAULT_FIELD_TYPE;
+            $definedSpecs[$field->getSearchFieldName()] = $explicitFieldType;
+        }
+
+        return $definedSpecs;
+    }
+
+    /**
+     * @param string $index
+     * @throws IndexConfigurationException
+     */
+    private function validateIndex(string $index): void
+    {
         $validTypes = [
             self::DEFAULT_FIELD_TYPE,
             'date',
             'number',
             'geolocation',
         ];
-        foreach ($specs as $searchFieldName => $spec) {
-            $explicitFieldType = $spec['type'] ?? self::DEFAULT_FIELD_TYPE;
-            if (!in_array($explicitFieldType, $validTypes)) {
+
+        $map = [];
+        foreach ($this->getConfiguration()->getFieldsForIndex($index) as $field) {
+            $type = $field->getOption('type') ?? self::DEFAULT_FIELD_TYPE;
+            if (!in_array($type, $validTypes)) {
                 throw new IndexConfigurationException(sprintf(
                     'Invalid field type: %s',
-                    $explicitFieldType
+                    $type
                 ));
             }
-            $definedSpecs[$searchFieldName] = $explicitFieldType;
-        }
+            $alreadyDefined = $map[$field->getSearchFieldName()] ?? null;
+            if ($alreadyDefined && $alreadyDefined !== $type) {
+                throw new IndexConfigurationException(sprintf(
+                    'Field "%s" is defined twice in the same index with differing types.
+                    (%s and %s). Consider changing the field name or explicitly defining
+                    the type on each usage',
+                    $field->getSearchFieldName(),
+                    $alreadyDefined,
+                    $type
+                ));
+            }
 
-        return $definedSpecs;
+            $map[$field->getSearchFieldName()] = $type;
+        }
     }
+
+
 
     /**
      * @param string $indexName

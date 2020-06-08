@@ -2,35 +2,47 @@
 Name: silverstripe-search-service
 ---
 SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Interfaces\BatchDocumentInterface.default:
+    class: SilverStripe\SearchService\Service\BatchProcessor
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+
+  SilverStripe\SearchService\Interfaces\BatchDocumentInterface.dataobject:
+    class: SilverStripe\SearchService\DataObject\DataObjectBatchProcessor
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
 
   SilverStripe\SearchService\Extensions\SearchServiceExtension:
     constructor:
-      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
-      batchProcessor: '%$SilverStripe\SearchService\Service\BatchProcessor'
+      batchProcessor: '%$SilverStripe\SearchService\Interfaces\BatchDocumentInterface.dataobject'
 
   SilverStripe\SearchService\Tasks\SearchConfigure:
     constructor:
-      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
 
   SilverStripe\SearchService\Tasks\SearchReindex:
     constructor:
-      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
-      batchProcessor: '%$SilverStripe\SearchService\Service\BatchProcessor'
+      batchProcessor: '%$SilverStripe\SearchService\Interfaces\BatchDocumentInterface.default'
+
+  SilverStripe\SearchService\Tasks\SearchClearIndex:
+    constructor:
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+      batchProcessor: '%$SilverStripe\SearchService\Interfaces\BatchDocumentInterface.default'
 
   SilverStripe\SearchService\Tasks\SearchInspect:
     constructor:
-      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
+      searchService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
 
   SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry:
     constructor:
       dataObject: '%$SilverStripe\SearchService\DataObject\DataObjectFetchCreator'
-
-  SilverStripe\SearchService\Service\BatchProcessor:
-    constructor:
-      searchService: '%$SilverStripe\SearchService\Interfaces\SearchServiceInterface'
-      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
 
   SilverStripe\SearchService\Service\IndexConfiguration:
     constructor:

@@ -11,6 +11,7 @@ use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
+use SilverStripe\SearchService\DataObject\DataObjectBatchProcessor;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
@@ -54,12 +55,12 @@ class SearchServiceExtension extends DataExtension
      * SearchServiceExtension constructor.
      * @param IndexingInterface $searchService
      * @param IndexConfiguration $config
-     * @param BatchDocumentInterface $batchProcessor
+     * @param DataObjectBatchProcessor $batchProcessor
      */
     public function __construct(
         IndexingInterface $searchService,
         IndexConfiguration $config,
-        BatchDocumentInterface $batchProcessor
+        DataObjectBatchProcessor $batchProcessor
     ) {
         parent::__construct();
         $this->setSearchService($searchService);
@@ -99,11 +100,7 @@ class SearchServiceExtension extends DataExtension
     public function addToIndexes(): void
     {
         $document = DataObjectDocument::create($this->owner);
-        $docs = [$document];
-        foreach ($document->getRefererDataObjects() as $dataObject) {
-            $docs[] = DataObjectDocument::create($dataObject);
-        }
-        $this->getBatchProcessor()->addDocuments($docs);
+        $this->getBatchProcessor()->addDocuments([$document]);
     }
 
     /**
@@ -127,24 +124,10 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * Capture the referring documents before this goes unpublished and they become
-     * unretrievable
-     */
-    public function onBeforeUnpublish(): void
-    {
-        $document = DataObjectDocument::create($this->owner);
-        $docs = [];
-        foreach ($document->getRefererDataObjects() as $dataObject) {
-            $docs[] = DataObjectDocument::create($dataObject)->getIdentifier();
-        }
-        $this->getBatchProcessor()->removeDocuments($docs);
-    }
-
-    /**
      * When unpublishing this item, remove from search
      * @throws Exception
      */
-    public function onAfterUnpublish(): void
+    public function onBeforeUnpublish(): void
     {
         $this->owner->removeFromIndexes();
     }

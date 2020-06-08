@@ -3,6 +3,8 @@
 namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\ORM\ValidationException;
+use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
@@ -10,10 +12,17 @@ use SilverStripe\SearchService\Service\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 use InvalidArgumentException;
+use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 /**
  * Index an item (or multiple items) into search async. This method works well
  * for performance and batching large indexes
+ *
+ * @property DocumentInterface[] $documents
+ * @property string $method
+ * @property int $batchSize
+ * @property bool $processDependencies
+ * @property DocumentInterface $referrerDocument
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -34,12 +43,12 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     /**
      * @var DocumentInterface[]
      */
-    private $documents = [];
+    private $chunks = [];
 
     /**
-     * @var DocumentInterface[]
+     * @var IndexJob[]
      */
-    private $chunks = [];
+    private $childJobs = [];
 
     /**
      * @var IndexingInterface
@@ -47,22 +56,18 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     private $service;
 
     /**
-     * @var int
-     */
-    private $method;
-
-    /**
      * @param DocumentInterface[] $documents
      * @param int $method
      * @param int $batchSize
      */
-    public function __construct(array $documents = [], int $method = self::METHOD_ADD, ?int $batchSize = null)
-    {
+    public function __construct(
+        array $documents = [],
+        int $method = self::METHOD_ADD,
+        ?int $batchSize = null
+    ) {
         parent::__construct();
         $this->documents = $documents;
-
-        $this->chunks = array_chunk($documents, $batchSize ?: IndexConfiguration::singleton()->getBatchSize());
-        $this->totalSteps = sizeof($this->chunks);
+        $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
         $this->setMethod($method);
     }
 
@@ -74,10 +79,9 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         return sprintf(
-            'Search service %s %s documents in %s chunks',
-            $this->getMethod() === self::METHOD_DELETE ? 'removing' : 'adding',
-            sizeof($this->documents),
-            sizeof($this->chunks)
+            'Search service %s %s documents',
+            $this->method === self::METHOD_DELETE ? 'removing' : 'adding',
+            sizeof($this->documents)
         );
     }
 
@@ -86,7 +90,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function getJobType()
     {
-        return QueuedJob::IMMEDIATE;
+        return QueuedJob::QUEUED;
     }
 
     /**
@@ -101,11 +105,14 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function setup()
     {
+        $this->chunks = array_chunk($this->documents, $this->batchSize);
+        $this->totalSteps = sizeof($this->chunks);
         $this->isComplete = !count($this->documents);
     }
 
     /**
      * Lets process a single node
+     * @throws ValidationException
      */
     public function process()
     {
@@ -116,12 +123,52 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
 
             return;
         }
-
         $this->currentStep++;
         $documents = array_shift($remainingChildren);
-        $method = $this->getMethod() === static::METHOD_DELETE ? 'removeDocuments' : 'addDocuments';
-        $this->getSearchService()->$method($documents);
+        if ($this->method === static::METHOD_DELETE) {
+            $this->getSearchService()->removeDocuments($documents);
+        } else {
+            $toRemove = [];
+            $toUpdate = [];
+            /* @var DocumentInterface $document */
+            foreach ($documents as $document) {
+                if ($document->shouldIndex()) {
+                    $toUpdate[] = $document;
+                } else {
+                    $toRemove[] = $document;
+                }
+            }
+            if (!empty($toUpdate)) {
+                $this->getSearchService()->addDocuments($toUpdate);
+            }
+            if (!empty($toRemove)) {
+                $this->getSearchService()->removeDocuments($toUpdate);
+            }
+
+        }
+
         $this->chunks = $remainingChildren;
+
+        if ($this->processDependencies) {
+            foreach ($documents as $document) {
+                if ($document instanceof DependencyTracker) {
+                    $dependentDocs = [];
+                    /* @var DocumentInterface $dependentDocument */
+                    foreach ($document->getDependentDocuments() as $dependentDocument) {
+                        // No circular dependencies
+                        if ($dependentDocument->getIdentifier() === $document->getIdentifier()) {
+                            continue;
+                        }
+                        $dependentDocs[] = $dependentDocument;
+                    }
+                    if (!empty($dependentDocs)) {
+                        $childJob = IndexJob::create($dependentDocs);
+                        QueuedJobService::singleton()->queueJob($childJob);
+                        $this->childJobs[] = $childJob;
+                    }
+                }
+            }
+        }
 
         if (!count($remainingChildren)) {
             $this->isComplete = true;
@@ -142,17 +189,36 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
             ));
         }
 
-        $this->method = $method;
+        $this->__set('method', $method);
 
         return $this;
     }
 
     /**
-     * @return int
+     * @param bool $processDependencies
+     * @return IndexJob
      */
-    public function getMethod(): int
+    public function setProcessDependencies(bool $processDependencies): IndexJob
     {
-        return $this->method;
+        $this->processDependencies = $processDependencies;
+        return $this;
     }
 
+    /**
+     * @param int $batchSize
+     * @return IndexJob
+     */
+    public function setBatchSize(int $batchSize): IndexJob
+    {
+        $this->batchSize = $batchSize;
+        return $this;
+    }
+
+    /**
+     * @return IndexJob[]
+     */
+    public function getChildJobs(): array
+    {
+        return $this->childJobs;
+    }
 }
