@@ -10,3 +10,11 @@ SilverStripe\ORM\FieldType\DBDate:
 SilverStripe\ORM\FieldType\DBBoolean:
   extensions:
     - SilverStripe\SearchService\Extensions\DBBooleanExtension
+---
+Name: 'silverstripe-search-service-cms'
+Only:
+  moduleexists: 'silverstripe/cms'
+---
+SilverStripe\CMS\Model\SiteTree:
+  extensions:
+    - SilverStripe\SearchService\Extensions\SearchServiceExtension
