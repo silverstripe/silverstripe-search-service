@@ -14,11 +14,13 @@ use SilverStripe\Dev\Debug;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
+use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Service\BatchProcessorAware;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\SearchService\Service\SyncJobRunner;
 
 class SearchClearIndex extends BuildTask
 {
@@ -63,42 +65,13 @@ class SearchClearIndex extends BuildTask
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
 
-        $service = $this->getIndexService();
         $targetIndex = $request->getVar('index');
         if (!$targetIndex) {
             echo "Must specify an index in the 'index' parameter." . PHP_EOL;
             die();
         }
-        die(var_dump($service->listDocuments($targetIndex)));
-    }
-
-    /**
-     * @param DocumentFetcherInterface $fetcher
-     * @param int $chunkSize
-     * @return iterable
-     * @see https://github.com/silverstripe/silverstripe-framework/pull/8940/files
-     */
-    private function chunk(DocumentFetcherInterface $fetcher, int $chunkSize = 100): iterable
-    {
-        if ($chunkSize < 1) {
-            throw new InvalidArgumentException(sprintf(
-                '%s::%s: chunkSize must be greater than or equal to 1',
-                __CLASS__,
-                __METHOD__
-            ));
-        }
-
-        $currentChunk = 0;
-        while ($chunk = $fetcher->fetch($chunkSize, $chunkSize * $currentChunk)) {
-            foreach ($chunk as $item) {
-                yield $item;
-            }
-
-            if (sizeof($chunk) < $chunkSize) {
-                break;
-            }
-            $currentChunk++;
-        }
+        $job = ClearIndexJob::create($targetIndex);
+        SyncJobRunner::singleton()->runJob($job);
     }
 
 }

@@ -4,6 +4,7 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
@@ -24,7 +25,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
  * @property bool $processDependencies
  * @property DocumentInterface $referrerDocument
  */
-class IndexJob extends AbstractQueuedJob implements QueuedJob
+class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
 {
     use Injectable;
     use ServiceAware;

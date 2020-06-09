@@ -40,6 +40,12 @@ class IndexConfiguration
     private static $crawl_page_content = true;
 
     /**
+     * @var bool
+     * @config
+     */
+    private static $include_page_html = true;
+
+    /**
      * @var array
      * @config
      */
@@ -108,6 +114,14 @@ class IndexConfiguration
     public function shouldCrawlPageContent(): bool
     {
         return $this->config()->get('crawl_page_content');
+    }
+
+    /**
+     * @return bool
+     */
+    public function shouldIncludePageHTML(): bool
+    {
+        return $this->config()->get('include_page_html');
     }
 
     /**

@@ -22,6 +22,7 @@ use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
 use InvalidArgumentException;
+use SilverStripe\SearchService\Service\SyncJobRunner;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class SearchReindex extends BuildTask
@@ -69,8 +70,6 @@ class SearchReindex extends BuildTask
 
         $targetClass = $request->getVar('onlyClass');
         $job = ReindexJob::create($targetClass);
-        $jobID = QueuedJobService::singleton()->queueJob($job);
-        echo sprintf('Running job %s', $job->getTitle()) . PHP_EOL;
-        while(!$job->isFinished)
+        SyncJobRunner::singleton()->runJob($job);
     }
 }

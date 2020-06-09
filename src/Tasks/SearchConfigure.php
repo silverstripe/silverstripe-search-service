@@ -2,7 +2,9 @@
 
 namespace SilverStripe\SearchService\Tasks;
 
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\BuildTask;
+use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\ServiceAware;
 
@@ -29,6 +31,10 @@ class SearchConfigure extends BuildTask
         $this->setIndexService($searchService);
     }
 
+    /**
+     * @param HTTPRequest $request
+     * @throws IndexingServiceException
+     */
     public function run($request)
     {
         $this->getIndexService()->configure();

@@ -190,7 +190,11 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
         $toIndex[$baseClassField] = $dataObject->baseClass();
 
         if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
-            $toIndex[$pageContentField] = $this->getPageCrawler()->getMainContent($dataObject);
+            $content = $this->getPageCrawler()->getMainContent($dataObject);
+            if (!$this->getConfiguration()->shouldIncludePageHTML()) {
+                $content = strip_tags($content);
+            }
+            $toIndex[$pageContentField] = $content;
         }
 
         $dataObject->invokeWithExtensions('onBeforeAttributesFromObject');
@@ -318,14 +322,14 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     /**
      * @return iterable
      */
-    public function getDependentDocuments(): iterable
+    public function getDependentDocuments(): array
     {
         $searchableClasses = $this->getConfiguration()->getSearchableClasses();
         $dataObjectClasses = array_filter($searchableClasses, function ($class) {
             return is_subclass_of($class, DataObject::class);
         });
-        $docs = [];
         $ownedDataObject = $this->getDataObject();
+        $docs = [];
         foreach ($dataObjectClasses as $class) {
             // Start with a singleton to look at the model first, then get real records if needed
             $owningDataObject = Injector::inst()->get($class);
@@ -358,7 +362,7 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
                         }
                         // Now test if this record actually appears in the list.
                         if ($list->filter('ID', $ownedDataObject->ID)->exists()) {
-                            yield $candidateDocument;
+                            $docs[] = $candidateDocument;
                         }
 
                     }
@@ -376,12 +380,16 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
                             continue;
                         }
                         if ($relatedObj->ID == $ownedDataObject->ID) {
-                            yield $document;
+                            $docs[] = $document;
                         }
                     }
                 }
             }
         }
+
+        $this->getDataObject()->invokeWithExtensions('updateSearchDependentDocuments', $docs);
+
+        return $docs;
     }
 
     /**

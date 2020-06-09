@@ -22,7 +22,7 @@ class DataObjectBatchProcessor extends BatchProcessor
      * @var int
      * @config
      */
-    private static $buffer_seconds = 1;
+    private static $buffer_seconds = 5;
 
     /**
      * @param array $documents

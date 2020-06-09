@@ -4,6 +4,7 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
@@ -20,7 +21,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
  * @property int $batchSize
  * @property string|null $onlyClass
  */
-class ReindexJob extends AbstractQueuedJob implements QueuedJob
+class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
 {
     use Injectable;
     use ConfigurationAware;

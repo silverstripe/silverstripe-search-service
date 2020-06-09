@@ -6,5 +6,5 @@ namespace SilverStripe\SearchService\Interfaces;
 
 interface DependencyTracker
 {
-    public function getDependentDocuments(): iterable;
+    public function getDependentDocuments(): array;
 }
