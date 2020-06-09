@@ -60,7 +60,7 @@ class IndexConfiguration
      * @var bool
      * @config
      */
-    private $use_sync_jobs = false;
+    private static $use_sync_jobs = false;
 
     /**
      * IndexConfiguration constructor.
