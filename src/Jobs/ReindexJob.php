@@ -21,7 +21,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
  * @property int $batchSize
  * @property string|null $onlyClass
  */
-class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
+class ReindexJob extends AbstractChildJobProvider implements QueuedJob
 {
     use Injectable;
     use ConfigurationAware;
@@ -30,7 +30,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvide
      * @var array
      */
     private static $dependencies = [
-        'Registry' => '$%' . DocumentFetchCreatorRegistry::class,
+        'Registry' => '%$' . DocumentFetchCreatorRegistry::class,
         'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
@@ -38,11 +38,6 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvide
      * @var DocumentFetchCreatorRegistry
      */
     private $registry;
-
-    /**
-     * @var IndexJob[]
-     */
-    private $childJobs = [];
 
     /**
      * @param string|null $onlyClass
@@ -79,7 +74,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvide
 
     public function setup()
     {
-        $until = strtotime(time(), '-' . $this->getConfiguration()->getSyncInterval());
+        $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
         $classes = $this->onlyClass ? [$this->onlyClass] : $this->getConfiguration()->getSearchableClasses();
 
         /* @var DocumentFetcherInterface[] $fetchers */
@@ -119,7 +114,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvide
         $documents = $fetcher->fetch($this->batchSize, $this->fetchOffset);
         $job = IndexJob::create($documents);
         $job->setProcessDependencies(false);
-        QueuedJobService::singleton()->queueJob($job);
+        $this->runChildJob($job);
         $nextOffset = $this->fetchOffset + $this->batchSize;
         if ($nextOffset >= $fetcher->getTotalDocuments()) {
             $this->fetchIndex++;
@@ -138,14 +133,6 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvide
     {
         $this->batchSize = $batchSize;
         return $this;
-    }
-
-    /**
-     * @return IndexJob[]
-     */
-    public function getChildJobs(): array
-    {
-        return $this->childJobs;
     }
 
     /**

@@ -4,9 +4,12 @@ Name: silverstripe-search-service
 SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Interfaces\BatchDocumentInterface.default:
     class: SilverStripe\SearchService\Service\BatchProcessor
-
+    constructor:
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
   SilverStripe\SearchService\Interfaces\BatchDocumentInterface.dataobject:
     class: SilverStripe\SearchService\DataObject\DataObjectBatchProcessor
+    constructor:
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
 
   SilverStripe\SearchService\Extensions\SearchServiceExtension:
     constructor:

@@ -25,7 +25,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
  * @property bool $processDependencies
  * @property DocumentInterface $referrerDocument
  */
-class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
+class IndexJob extends AbstractChildJobProvider implements QueuedJob
 {
     use Injectable;
     use ServiceAware;
@@ -47,11 +47,6 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
     private $chunks = [];
 
     /**
-     * @var IndexJob[]
-     */
-    private $childJobs = [];
-
-    /**
      * @var IndexingInterface
      */
     private $service;
@@ -69,6 +64,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
         parent::__construct();
         $this->documents = $documents;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
+        $this->processDependencies = true;
         $this->setMethod($method);
     }
 
@@ -164,8 +160,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
                     }
                     if (!empty($dependentDocs)) {
                         $childJob = IndexJob::create($dependentDocs);
-                        QueuedJobService::singleton()->queueJob($childJob);
-                        $this->childJobs[] = $childJob;
+                        $this->runChildJob($childJob);
                     }
                 }
             }
@@ -215,11 +210,4 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob, ChildJobProvider
         return $this;
     }
 
-    /**
-     * @return IndexJob[]
-     */
-    public function getChildJobs(): array
-    {
-        return $this->childJobs;
-    }
 }

@@ -5,15 +5,27 @@ namespace SilverStripe\SearchService\Service;
 
 
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Jobs\IndexJob;
+use Symbiote\QueuedJobs\Services\QueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use Exception;
 
 class BatchProcessor implements BatchDocumentInterface
 {
     use Injectable;
+    use ConfigurationAware;
+
+    /**
+     * BatchProcessor constructor.
+     * @param IndexConfiguration $configuration
+     */
+    public function __construct(IndexConfiguration $configuration)
+    {
+        $this->setConfiguration($configuration);
+    }
 
     /**
      * @param DocumentInterface[] $documents
@@ -23,8 +35,7 @@ class BatchProcessor implements BatchDocumentInterface
     public function addDocuments(array $documents): BatchDocumentInterface
     {
         $job = IndexJob::create($documents, IndexJob::METHOD_ADD);
-
-        QueuedJobService::singleton()->queueJob($job);
+        $this->run($job);
 
         return $this;
     }
@@ -37,9 +48,22 @@ class BatchProcessor implements BatchDocumentInterface
     public function removeDocuments(array $documents): BatchDocumentInterface
     {
         $job = IndexJob::create($documents, IndexJob::METHOD_DELETE);
-        QueuedJobService::singleton()->queueJob($job);
+        $this->run($job);
 
         return $this;
+    }
+
+    /**
+     * @param QueuedJob $job
+     * @throws ValidationException
+     */
+    protected function run(QueuedJob $job): void
+    {
+        if ($this->getConfiguration()->shouldUseSyncJobs()) {
+            SyncJobRunner::singleton()->runJob($job, false);
+        } else {
+            QueuedJobService::singleton()->queueJob($job);
+        }
     }
 
 }

@@ -36,10 +36,10 @@ class DataObjectBatchProcessor extends BatchProcessor
         // Remove the dataobjects, ignore dependencies
         $job = IndexJob::create($documents, IndexJob::METHOD_DELETE);
         $job->setProcessDependencies(false);
-        QueuedJobService::singleton()->queueJob($job);
+        $this->run($job);
         foreach ($documents as $doc) {
             $childJob = RemoveDataObjectJob::create($doc, $timestamp);
-            QueuedJobService::singleton()->queueJob($childJob);
+            $this->run($childJob);
         }
 
         return $this;

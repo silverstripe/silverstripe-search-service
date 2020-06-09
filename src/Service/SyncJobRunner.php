@@ -12,16 +12,26 @@ class SyncJobRunner
 {
     use Injectable;
 
-    public function runJob(QueuedJob $job, $level = 0)
+    /**
+     * @param QueuedJob $job
+     * @param bool $verbose
+     * @param int $level
+     */
+    public function runJob(QueuedJob $job, bool $verbose = true, $level = 0)
     {
-        echo sprintf(
-            '%sRunning%sjob %s%s',
-            str_repeat('  ', $level),
-            $level > 0 ? ' child ' : '',
-            $job->getTitle(),
-            PHP_EOL
-        );
+        if ($job instanceof ChildJobProvider) {
+            $job->setDeferChildJobs(true);
+        }
 
+        if ($verbose) {
+            echo sprintf(
+                '%sRunning%sjob %s%s',
+                str_repeat('  ', $level),
+                $level > 0 ? ' child ' : '',
+                $job->getTitle(),
+                PHP_EOL
+            );
+        }
         $job->setup();
         while(!$job->jobFinished()) {
             $job->process();
@@ -29,14 +39,16 @@ class SyncJobRunner
         if ($job instanceof ChildJobProvider) {
             $childJobs = $job->getChildJobs();
             if (!empty($childJobs)) {
-                echo sprintf(
-                    '%s%s child jobs created%s',
-                    str_repeat('  ', $level),
-                    count($childJobs),
-                    PHP_EOL
-                );
+                if ($verbose) {
+                    echo sprintf(
+                        '%s%s child jobs created%s',
+                        str_repeat('  ', $level),
+                        count($childJobs),
+                        PHP_EOL
+                    );
+                }
                 foreach ($job->getChildJobs() as $childJob) {
-                    $this->runJob($childJob, $level + 1);
+                    $this->runJob($childJob, $verbose, $level + 1);
                 }
             }
         }

@@ -57,6 +57,12 @@ class IndexConfiguration
     private $indexVariant;
 
     /**
+     * @var bool
+     * @config
+     */
+    private $use_sync_jobs = false;
+
+    /**
      * IndexConfiguration constructor.
      * @param string|null $indexVariant
      */
@@ -131,6 +137,14 @@ class IndexConfiguration
     public function getIndexes(): array
     {
         return $this->config()->get('indexes');
+    }
+
+    /**
+     * @return bool
+     */
+    public function shouldUseSyncJobs(): bool
+    {
+        return $this->config()->get('use_sync_jobs');
     }
 
     /**
