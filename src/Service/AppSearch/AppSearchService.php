@@ -98,11 +98,11 @@ class AppSearchService implements IndexingInterface
     }
 
     /**
-     * @param DocumentInterface $doc
+     * @param string $docID
      * @return IndexingInterface
      * @throws Exception
      */
-    public function removeDocument(DocumentInterface $doc): IndexingInterface
+    public function removeDocument(string $docID): IndexingInterface
     {
         $this->removeDocuments([$doc]);
 
@@ -110,35 +110,17 @@ class AppSearchService implements IndexingInterface
     }
 
     /**
-     * @param DocumentInterface[] $items
+     * @param array $itemIDs
      * @return BatchDocumentInterface
      * @throws Exception
      */
-    public function removeDocuments(array $items): BatchDocumentInterface
+    public function removeDocuments(array $itemIDs): BatchDocumentInterface
     {
-        $documentMap = [];
-        /* @var DocumentInterface $item */
-        foreach ($items as $item) {
-            if (!$item instanceof DocumentInterface) {
-                throw new InvalidArgumentException(sprintf(
-                    '%s not passed a %s',
-                    __FUNCTION__,
-                    DocumentInterface::class
-                ));
-            }
-
-            foreach (array_keys($item->getIndexes()) as $indexName) {
-                if (!isset($documentMap[$indexName])) {
-                    $documentMap[$indexName] = [];
-                }
-                $documentMap[$indexName][] = $item->getIdentifier();
-            }
-        }
-
-        foreach ($documentMap as $indexName => $documentIds) {
+        $indexes = array_keys($this->getConfiguration()->getIndexes());
+        foreach ($indexes as $indexName) {
             $result = $this->getClient()->deleteDocuments(
                 static::environmentizeIndex($indexName),
-                $documentIds
+                $itemIDs
             );
             $this->handleError($result);
         }
@@ -190,7 +172,7 @@ class AppSearchService implements IndexingInterface
      * @return array
      * @throws Exception
      */
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocumentIDs(string $indexName, ?int $limit = null, int $offset = 0): array
     {
         try {
             $response = $this->getClient()->listDocuments(
@@ -219,7 +201,7 @@ class AppSearchService implements IndexingInterface
     {
 
         $response = $this->getClient()->listDocuments(
-            static::environmentizeIndex($indexName),
+            static::environmentizeIndex($indexName)
         );
         $this->handleError($response);
         $total = $response['meta']['page']['total_results'] ?? null;

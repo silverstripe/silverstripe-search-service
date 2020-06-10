@@ -6,7 +6,6 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
-use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
@@ -19,6 +18,7 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  *
  * @property string $indexName
  * @property int $batchSize
+ * @property int $batchOffset
  */
 class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -30,6 +30,11 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
     ];
 
     /**
+     * @var int
+     */
+    private $totalCount = 0;
+
+    /**
      * ClearIndexJob constructor.
      * @param string $indexName
      * @param int|null $batchSize
@@ -39,6 +44,7 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         parent::__construct();
         $this->indexName = $indexName;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
+        $this->batchOffset = 0;
     }
 
     /**
@@ -61,11 +67,12 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
-        $docs = $this->getIndexService()->listDocuments($this->indexName, $this->batchSize);
-        $ids = array_map(function (DocumentInterface $doc) {
-            return $doc->getIdentifier();
-        }, $docs);
+        $ids = $this->getIndexService()->listDocumentIDs($this->indexName, $this->batchSize, $this->batchOffset);
         $this->getIndexService()->removeDocuments($ids);
+        $this->batchOffset += $this->batchSize;
+        if ($this->batchOffset > $this->totalCount) {
+            $this->isComplete = true;
+        }
         $this->currentStep++;
     }
 }

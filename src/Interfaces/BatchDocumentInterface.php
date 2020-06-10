@@ -13,9 +13,9 @@ interface BatchDocumentInterface
     public function addDocuments(array $items): BatchDocumentInterface;
 
     /**
-     * @param DocumentInterface[] $items
+     * @param array $itemIDs
      * @return $this
      */
-    public function removeDocuments(array $items): BatchDocumentInterface;
+    public function removeDocuments(array $itemIDs): BatchDocumentInterface;
 
 }
