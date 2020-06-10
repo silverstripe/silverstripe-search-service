@@ -75,7 +75,7 @@ class ReindexJob extends AbstractChildJobProvider implements QueuedJob
     public function setup()
     {
         $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
-        $classes = $this->onlyClass ? [$this->onlyClass] : $this->getConfiguration()->getSearchableClasses();
+        $classes = $this->onlyClass ? [$this->onlyClass] : $this->getConfiguration()->getSearchableBaseClasses();
 
         /* @var DocumentFetcherInterface[] $fetchers */
         $fetchers = [];

@@ -104,4 +104,6 @@ class DataObjectFetcher implements DocumentFetcherInterface
         return $list->limit($limit, $offset);
     }
 
+    public function getDataObjectClass() { return $this->dataObjectClass; }
+
 }

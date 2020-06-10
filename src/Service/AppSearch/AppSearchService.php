@@ -149,6 +149,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param string $id
      * @return array|null
+     * @throws IndexingServiceException
      */
     public function getDocument(string $id): ?array
     {
@@ -160,7 +161,7 @@ class AppSearchService implements IndexingInterface
     /**
      * @param array $ids
      * @return array
-     * @throws Exce
+     * @throws IndexingServiceException
      */
     public function getDocuments(array $ids): array
     {

@@ -206,6 +206,22 @@ class IndexConfiguration
     }
 
     /**
+     * @return array
+     */
+    public function getSearchableBaseClasses(): array
+    {
+        $classes = $this->getSearchableClasses();
+        $baseClasses = $classes;
+        foreach ($classes as $class) {
+            $baseClasses = array_filter($baseClasses, function($possibleParent) use ($class) {
+                return !is_subclass_of($possibleParent, $class);
+            });
+        }
+
+        return $baseClasses;
+    }
+
+    /**
      * @param string $class
      * @return Field[]|null
      */
