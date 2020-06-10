@@ -110,8 +110,7 @@ class SearchServiceExtension extends DataExtension
     public function removeFromIndexes(): void
     {
         $document = DataObjectDocument::create($this->owner);
-        $docs = [$document->getIdentifier()];
-        $this->getBatchProcessor()->removeDocuments($docs);
+        $this->getBatchProcessor()->removeDocuments([$document]);
     }
 
     /**

@@ -1,19 +1,14 @@
 <?php
-
-
 namespace SilverStripe\SearchService\DataObject;
-
 
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
-use SilverStripe\SearchService\Interfaces\DependencyTracker;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Service\BatchProcessor;
-use SilverStripe\Versioned\Versioned;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
-use DateTime;
+
 class DataObjectBatchProcessor extends BatchProcessor
 {
     use Configurable;
@@ -25,7 +20,7 @@ class DataObjectBatchProcessor extends BatchProcessor
     private static $buffer_seconds = 5;
 
     /**
-     * @param array $documents
+     * @param DocumentInterface[] $documents
      * @return BatchDocumentInterface
      * @throws ValidationException
      */
