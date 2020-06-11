@@ -160,12 +160,14 @@ class AppSearchService implements IndexingInterface
             );
             $this->handleError($response);
             if ($response) {
-                foreach ($response as $doc) {
-                    $docs[$doc['id']] = $response;
+                foreach ($response['results'] as $data) {
+                    $document = $this->getBuilder()->import($data);
+                    if ($document) {
+                        $docs[$document->getIdentifier()] = $document;
+                    }
                 }
             }
         }
-
 
         return array_values($docs);
     }
