@@ -11,11 +11,15 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       client: '%$Elastic\AppSearch\Client\Client'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+      builder: '%$SilverStripe\SearchService\Service\DocumentBuilder'
   Elastic\AppSearch\Client\Client:
     factory: SilverStripe\SearchService\Services\AppSearch\ClientFactory
     constructor:
       endpoint: '`APP_SEARCH_ENDPOINT`'
       apiKey: '`APP_SEARCH_API_KEY`'
+SilverStripe\SearchService\Service\IndexConfiguration:
+  id_field: 'id'
+  source_class_field: 'source_class'
 
 ## customise the dataobject fields for AppSearch compatability
 SilverStripe\SearchService\DataObject\DataObjectDocument:

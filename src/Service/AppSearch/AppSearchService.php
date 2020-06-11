@@ -3,12 +3,7 @@
 namespace SilverStripe\SearchService\Services\AppSearch;
 
 use Elastic\AppSearch\Client\Client;
-use Psr\Log\LoggerInterface;
-use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
@@ -18,6 +13,7 @@ use InvalidArgumentException;
 use Exception;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 
 class AppSearchService implements IndexingInterface
@@ -33,14 +29,21 @@ class AppSearchService implements IndexingInterface
     private $client;
 
     /**
+     * @var DocumentBuilder
+     */
+    private $builder;
+
+    /**
      * AppSearchService constructor.
      * @param Client $client
      * @param IndexConfiguration $configuration
+     * @param DocumentBuilder $exporter
      */
-    public function __construct(Client $client, IndexConfiguration $configuration)
+    public function __construct(Client $client, IndexConfiguration $configuration, DocumentBuilder $exporter)
     {
         $this->client = $client;
         $this->setConfiguration($configuration);
+        $this->setBuilder($exporter);
     }
 
     /**
@@ -76,8 +79,7 @@ class AppSearchService implements IndexingInterface
                 continue;
             }
 
-            $fields = $item->toArray();
-            $fields['id'] = $item->getIdentifier();
+            $fields = $this->getBuilder()->export($item);
 
             foreach (array_keys($item->getIndexes()) as $indexName) {
                 if (!isset($documentMap[$indexName])) {
@@ -98,11 +100,11 @@ class AppSearchService implements IndexingInterface
     }
 
     /**
-     * @param string $docID
+     * @param DocumentInterface $doc
      * @return IndexingInterface
      * @throws Exception
      */
-    public function removeDocument(string $docID): IndexingInterface
+    public function removeDocument(DocumentInterface $doc): IndexingInterface
     {
         $this->removeDocuments([$doc]);
 
@@ -110,17 +112,20 @@ class AppSearchService implements IndexingInterface
     }
 
     /**
-     * @param array $itemIDs
+     * @param DocumentInterface[] $items
      * @return BatchDocumentInterface
      * @throws Exception
      */
-    public function removeDocuments(array $itemIDs): BatchDocumentInterface
+    public function removeDocuments(array $items): BatchDocumentInterface
     {
         $indexes = array_keys($this->getConfiguration()->getIndexes());
+        $ids = array_map(function (DocumentInterface $item) {
+            return $item->getIdentifier();
+        }, $items);
         foreach ($indexes as $indexName) {
             $result = $this->getClient()->deleteDocuments(
                 static::environmentizeIndex($indexName),
-                $itemIDs
+                $ids
             );
             $this->handleError($result);
         }
@@ -169,10 +174,10 @@ class AppSearchService implements IndexingInterface
      * @param string $indexName
      * @param int|null $limit
      * @param int $offset
-     * @return array
+     * @return DocumentInterface[]
      * @throws Exception
      */
-    public function listDocumentIDs(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
     {
         try {
             $response = $this->getClient()->listDocuments(
@@ -182,9 +187,15 @@ class AppSearchService implements IndexingInterface
             );
             $this->handleError($response);
             if ($response) {
-                return array_map(function ($doc) {
-                    return $doc['id'];
-                }, $response['results']);
+                $documents = [];
+                foreach ($response['results'] as $data) {
+                    $document = $this->getBuilder()->import($data);
+                    if ($document) {
+                        $documents[] = $document;
+                    }
+                }
+
+                return $documents;
             }
         } catch (Exception $e) {
         }
@@ -282,6 +293,25 @@ class AppSearchService implements IndexingInterface
         $this->client = $client;
         return $this;
     }
+
+    /**
+     * @return DocumentBuilder
+     */
+    public function getBuilder(): DocumentBuilder
+    {
+        return $this->builder;
+    }
+
+    /**
+     * @param DocumentBuilder $builder
+     * @return AppSearchService
+     */
+    public function setBuilder(DocumentBuilder $builder): AppSearchService
+    {
+        $this->builder = $builder;
+        return $this;
+    }
+
 
     /**
      * @param string $index

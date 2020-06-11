@@ -17,4 +17,10 @@ interface DocumentFetcherInterface
      */
     public function getTotalDocuments(): int;
 
+    /**
+     * @param array $data
+     * @return DocumentInterface|null
+     */
+    public function createDocument(array $data): ?DocumentInterface;
+
 }

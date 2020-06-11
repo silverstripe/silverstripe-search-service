@@ -16,11 +16,11 @@ interface IndexingInterface extends BatchDocumentInterface
     public function addDocument(DocumentInterface $item): self;
 
     /**
-     * @param string $docID
+     * @param DocumentInterface $doc
      * @return $this
      * @throws IndexingServiceException
      */
-    public function removeDocument(string $docID): self;
+    public function removeDocument(DocumentInterface $doc): self;
 
     /**
      * @param string $id
@@ -43,7 +43,7 @@ interface IndexingInterface extends BatchDocumentInterface
      * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
-    public function listDocumentIDs(string $indexName, ?int $limit = null, int $offset = 0): array;
+    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array;
 
     /**
      * @param string $indexName

@@ -44,3 +44,8 @@ SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Service\IndexConfiguration:
     constructor:
       index_variant: '`SS_ENVIRONMENT_TYPE`'
+
+  SilverStripe\SearchService\Service\DocumentBuilder:
+    constructor:
+      configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+      registry: '%$SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry'

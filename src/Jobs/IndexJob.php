@@ -6,7 +6,9 @@ use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
+use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
+use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
@@ -130,16 +132,32 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
             /* @var DocumentInterface $document */
             foreach ($documents as $document) {
                 if ($document->shouldIndex()) {
+                    if ($document instanceof DocumentAddHandler) {
+                        $document->onAddToSearchIndexes(DocumentAddHandler::BEFORE_ADD);
+                    }
                     $toUpdate[] = $document;
                 } else {
+                    if ($document instanceof DocumentRemoveHandler) {
+                        $document->onRemoveFromSearchIndexes(DocumentAddHandler::BEFORE_ADD);
+                    }
                     $toRemove[] = $document;
                 }
             }
             if (!empty($toUpdate)) {
                 $this->getIndexService()->addDocuments($toUpdate);
+                foreach ($toUpdate as $document) {
+                    if ($document instanceof DocumentAddHandler) {
+                        $document->onAddToSearchIndexes(DocumentAddHandler::AFTER_ADD);
+                    }
+                }
             }
             if (!empty($toRemove)) {
                 $this->getIndexService()->removeDocuments($toUpdate);
+                foreach ($toUpdate as $document) {
+                    if ($document instanceof DocumentRemoveHandler) {
+                        $document->onRemoveFromSearchIndexes(DocumentRemoveHandler::AFTER_REMOVE);
+                    }
+                }
             }
 
         }

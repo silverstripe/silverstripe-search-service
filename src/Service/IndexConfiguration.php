@@ -63,6 +63,17 @@ class IndexConfiguration
     private static $use_sync_jobs = false;
 
     /**
+     * @var string
+     */
+    private static $id_field = 'id';
+
+    /**
+     * @var string
+     * @config
+     */
+    private static $source_class_field = 'source_class';
+
+    /**
      * IndexConfiguration constructor.
      * @param string|null $indexVariant
      */
@@ -146,6 +157,23 @@ class IndexConfiguration
     {
         return $this->config()->get('use_sync_jobs');
     }
+
+    /**
+     * @return string
+     */
+    public function getIDField(): string
+    {
+        return $this->config()->get('id_field');
+    }
+
+    /**
+     * @return string
+     */
+    public function getSourceClassField(): string
+    {
+        return $this->config()->get('source_class_field');
+    }
+
 
     /**
      * @param string $class

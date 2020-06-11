@@ -5,21 +5,20 @@ namespace SilverStripe\SearchService\Extensions;
 use Exception;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\RelationList;
+use SilverStripe\ORM\DB;
 use SilverStripe\SearchService\DataObject\DataObjectBatchProcessor;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
-use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\BatchProcessorAware;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\Versioned\Versioned;
 
 /**
  * The extension that provides implicit indexing features to dataobjects
@@ -92,7 +91,6 @@ class SearchServiceExtension extends DataExtension
             $this->hasConfigured = true;
         }
     }
-
     /**
      * Index this record into search or queue if configured to do so
      *

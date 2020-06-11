@@ -30,4 +30,9 @@ interface DocumentInterface
      * @return array
      */
     public function toArray(): array;
+
+    /**
+     * @return string
+     */
+    public function getSourceClass(): string;
 }

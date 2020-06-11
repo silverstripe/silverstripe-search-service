@@ -67,8 +67,14 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
-        $ids = $this->getIndexService()->listDocumentIDs($this->indexName, $this->batchSize, $this->batchOffset);
-        $this->getIndexService()->removeDocuments($ids);
+        $docs = $this->getIndexService()->listDocuments(
+            $this->indexName,
+            $this->batchSize,
+            $this->batchOffset
+        );
+        if (!empty($docs)) {
+            $this->getIndexService()->removeDocuments($docs);
+        }
         $this->batchOffset += $this->batchSize;
         if ($this->batchOffset > $this->totalCount) {
             $this->isComplete = true;

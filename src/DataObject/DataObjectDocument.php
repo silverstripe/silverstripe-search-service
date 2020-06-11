@@ -23,7 +23,10 @@ use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Extensions\DBFieldExtension;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
+use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
+use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
+use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\ConfigurationAware;
@@ -31,24 +34,32 @@ use SilverStripe\SearchService\Service\DocumentChunkFetcher;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
+use SilverStripe\SearchService\Service\ServiceAware;
 use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
 use Exception;
 use Serializable;
 
-class DataObjectDocument implements DocumentInterface, DependencyTracker, Serializable
+class DataObjectDocument implements
+    DocumentInterface,
+    DependencyTracker,
+    Serializable,
+    DocumentRemoveHandler,
+    DocumentAddHandler,
+    DocumentMetaProvider
 {
     use Injectable;
     use Extensible;
     use Configurable;
     use ConfigurationAware;
+    use ServiceAware;
 
     /**
      * @var string
      * @config
      */
-    private static $id_field = 'record_id';
+    private static $record_id_field = 'record_id';
 
     /**
      * @var string
@@ -68,11 +79,6 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     private $dataObject;
 
     /**
-     * @var IndexingInterface
-     */
-    private $service;
-
-    /**
      * @var PageCrawler
      */
     private $pageCrawler;
@@ -81,7 +87,7 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
      * @var array
      */
     private static $dependencies = [
-        'Service' => '%$' . IndexingInterface::class,
+        'IndexService' => '%$' . IndexingInterface::class,
         'PageCrawler' => '%$' . PageCrawler::class,
         'Configuration' => '%$' . IndexConfiguration::class,
     ];
@@ -104,6 +110,14 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
         $id = $this->getDataObject()->ID;
 
         return strtolower(sprintf('%s_%s', $type, $id));
+    }
+
+    /**
+     * @return string
+     */
+    public function getSourceClass(): string
+    {
+        return $this->getDataObject()->ClassName;
     }
 
     /**
@@ -143,20 +157,27 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     }
 
     /**
-     *
+     * @param bool $isDeleted
      */
-    public function markIndexed(): void
+    public function markIndexed(bool $isDeleted = false): void
     {
         $schema = DataObject::getSchema();
         $table = $schema->tableForField($this->getDataObject()->ClassName, 'SearchIndexed');
 
         if ($table) {
-            DB::query(sprintf('UPDATE %s SET SearchIndexed = NOW() WHERE ID = %s', $table, $this->getDataObject()->ID));
+            $newValue = $isDeleted ? 'null' : 'NOW()';
+            DB::query(sprintf(
+                'UPDATE %s SET SearchIndexed = %s WHERE ID = %s',
+                $table,
+                $newValue,
+                $this->getDataObject()->ID
+            ));
 
             if ($this->getDataObject()->hasExtension(Versioned::class) && $this->getDataObject()->hasStages()) {
                 DB::query(sprintf(
-                    'UPDATE %s_Live SET SearchIndexed = NOW() WHERE ID = %s',
+                    'UPDATE %s_Live SET SearchIndexed = %s WHERE ID = %s',
                     $table,
+                    $newValue,
                     $this->getDataObject()->ID
                 ));
             }
@@ -180,14 +201,10 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
      */
     public function toArray(): array
     {
-        $idField = $this->config()->get('id_field');
-        $baseClassField = $this->config()->get('base_class_field');
         $pageContentField = $this->config()->get('page_content_field');
         $dataObject = $this->getDataObject();
 
         $toIndex = [];
-        $toIndex[$idField] = $dataObject->ID;
-        $toIndex[$baseClassField] = $dataObject->baseClass();
 
         if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
             $content = $this->getPageCrawler()->getMainContent($dataObject);
@@ -202,7 +219,7 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
         $attributes = new Map(ArrayList::create());
 
         foreach ($toIndex as $k => $v) {
-            $this->getService()->validateField($k);
+            $this->getIndexService()->validateField($k);
             $attributes->push($k, $v);
         }
 
@@ -260,6 +277,20 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     }
 
     /**
+     * @return array
+     */
+    public function provideMeta(): array
+    {
+        $baseClassField = $this->config()->get('base_class_field');
+        $recordIDField = $this->config()->get('record_id_field');
+
+        return [
+            $baseClassField => $this->getDataObject()->baseClass(),
+            $recordIDField => $this->getDataObject()->ID,
+        ];
+    }
+
+    /**
      * @return Field[]
      */
     public function getIndexedFields(): array
@@ -313,7 +344,7 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     public function toDBField(Field $field)
     {
         if ($field->getProperty()) {
-            return $this->getDataObject()->obj($field->getProperty());
+            return $this->getDataObject()->relObject($field->getProperty());
         }
 
         return $this->resolveField($field->getSearchFieldName());
@@ -411,24 +442,6 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
     }
 
     /**
-     * @return IndexingInterface
-     */
-    public function getService(): IndexingInterface
-    {
-        return $this->service;
-    }
-
-    /**
-     * @param IndexingInterface $service
-     * @return DataObjectDocument
-     */
-    public function setService(IndexingInterface $service): DataObjectDocument
-    {
-        $this->service = $service;
-        return $this;
-    }
-
-    /**
      * @param PageCrawler $crawler
      * @return $this
      */
@@ -470,6 +483,26 @@ class DataObjectDocument implements DocumentInterface, DependencyTracker, Serial
         foreach (static::config()->get('dependencies') as $name => $service) {
             $method = 'set' . $name;
             $this->$method(Injector::inst()->get($service));
+        }
+    }
+
+    /**
+     * @param string $event
+     */
+    public function onAddToSearchIndexes(string $event): void
+    {
+        if ($event === DocumentAddHandler::AFTER_ADD) {
+            $this->markIndexed();
+        }
+    }
+
+    /**
+     * @param string $event
+     */
+    public function onRemoveFromSearchIndexes(string $event): void
+    {
+        if ($event === DocumentRemoveHandler::AFTER_REMOVE) {
+            $this->markIndexed(true);
         }
     }
 

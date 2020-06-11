@@ -14,13 +14,18 @@ use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
+use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\Versioned\Versioned;
+use InvalidArgumentException;
 
 class DataObjectFetcher implements DocumentFetcherInterface
 {
     use Extensible;
     use Configurable;
     use Injectable;
+    use ConfigurationAware;
 
     /**
      * @config
@@ -44,12 +49,28 @@ class DataObjectFetcher implements DocumentFetcherInterface
     private $until;
 
     /**
+     * @var array
+     */
+    private static $dependencies = [
+        'Configuration' => '%$' . IndexConfiguration::class,
+        'Registry' => '%$' . DocumentFetchCreatorRegistry::class,
+    ];
+
+    /**
      * DataObjectFetcher constructor.
      * @param string $class
      * @param int|null $until
      */
     public function __construct(string $class, ?int $until = null)
     {
+        if (!is_subclass_of($class, DataObject::class)) {
+            throw new InvalidArgumentException(sprintf(
+                '%s is not a subclass of %s',
+                $class,
+                DataObject::class
+            ));
+        }
+
         $this->dataObjectClass = $class;
         $this->until = $until;
     }
@@ -79,7 +100,31 @@ class DataObjectFetcher implements DocumentFetcherInterface
     }
 
     /**
-     * @param string $class
+     * @param array $data
+     * @return DocumentInterface|null
+     */
+    public function createDocument(array $data): ?DocumentInterface
+    {
+        $idField = DataObjectDocument::config()->get('record_id_field');
+        $ID = $data[$idField] ?? null;
+
+        if (!$ID) {
+            throw new InvalidArgumentException(sprintf(
+                'No %s field found: %s',
+                $idField,
+                print_r($data, true)
+            ));
+        }
+
+        $dataObject = DataObject::get_by_id($this->dataObjectClass, $ID);
+        if (!$dataObject) {
+            return null;
+        }
+
+        return DataObjectDocument::create($dataObject);
+    }
+
+    /**
      * @param int|null $limit
      * @param int|null $offset
      * @return DataList
@@ -103,7 +148,5 @@ class DataObjectFetcher implements DocumentFetcherInterface
 
         return $list->limit($limit, $offset);
     }
-
-    public function getDataObjectClass() { return $this->dataObjectClass; }
 
 }
