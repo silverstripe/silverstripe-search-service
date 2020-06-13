@@ -4,16 +4,14 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
-use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-
+use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 /**
  * @property DocumentFetcherInterface[] $fetchers
@@ -22,7 +20,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
  * @property int $batchSize
  * @property string|null $onlyClass
  */
-class ReindexJob extends AbstractChildJobProvider implements QueuedJob
+class ReindexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ConfigurationAware;
@@ -95,6 +93,7 @@ class ReindexJob extends AbstractChildJobProvider implements QueuedJob
 
         $this->totalSteps = $steps;
         $this->isComplete = $steps === 0;
+        $this->currentStep = 0;
         $this->fetchers = array_values($fetchers);
         $this->fetchIndex = 0;
         $this->fetchOffset = 0;
@@ -102,7 +101,6 @@ class ReindexJob extends AbstractChildJobProvider implements QueuedJob
 
     /**
      * Lets process a single node
-     * @throws ValidationException
      */
     public function process()
     {
@@ -114,9 +112,13 @@ class ReindexJob extends AbstractChildJobProvider implements QueuedJob
         }
 
         $documents = $fetcher->fetch($this->batchSize, $this->fetchOffset);
-        $job = IndexJob::create($documents);
-        $job->setProcessDependencies(false);
-        $this->runChildJob($job);
+
+        $indexer = Indexer::create($documents, Indexer::METHOD_ADD, $this->batchSize);
+        $indexer->setProcessDependencies(false);
+        while (!$indexer->finished()) {
+            $indexer->tick();
+        }
+
         $nextOffset = $this->fetchOffset + $this->batchSize;
         if ($nextOffset >= $fetcher->getTotalDocuments()) {
             $this->fetchIndex++;

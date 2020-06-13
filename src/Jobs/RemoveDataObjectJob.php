@@ -7,6 +7,7 @@ namespace SilverStripe\SearchService\Jobs;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
+use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
 use Exception;
 
@@ -27,7 +28,7 @@ class RemoveDataObjectJob extends IndexJob
      */
     public function __construct(DataObjectDocument $document, int $timestamp = null, ?int $batchSize = null)
     {
-        parent::__construct([], static::METHOD_ADD, $batchSize);
+        parent::__construct([], Indexer::METHOD_ADD, $batchSize);
         $this->timestamp = $timestamp ?: time();
         $this->document = $document;
     }
@@ -54,7 +55,7 @@ class RemoveDataObjectJob extends IndexJob
         // Set the documents in setup to ensure async
         $datetime = DBField::create_field('Datetime', $this->timestamp);
         $archiveDate = $datetime->format($datetime->getISOFormat());
-        Versioned::withVersionedMode(function () use ($archiveDate) {
+        $documents = Versioned::withVersionedMode(function () use ($archiveDate) {
             Versioned::reading_archived_date($archiveDate);
 
             // Go back in time to find out what the owners were before unpublish
@@ -62,7 +63,7 @@ class RemoveDataObjectJob extends IndexJob
 
             // refetch everything on the live stage
             Versioned::set_stage(Versioned::LIVE);
-            $this->documents = array_map(function (DataObjectDocument $doc) {
+            return array_map(function (DataObjectDocument $doc) {
                 return DataObjectDocument::create(
                     DataObject::get_by_id(
                         $doc->getSourceClass(),
@@ -70,6 +71,8 @@ class RemoveDataObjectJob extends IndexJob
                     ));
             }, $dependentDocs);
         });
+
+        $this->indexer->setDocuments($documents);
 
         parent::setup();
     }
