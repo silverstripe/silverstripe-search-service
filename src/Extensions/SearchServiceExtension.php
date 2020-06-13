@@ -124,7 +124,7 @@ class SearchServiceExtension extends DataExtension
     /**
      * When unpublishing this item, remove from search
      */
-    public function onBeforeUnpublish(): void
+    public function onAfterUnpublish(): void
     {
         $this->owner->removeFromIndexes();
     }
@@ -133,9 +133,11 @@ class SearchServiceExtension extends DataExtension
      * Before deleting this record ensure that it is removed from search.
      * @throws Exception
      */
-    public function onBeforeDelete()
+    public function onAfterDelete()
     {
-        $this->owner->removeFromIndexes();
+        if (!$this->owner->hasExtension(Versioned::class)) {
+            $this->owner->removeFromIndexes();
+        }
     }
 
 }

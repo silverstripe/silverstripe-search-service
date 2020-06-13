@@ -134,18 +134,10 @@ class DataObjectFetcher implements DocumentFetcherInterface
         /* @var DBDatetime $since */
         $since = DBField::create_field('Datetime', $this->until);
         $date = $since->Rfc822();
-        /* @var DataObject&Versioned $inst */
-        $inst = Injector::inst()->get($this->dataObjectClass);
-        if ($inst->hasExtension(Versioned::class) && $inst->hasStages()) {
-            $list = Versioned::get_by_stage(
-                $this->dataObjectClass,
-                Versioned::LIVE,
-                sprintf("SearchIndexed IS NULL OR SearchIndexed < '%s'", $date)
+        $list = DataList::create($this->dataObjectClass)
+            ->where(
+                ['SearchIndexed IS NULL OR SearchIndexed < ?' => $date]
             );
-        } else {
-            $list = DataList::create($this->dataObjectClass);
-        }
-
         return $list->limit($limit, $offset);
     }
 

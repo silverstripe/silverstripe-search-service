@@ -10,6 +10,7 @@ use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 
+use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
@@ -74,6 +75,7 @@ class ReindexJob extends AbstractChildJobProvider implements QueuedJob
 
     public function setup()
     {
+        Versioned::set_stage(Versioned::LIVE);
         $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
         $classes = $this->onlyClass ? [$this->onlyClass] : $this->getConfiguration()->getSearchableBaseClasses();
 

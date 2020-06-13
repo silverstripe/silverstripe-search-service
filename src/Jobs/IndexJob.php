@@ -4,18 +4,16 @@ namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
-use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
+use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\ServiceAware;
-use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 use InvalidArgumentException;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 /**
  * Index an item (or multiple items) into search async. This method works well
@@ -31,6 +29,7 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
 {
     use Injectable;
     use ServiceAware;
+    use ConfigurationAware;
 
     const METHOD_DELETE = 0;
 
@@ -41,6 +40,7 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
      */
     private static $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,
+        'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
     /**
@@ -131,6 +131,9 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
             $toUpdate = [];
             /* @var DocumentInterface $document */
             foreach ($documents as $document) {
+                if (!$this->getConfiguration()->isClassIndexed($document->getSourceClass())) {
+                    continue;
+                }
                 if ($document->shouldIndex()) {
                     if ($document instanceof DocumentAddHandler) {
                         $document->onAddToSearchIndexes(DocumentAddHandler::BEFORE_ADD);
@@ -138,7 +141,7 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
                     $toUpdate[] = $document;
                 } else {
                     if ($document instanceof DocumentRemoveHandler) {
-                        $document->onRemoveFromSearchIndexes(DocumentAddHandler::BEFORE_ADD);
+                        $document->onRemoveFromSearchIndexes(DocumentRemoveHandler::BEFORE_REMOVE);
                     }
                     $toRemove[] = $document;
                 }
@@ -152,14 +155,13 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
                 }
             }
             if (!empty($toRemove)) {
-                $this->getIndexService()->removeDocuments($toUpdate);
-                foreach ($toUpdate as $document) {
+                $this->getIndexService()->removeDocuments($toRemove);
+                foreach ($toRemove as $document) {
                     if ($document instanceof DocumentRemoveHandler) {
                         $document->onRemoveFromSearchIndexes(DocumentRemoveHandler::AFTER_REMOVE);
                     }
                 }
             }
-
         }
 
         $this->chunks = $remainingChildren;
@@ -167,15 +169,12 @@ class IndexJob extends AbstractChildJobProvider implements QueuedJob
         if ($this->processDependencies) {
             foreach ($documents as $document) {
                 if ($document instanceof DependencyTracker) {
-                    $dependentDocs = [];
-                    /* @var DocumentInterface $dependentDocument */
-                    foreach ($document->getDependentDocuments() as $dependentDocument) {
-                        // No circular dependencies
-                        if ($dependentDocument->getIdentifier() === $document->getIdentifier()) {
-                            continue;
+                    $dependentDocs = array_filter(
+                        $document->getDependentDocuments(),
+                        function (DocumentInterface $dependentDocument) use ($document) {
+                            return $dependentDocument->getIdentifier() !== $document->getIdentifier();
                         }
-                        $dependentDocs[] = $dependentDocument;
-                    }
+                    );
                     if (!empty($dependentDocs)) {
                         $childJob = IndexJob::create($dependentDocs);
                         $this->runChildJob($childJob);

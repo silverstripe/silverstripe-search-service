@@ -4,17 +4,17 @@
 namespace SilverStripe\SearchService\Jobs;
 
 
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
-use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\Versioned\Versioned;
-use DateTime;
 use Exception;
 
 /**
  * Class RemoveDataObjectJob
  * @package SilverStripe\SearchService\Jobs
  *
- * @property DocumentInterface $document
+ * @property DataObjectDocument $document
  * @property int $timestamp
  */
 class RemoveDataObjectJob extends IndexJob
@@ -52,12 +52,25 @@ class RemoveDataObjectJob extends IndexJob
     public function setup()
     {
         // Set the documents in setup to ensure async
-        $datetime = new DateTime($this->timestamp);
-        $archiveDate = $datetime->format('Y-m-d H:i:s');
+        $datetime = DBField::create_field('Datetime', $this->timestamp);
+        $archiveDate = $datetime->format($datetime->getISOFormat());
         Versioned::withVersionedMode(function () use ($archiveDate) {
             Versioned::reading_archived_date($archiveDate);
-            $this->documents = $this->document->getDependentDocuments();
+
+            // Go back in time to find out what the owners were before unpublish
+            $dependentDocs = $this->document->getDependentDocuments();
+
+            // refetch everything on the live stage
+            Versioned::set_stage(Versioned::LIVE);
+            $this->documents = array_map(function (DataObjectDocument $doc) {
+                return DataObjectDocument::create(
+                    DataObject::get_by_id(
+                        $doc->getSourceClass(),
+                        $doc->getDataObject()->ID
+                    ));
+            }, $dependentDocs);
         });
+
         parent::setup();
     }
 }

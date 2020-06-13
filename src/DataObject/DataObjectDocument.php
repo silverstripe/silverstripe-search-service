@@ -9,7 +9,9 @@ use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
@@ -40,6 +42,7 @@ use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
 use Exception;
 use Serializable;
+use LogicException;
 
 class DataObjectDocument implements
     DocumentInterface,
@@ -202,7 +205,18 @@ class DataObjectDocument implements
     public function toArray(): array
     {
         $pageContentField = $this->config()->get('page_content_field');
-        $dataObject = $this->getDataObject();
+        if ($this->getDataObject()->hasExtension(Versioned::class)) {
+            $dataObject = Versioned::get_one_by_stage(
+                get_class($this->getDataObject()),
+                Versioned::LIVE,
+                ['ID = ?' => $this->getDataObject()->ID]
+            );
+        } else {
+            $dataObject = DataObject::get_by_id(
+                get_class($this->getDataObject()),
+                $this->getDataObject()->ID
+            );
+        }
 
         $toIndex = [];
 
@@ -216,25 +230,60 @@ class DataObjectDocument implements
 
         $dataObject->invokeWithExtensions('onBeforeAttributesFromObject');
 
-        $attributes = new Map(ArrayList::create());
+        $attributes = [];
 
         foreach ($toIndex as $k => $v) {
             $this->getIndexService()->validateField($k);
-            $attributes->push($k, $v);
+            $attributes[$k] = $v;
         }
 
         foreach ($this->getIndexedFields() as $field) {
+            $this->getIndexService()->validateField($field->getSearchFieldName());
             /* @var DBField&DBFieldExtension $dbField */
-            $dbField = $this->toDBField($field);
-            if ($dbField && ($dbField->exists() || $dbField instanceof DBBoolean)) {
+            $dbField = $this->getFieldValue($field);
+            if (!$dbField) {
+                continue;
+            }
+            if (is_array($dbField)) {
+                if (ArrayLib::is_associative($dbField)) {
+                    throw new IndexConfigurationException(sprintf(
+                        'Field "%s" returns an array, but it is associative',
+                        $field->getSearchFieldName()
+                    ));
+                }
+
+                $validated = array_filter($dbField, 'is_scalar');
+
+                if (sizeof($validated) !== sizeof($dbField)) {
+                    throw new IndexConfigurationException(sprintf(
+                        'Field "%s" returns an array, but some of its values are non scalar',
+                        $field->getSearchFieldName()
+                    ));
+                }
+
+                $attributes[$field->getSearchFieldName()] = $dbField;
+                continue;
+
+            } else if ($dbField instanceof ViewableData) {
                 if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
-                    // has-many, many-many, has-one
-                    $this->exportAttributesFromRelationship($field->getSearchFieldName(), $attributes);
-                } else {
+                    throw new IndexConfigurationException(sprintf(
+                        'Field "%s" returns a DataObject or RelationList. To index fields from relationships,
+                        use the "property" node to specify dot notation for the fields you want. For instance,
+                        blogTags: { property: Tags.Title }',
+                        $field->getSearchFieldName()
+                    ));
+                } elseif($dbField instanceof DBField) {
                     $value = $dbField->getSearchValue();
-                    $attributes->push($field->getSearchFieldName(), $value);
+                    $attributes[$field->getSearchFieldName()] = $value;
+                    continue;
                 }
             }
+
+            throw new IndexConfigurationException(sprintf(
+                'Field "%s" returns value that cannot be resolved',
+                $field->getSearchFieldName()
+            ));
+
         }
 
         // DataObject specific customisation
@@ -243,37 +292,7 @@ class DataObjectDocument implements
         // Universal customisation
         $this->extend('updateSearchAttributes', $attributes);
 
-        return $attributes->toArray();
-    }
-
-    /**
-     * Retrieve all the attributes from the related object that we want to add
-     * to this record.
-     *
-     * @param string $relationship
-     * @param Map $attributes
-     */
-    public function exportAttributesFromRelationship($relationship, $attributes): void
-    {
-        $item = $this->getDataObject();
-        try {
-            $data = [];
-
-            /* @var ViewableData $related */
-            $related = $item->{$relationship}();
-
-            if (!$related || !$related->exists()) {
-                return;
-            }
-            $relatedRecords = is_iterable($related) ? $related : [$related];
-            foreach ($relatedRecords as $relatedObj) {
-                $document = DataObjectDocument::create($relatedObj);
-                $data[] = $document->toArray();
-            }
-            $attributes->push($relationship, $data);
-        } catch (Exception $e) {
-            Injector::inst()->create(LoggerInterface::class)->error($e);
-        }
+        return $attributes;
     }
 
     /**
@@ -306,52 +325,122 @@ class DataObjectDocument implements
     }
 
     /**
-     * @param string $fieldName
-     * @return DBField|RelationList|null
+     * @param array $path
+     * @param DataObject|DataList|null $context
+     * @return array
+     * @throws LogicException
      */
-    private function resolveField(string $fieldName)
+    private function parsePath(array $path, $context = null): ?array
     {
-        // First try a match on a field or method
-        $dataObject = $this->getDataObject();
-        $result = $dataObject->obj($fieldName);
+        $subject = $context ?: $this->getDataObject();
+        $nextField = array_shift($path);
+        if ($subject instanceof DataObject) {
+            $result = $subject->obj($nextField);
+            if ($result instanceof DBField) {
+                $dependency = $subject === $this->getDataObject() ? null : $subject;
+                return [$dependency, $result];
+            }
+            return $this->parsePath($path, $result);
+        }
+
+        if ($subject instanceof DataList || $subject instanceof UnsavedRelationList) {
+            $singleton = DataObject::singleton($subject->dataClass());
+            if ($singleton->hasField($nextField)) {
+                $value = $subject->column($nextField);
+                return [$subject, $value];
+            }
+
+            $maybeList = $singleton->obj($nextField);
+            if ($maybeList instanceof RelationList || $maybeList instanceof UnsavedRelationList) {
+                return $this->parsePath($path, $subject->relation($nextField));
+            }
+
+        }
+
+        throw new LogicException(sprintf(
+            'Cannot resolve field %s on list of class %s',
+            $nextField,
+            $subject->dataClass()
+        ));
+    }
+
+    /**
+     * @param string $field
+     * @return ViewableData|null
+     */
+    private function resolveField(string $field): ?ViewableData
+    {
+        $subject = $this->getDataObject();
+        $result = $subject->obj($field);
+
         if ($result && $result instanceof DBField) {
             return $result;
         }
+
         $normalFields = array_merge(
             array_keys(
                 DataObject::getSchema()
-                    ->fieldSpecs($dataObject, DataObjectSchema::DB_ONLY)
+                    ->fieldSpecs($subject, DataObjectSchema::DB_ONLY)
             ),
             array_keys(
-                $dataObject->hasMany()
+                $subject->hasMany()
             ),
             array_keys(
-                $dataObject->manyMany()
+                $subject->manyMany()
             )
         );
 
         $lowercaseFields = array_map('strtolower', $normalFields);
         $lookup = array_combine($lowercaseFields, $normalFields);
-        $fieldName = $lookup[strtolower($fieldName)] ?? null;
+        $fieldName = $lookup[strtolower($field)] ?? null;
 
-        return $fieldName ? $dataObject->obj($fieldName) : null;
+        return $fieldName ? $subject->obj($fieldName) : null;
     }
 
     /**
      * @param Field $field
-     * @return DBField|DataObject|SS_List
+     * @return array
      */
-    public function toDBField(Field $field)
+    private function getFieldTuple(Field $field): array
     {
         if ($field->getProperty()) {
-            return $this->getDataObject()->relObject($field->getProperty());
+            $path = explode('.', $field->getProperty());
+            return $this->parsePath($path);
         }
 
-        return $this->resolveField($field->getSearchFieldName());
+        return [null, $this->resolveField($field->getSearchFieldName())];
     }
 
     /**
-     * @return iterable
+     * @param Field $field
+     * @return ViewableData|null
+     */
+    public function getFieldDependency(Field $field): ?ViewableData
+    {
+        $tuple = $this->getFieldTuple($field);
+        if ($tuple) {
+            return $tuple[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Field $field
+     * @return mixed|null
+     */
+    public function getFieldValue(Field $field)
+    {
+        $tuple = $this->getFieldTuple($field);
+        if ($tuple) {
+            return $tuple[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array
      */
     public function getDependentDocuments(): array
     {
@@ -375,10 +464,13 @@ class DataObjectDocument implements
             }
             $chunker = DocumentChunkFetcher::create($fetcher);
             foreach ($fields as $field) {
-                $dbField = $document->toDBField($field);
-                if ($dbField instanceof RelationList || $dbField instanceof UnsavedRelationList) {
+                $dependency = $document->getFieldDependency($field);
+                if (!$dependency) {
+                    continue;
+                }
+                if ($dependency instanceof RelationList || $dependency instanceof UnsavedRelationList) {
                     /* @var RelationList $dbField */
-                    $relatedObj = Injector::inst()->get($dbField->dataClass());
+                    $relatedObj = Injector::inst()->get($dependency->dataClass());
                     if (!$relatedObj instanceof $ownedDataObject) {
                         continue;
                     }
@@ -386,41 +478,41 @@ class DataObjectDocument implements
                     // we can fetch.
                     /* @var DataObjectDocument $candidateDocument */
                     foreach ($chunker->chunk(100) as $candidateDocument) {
-                        $list = $candidateDocument->toDBField($field);
+                        $list = $candidateDocument->getFieldDependency($field);
                         // Singleton returns a list, but record doesn't. Conceivable, but rare.
                         if (!$list || !$list instanceof RelationList) {
                             continue;
                         }
                         // Now test if this record actually appears in the list.
                         if ($list->filter('ID', $ownedDataObject->ID)->exists()) {
-                            $docs[] = $candidateDocument;
+                            $docs[$candidateDocument->getIdentifier()] = $candidateDocument;
                         }
 
                     }
-                } else if ($dbField instanceof DataObject) {
-                    $objectClass = get_class($dbField);
+                } else if ($dependency instanceof DataObject) {
+                    $objectClass = get_class($dependency);
                     if (!$ownedDataObject instanceof $objectClass) {
                         continue;
                     }
                     // Now that we have a static confirmation, test each record.
                     /* @var DataObjectDocument $candidateDocument */
                     foreach ($chunker->chunk(100) as $candidateDocument) {
-                        $relatedObj = $candidateDocument->toDBField($field);
+                        $relatedObj = $candidateDocument->getFieldValue($field);
                         // Singleton returned a dataobject, but this record did not. Rare, but possible.
                         if (!$relatedObj instanceof $objectClass) {
                             continue;
                         }
                         if ($relatedObj->ID == $ownedDataObject->ID) {
-                            $docs[] = $document;
+                            $docs[$document->getIdentifier()] = $document;
                         }
                     }
                 }
             }
         }
+        $dependentDocs = array_values($docs);
+        $this->getDataObject()->invokeWithExtensions('updateSearchDependentDocuments', $dependentDocs);
 
-        $this->getDataObject()->invokeWithExtensions('updateSearchDependentDocuments', $docs);
-
-        return $docs;
+        return $dependentDocs;
     }
 
     /**
@@ -438,6 +530,7 @@ class DataObjectDocument implements
     public function setDataObject(DataObject $dataObject)
     {
         $this->dataObject = $dataObject;
+
         return $this;
     }
 

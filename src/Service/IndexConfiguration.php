@@ -199,6 +199,15 @@ class IndexConfiguration
     }
 
     /**
+     * @param string $class
+     * @return bool
+     */
+    public function isClassIndexed(string $class): bool
+    {
+        return !empty($this->getFieldsForClass($class));
+    }
+
+    /**
      * @param string $index
      * @return array
      */

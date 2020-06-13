@@ -270,6 +270,12 @@ class AppSearchService implements IndexingInterface
      */
     public function validateField(string $field): void
     {
+        if ($field[0] === '_') {
+            throw new IndexConfigurationException(sprintf(
+                'Invalid field name: %s. Fields cannot begin with underscores.',
+                $field
+            ));
+        }
         if (preg_match('/[^a-z0-9_]/', $field)) {
             throw new IndexConfigurationException(sprintf(
                 'Invalid field name: %s. Must contain only alphanumeric characters and underscores.',
