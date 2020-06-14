@@ -31,7 +31,7 @@ class IndexConfiguration
      * @var string
      * @config
      */
-    private static $sync_interval = '2 hours';
+    private static $sync_interval = '5 minutes';
 
     /**
      * @var bool
@@ -52,11 +52,6 @@ class IndexConfiguration
     private static $indexes = [];
 
     /**
-     * @var string|null
-     */
-    private $indexVariant;
-
-    /**
      * @var bool
      * @config
      */
@@ -72,6 +67,12 @@ class IndexConfiguration
      * @config
      */
     private static $source_class_field = 'source_class';
+
+    /**
+     * @var string|null
+     */
+    private $indexVariant;
+
 
     /**
      * @var bool

@@ -5,6 +5,13 @@
 [![Version](http://img.shields.io/packagist/v/silverstripe/silverstripe-search-service.svg?style=flat-square)](https://packagist.org/packages/silverstripe/silverstripe-search-service)
 [![License](http://img.shields.io/packagist/l/silverstripe/silverstripe-search-service.svg?style=flat-square)](LICENSE)
 
+This module for Silverstripe CMS provides a set of abstraction layers that integrate the
+CMS with a search-as-a-service provider, such as Elastic or Algolia. Out of the box, it
+supports indexing DataObjects with Elastic AppSearch, but can be extended to work with
+other sources of content and/or service providers.
+
+This module does not provide any frontend functionality such as UI or querying APIs.
+It only handles indexing.
 
 ## Installation
 
@@ -12,4 +19,12 @@
 composer require "silverstripe/silverstripe-search-service"
 ```
 
+## Requirements
 
+* silverstripe/framework 4.4+
+* silverstripe/versioned
+* symbiote/silverstripe-queuedjobs
+
+## Documentation
+
+See the [developer documentation](docs/en/index.md).
