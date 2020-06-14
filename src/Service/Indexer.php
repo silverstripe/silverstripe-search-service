@@ -30,7 +30,6 @@ class Indexer
      */
     private static $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,
-        'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
     /**
@@ -79,16 +78,17 @@ class Indexer
         int $method = self::METHOD_ADD,
         ?int $batchSize = null
     ) {
-        $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
-        $this->chunks = array_chunk($this->documents, $batchSize);
-        $this->documents = $documents;
+        $this->setConfiguration(IndexConfiguration::singleton());
         $this->setMethod($method);
+        $this->setBatchSize($batchSize ?: $this->getConfiguration()->getBatchSize());
+        $this->setProcessDependencies($this->getConfiguration()->shouldTrackDependencies());
+        $this->setDocuments($documents);
     }
 
     /**
      * @return void
      */
-    public function tick(): void
+    public function processNode(): void
     {
         $remainingChildren = $this->chunks;
         $documents = array_shift($remainingChildren);
@@ -144,9 +144,9 @@ class Indexer
                         }
                     );
                     if (!empty($dependentDocs)) {
-                        $child = Indexer::create($dependentDocs, self::METHOD_ADD, $this->batchSize);
+                        $child = Indexer::create($dependentDocs, self::METHOD_ADD, $this->getBatchSize());
                         while(!$child->finished()) {
-                            $child->tick();
+                            $child->processNode();
                         }
                     }
                 }
@@ -178,6 +178,14 @@ class Indexer
     }
 
     /**
+     * @return int
+     */
+    public function getMethod(): int
+    {
+        return $this->method;
+    }
+
+    /**
      * @param bool $processDependencies
      * @return Indexer
      */
@@ -195,6 +203,14 @@ class Indexer
     {
         $this->batchSize = $batchSize;
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getBatchSize(): int
+    {
+        return $this->batchSize;
     }
 
     /**
@@ -228,9 +244,8 @@ class Indexer
     public function setDocuments(array $documents): Indexer
     {
         $this->documents = $documents;
+        $this->chunks = array_chunk($this->documents, $this->getBatchSize());
         return $this;
     }
-
-
 
 }

@@ -13,8 +13,6 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  * for performance and batching large indexes
  *
  * @property Indexer $indexer
- * @property DocumentInterface[] $documents
- * @property int $method
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -24,16 +22,17 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      * @param DocumentInterface[] $documents
      * @param int $method
      * @param int $batchSize
+     * @param bool $processDependencies
      */
     public function __construct(
         array $documents = [],
         int $method = Indexer::METHOD_ADD,
-        ?int $batchSize = null
+        ?int $batchSize = null,
+        bool $processDependencies = true
     ) {
         parent::__construct();
-        $this->documents = $documents;
-        $this->method = $method;
         $this->indexer = Indexer::create($documents, $method, $batchSize);
+        $this->indexer->setProcessDependencies($processDependencies);
     }
 
     public function setup()
@@ -52,8 +51,8 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     {
         return sprintf(
             'Search service %s %s documents',
-            $this->method === Indexer::METHOD_DELETE ? 'removing' : 'adding',
-            sizeof($this->documents)
+            $this->indexer->getMethod() === Indexer::METHOD_DELETE ? 'removing' : 'adding',
+            sizeof($this->indexer->getDocuments())
         );
     }
 
@@ -75,7 +74,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
             return;
         }
         $this->currentStep++;
-        $this->indexer->tick();
+        $this->indexer->processNode();
     }
 
 }

@@ -22,11 +22,11 @@ class RemoveDataObjectJob extends IndexJob
 {
 
     /**
-     * @param DataObjectDocument $document
+     * @param DataObjectDocument|null $document
      * @param int|null $timestamp
      * @param int|null $batchSize
      */
-    public function __construct(DataObjectDocument $document, int $timestamp = null, ?int $batchSize = null)
+    public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
         $this->timestamp = $timestamp ?: time();

@@ -74,6 +74,12 @@ class IndexConfiguration
     private static $source_class_field = 'source_class';
 
     /**
+     * @var bool
+     * @config
+     */
+    private static $auto_dependency_tracking = true;
+
+    /**
      * IndexConfiguration constructor.
      * @param string|null $indexVariant
      */
@@ -174,6 +180,13 @@ class IndexConfiguration
         return $this->config()->get('source_class_field');
     }
 
+    /**
+     * @return bool
+     */
+    public function shouldTrackDependencies(): bool
+    {
+        return $this->config()->get('auto_dependency_tracking');
+    }
 
     /**
      * @param string $class
