@@ -45,6 +45,12 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 **Note**: Be careful about whimsically changing your schema. AppSearch may need to be fully
 reindexed if you change the data type of a field. 
 
+## More information
+
+* [Usage](usage.md)
+* [Configuration](configuration.md)
+* [Customising and extending](customising.md) 
+* [Overview and Rationale](overview.md)
 
 
 
