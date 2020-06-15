@@ -283,39 +283,35 @@ class IndexConfiguration
 
     /**
      * @param string $class
-     * @return Field[]|null
+     * @return Field[]
      */
     public function getFieldsForClass(string $class): ?array
     {
-        foreach ($this->getIndexes() as $config) {
-            $includedClasses = $config['includeClasses'] ?? [];
-            if (!isset($includedClasses[$class])) {
-                continue;
-            }
-            $spec = $includedClasses[$class];
-            if ($spec === false) {
-                continue;
-            }
-            if (is_array($spec) && !empty($spec)) {
-                $fields = $spec['fields'] ?? [];
-                $fieldObjs = [];
-                foreach ($fields as $searchName => $data) {
-                    if ($data === false) {
-                        continue;
+        $candidate = $class;
+        $fieldObjs = [];
+        while($candidate) {
+            foreach ($this->getIndexes() as $config) {
+                $includedClasses = $config['includeClasses'] ?? [];
+                $spec = $includedClasses[$candidate] ?? null;
+                if (is_array($spec) && !empty($spec)) {
+                    $fields = $spec['fields'] ?? [];
+                    $fieldObjs = [];
+                    foreach ($fields as $searchName => $data) {
+                        if ($data === false) {
+                            continue;
+                        }
+                        $config = (array)$data;
+                        $fieldObjs[$searchName] = new Field(
+                            $searchName,
+                            $config['property'] ?? null,
+                            $config['options'] ?? []
+                        );
                     }
-                    $config = (array) $data;
-                    $fieldObjs[] = new Field(
-                        $searchName,
-                        $config['property'] ?? null,
-                        $config['options'] ?? []
-                    );
                 }
-
-                return $fieldObjs;
+                $candidate = get_parent_class($candidate);
             }
         }
-
-        return null;
+        return $fieldObjs;
     }
 
     public function getFieldsForIndex(string $index): array

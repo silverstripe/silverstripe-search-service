@@ -117,7 +117,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         $indexer = Indexer::create($documents, Indexer::METHOD_ADD, $this->batchSize);
         $indexer->setProcessDependencies(false);
         while (!$indexer->finished()) {
-            $indexer->tick();
+            $indexer->processNode();
         }
 
         $nextOffset = $this->fetchOffset + $this->batchSize;

@@ -3,22 +3,17 @@
 
 namespace SilverStripe\SearchService\DataObject;
 
-use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\ArrayLib;
-use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
-use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\ORM\FieldType\DBField;
-use SilverStripe\ORM\Map;
 use SilverStripe\ORM\RelationList;
-use SilverStripe\ORM\SS_List;
 use SilverStripe\ORM\UnsavedRelationList;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Extensions\DBFieldExtension;
@@ -42,6 +37,7 @@ use SilverStripe\View\ViewableData;
 use Exception;
 use Serializable;
 use LogicException;
+use InvalidArgumentException;
 
 class DataObjectDocument implements
     DocumentInterface,
@@ -521,9 +517,17 @@ class DataObjectDocument implements
     /**
      * @param DataObject&SearchServiceExtension $dataObject
      * @return DataObjectDocument
+     * @throws InvalidArgumentException
      */
     public function setDataObject(DataObject $dataObject)
     {
+        if (!$dataObject->hasExtension(SearchServiceExtension::class)) {
+            throw new InvalidArgumentException(sprintf(
+                'DataObject %s does not have the %s extension',
+                get_class($dataObject),
+                SearchServiceExtension::class
+            ));
+        }
         $this->dataObject = $dataObject;
 
         return $this;
