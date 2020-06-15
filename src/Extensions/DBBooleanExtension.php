@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Extensions;
 
-
 use SilverStripe\Core\Extension;
 
 class DBBooleanExtension extends Extension

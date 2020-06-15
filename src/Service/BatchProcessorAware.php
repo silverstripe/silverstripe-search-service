@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 
 trait BatchProcessorAware
@@ -31,5 +30,4 @@ trait BatchProcessorAware
     {
         return $this->batchProcessor;
     }
-
 }

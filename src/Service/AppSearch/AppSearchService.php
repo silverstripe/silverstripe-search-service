@@ -447,5 +447,4 @@ class AppSearchService implements IndexingInterface
 
         return $indexName;
     }
-
 }

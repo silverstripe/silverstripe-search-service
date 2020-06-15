@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\DataObject;
 
-
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
@@ -263,8 +262,7 @@ class DataObjectDocument implements
 
                 $attributes[$field->getSearchFieldName()] = $dbField;
                 continue;
-
-            } else if ($dbField instanceof ViewableData) {
+            } elseif ($dbField instanceof ViewableData) {
                 if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
                     throw new IndexConfigurationException(sprintf(
                         'Field "%s" returns a DataObject or RelationList. To index fields from relationships,
@@ -272,7 +270,7 @@ class DataObjectDocument implements
                         blogTags: { property: Tags.Title }',
                         $field->getSearchFieldName()
                     ));
-                } elseif($dbField instanceof DBField) {
+                } elseif ($dbField instanceof DBField) {
                     $value = $dbField->getSearchValue();
                     $attributes[$field->getSearchFieldName()] = $value;
                     continue;
@@ -283,7 +281,6 @@ class DataObjectDocument implements
                 'Field "%s" returns value that cannot be resolved',
                 $field->getSearchFieldName()
             ));
-
         }
 
         // DataObject specific customisation
@@ -354,7 +351,6 @@ class DataObjectDocument implements
             if ($maybeList instanceof RelationList || $maybeList instanceof UnsavedRelationList) {
                 return $this->parsePath($path, $subject->relation($nextField));
             }
-
         }
 
         throw new LogicException(sprintf(
@@ -487,9 +483,8 @@ class DataObjectDocument implements
                         if ($list->filter('ID', $ownedDataObject->ID)->exists()) {
                             $docs[$candidateDocument->getIdentifier()] = $candidateDocument;
                         }
-
                     }
-                } else if ($dependency instanceof DataObject) {
+                } elseif ($dependency instanceof DataObject) {
                     $objectClass = get_class($dependency);
                     if (!$ownedDataObject instanceof $objectClass) {
                         continue;
@@ -598,5 +593,4 @@ class DataObjectDocument implements
             $this->markIndexed(true);
         }
     }
-
 }

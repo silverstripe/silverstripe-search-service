@@ -22,5 +22,4 @@ interface DocumentFetcherInterface
      * @return DocumentInterface|null
      */
     public function createDocument(array $data): ?DocumentInterface;
-
 }

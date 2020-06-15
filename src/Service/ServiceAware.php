@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 
@@ -39,6 +38,4 @@ trait ServiceAware
     {
         return Injector::inst()->has(IndexingInterface::class);
     }
-
-
 }

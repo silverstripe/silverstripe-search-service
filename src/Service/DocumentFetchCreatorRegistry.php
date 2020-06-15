@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Injector\InjectorNotFoundException;
@@ -25,7 +24,7 @@ class DocumentFetchCreatorRegistry
      */
     public function __construct(...$fetchCreators)
     {
-        foreach($fetchCreators as $creator) {
+        foreach ($fetchCreators as $creator) {
             $this->addFetchCreator($creator);
         }
     }

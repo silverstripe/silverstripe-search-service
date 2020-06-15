@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 trait RegistryAware
 {
     /**
@@ -28,5 +27,4 @@ trait RegistryAware
         $this->registry = $registry;
         return $this;
     }
-
 }

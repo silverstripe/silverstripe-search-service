@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\DataObject;
 
-
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
@@ -140,5 +139,4 @@ class DataObjectFetcher implements DocumentFetcherInterface
             );
         return $list->limit($limit, $offset);
     }
-
 }

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
-
 interface DocumentRemoveHandler
 {
     const BEFORE_REMOVE = 'before';

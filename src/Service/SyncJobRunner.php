@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use Symbiote\QueuedJobs\Services\QueuedJob;
@@ -33,7 +32,7 @@ class SyncJobRunner
             );
         }
         $job->setup();
-        while(!$job->jobFinished()) {
+        while (!$job->jobFinished()) {
             $job->process();
         }
         if ($job instanceof ChildJobProvider) {

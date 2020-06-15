@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
-
 interface BatchDocumentInterface
 {
     /**
@@ -17,5 +16,4 @@ interface BatchDocumentInterface
      * @return $this
      */
     public function removeDocuments(array $items): BatchDocumentInterface;
-
 }

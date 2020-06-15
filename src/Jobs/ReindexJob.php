@@ -42,7 +42,8 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
      * @param string|null $onlyClass
      * @param int $batchSize
      */
-    public function __construct(?string $onlyClass = null, ?int $batchSize = null) {
+    public function __construct(?string $onlyClass = null, ?int $batchSize = null)
+    {
         parent::__construct();
         $this->onlyClass = $onlyClass;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
@@ -156,5 +157,4 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         $this->registry = $registry;
         return $this;
     }
-
 }

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
-
 interface DocumentAddHandler
 {
     const BEFORE_ADD = 'before';
@@ -15,5 +14,4 @@ interface DocumentAddHandler
      * @return void
      */
     public function onAddToSearchIndexes(string $event): void;
-
 }

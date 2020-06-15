@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Services\AppSearch;
 
-
 use Elastic\AppSearch\Client\ClientBuilder;
 use SilverStripe\Core\Injector\Factory;
 use Exception;

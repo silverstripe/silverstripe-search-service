@@ -52,8 +52,7 @@ class SearchReindex extends BuildTask
         IndexingInterface $searchService,
         IndexConfiguration $config,
         BatchDocumentInterface $batchProcesor
-    )
-    {
+    ) {
         parent::__construct();
         $this->setIndexService($searchService);
         $this->setConfiguration($config);

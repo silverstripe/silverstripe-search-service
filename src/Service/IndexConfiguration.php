@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
@@ -274,7 +273,7 @@ class IndexConfiguration
         $classes = $this->getSearchableClasses();
         $baseClasses = $classes;
         foreach ($classes as $class) {
-            $baseClasses = array_filter($baseClasses, function($possibleParent) use ($class) {
+            $baseClasses = array_filter($baseClasses, function ($possibleParent) use ($class) {
                 return !is_subclass_of($possibleParent, $class);
             });
         }
@@ -329,6 +328,4 @@ class IndexConfiguration
 
         return $fields;
     }
-
-
 }

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use InvalidArgumentException;
@@ -53,5 +52,4 @@ class DocumentChunkFetcher
             $currentChunk++;
         }
     }
-
 }

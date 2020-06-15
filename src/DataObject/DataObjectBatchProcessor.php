@@ -39,6 +39,5 @@ class DataObjectBatchProcessor extends BatchProcessor
         }
 
         return $this;
-
     }
 }

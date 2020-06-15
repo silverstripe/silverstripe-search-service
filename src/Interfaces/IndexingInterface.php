@@ -63,5 +63,4 @@ interface IndexingInterface extends BatchDocumentInterface
      * @throws IndexConfigurationException
      */
     public function validateField(string $field): void;
-
 }

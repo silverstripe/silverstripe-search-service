@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
@@ -65,5 +64,4 @@ class BatchProcessor implements BatchDocumentInterface
             QueuedJobService::singleton()->queueJob($job);
         }
     }
-
 }

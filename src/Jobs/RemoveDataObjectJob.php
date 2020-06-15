@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
-
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
@@ -68,7 +67,8 @@ class RemoveDataObjectJob extends IndexJob
                     DataObject::get_by_id(
                         $doc->getSourceClass(),
                         $doc->getDataObject()->ID
-                    ));
+                    )
+                );
             }, $dependentDocs);
         });
 

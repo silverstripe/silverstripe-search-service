@@ -40,5 +40,4 @@ class SearchConfigure extends BuildTask
         $this->getIndexService()->configure();
         echo 'Done.';
     }
-
 }

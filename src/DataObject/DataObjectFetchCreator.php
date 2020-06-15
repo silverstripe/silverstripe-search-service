@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\DataObject;
 
-
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Interfaces\DocumentFetchCreatorInterface;

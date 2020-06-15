@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tasks;
 
-
 use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
@@ -49,8 +48,7 @@ class SearchClearIndex extends BuildTask
         IndexingInterface $searchService,
         IndexConfiguration $config,
         BatchDocumentInterface $batchProcesor
-    )
-    {
+    ) {
         parent::__construct();
         $this->setIndexService($searchService);
         $this->setConfiguration($config);
@@ -73,5 +71,4 @@ class SearchClearIndex extends BuildTask
         $job = ClearIndexJob::create($targetIndex);
         SyncJobRunner::singleton()->runJob($job);
     }
-
 }

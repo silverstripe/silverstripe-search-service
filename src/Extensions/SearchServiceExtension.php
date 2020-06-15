@@ -139,5 +139,4 @@ class SearchServiceExtension extends DataExtension
             $this->owner->removeFromIndexes();
         }
     }
-
 }

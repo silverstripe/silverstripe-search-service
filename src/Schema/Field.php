@@ -87,6 +87,4 @@ class Field
         $this->options[$key] = $value;
         return $this;
     }
-
-
 }

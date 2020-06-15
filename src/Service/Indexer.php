@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Service;
 
-
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
@@ -145,7 +144,7 @@ class Indexer
                     );
                     if (!empty($dependentDocs)) {
                         $child = Indexer::create($dependentDocs, self::METHOD_ADD, $this->getBatchSize());
-                        while(!$child->finished()) {
+                        while (!$child->finished()) {
                             $child->processNode();
                         }
                     }
@@ -247,5 +246,4 @@ class Indexer
         $this->chunks = array_chunk($this->documents, $this->getBatchSize());
         return $this;
     }
-
 }

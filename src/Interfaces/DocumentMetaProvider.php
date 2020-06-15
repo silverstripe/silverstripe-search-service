@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Interfaces;
 
-
 interface DocumentMetaProvider
 {
     /**
