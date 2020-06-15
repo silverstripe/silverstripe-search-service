@@ -193,7 +193,9 @@ step. The build step is invoked during `dev/build` or explicitly in the `SearchC
 
 Configuration can include operations like creating/removing indexes, defining a schema, and more.
 
-This method should rely heavily on the `IndexConfiguration` class to guide its operations.
+This method should rely heavily on the `IndexConfiguration` class to guide its operations, along
+with the `getOptions()` method of the `Field` objects, which can be used for adding arbitrary 
+configuration data to the index (e.g. data types).
 
 ```php
 public function configure(): void
