@@ -7,6 +7,7 @@ namespace SilverStripe\SearchService\Service;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Schema\Field;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 
@@ -210,6 +211,15 @@ class IndexConfiguration
         }
 
         return $matches;
+    }
+
+    /**
+     * @param DocumentInterface $doc
+     * @return array
+     */
+    public function getIndexesForDocument(DocumentInterface $doc): array
+    {
+        return $this->getIndexesForClassName($doc->getSourceClass());
     }
 
     /**

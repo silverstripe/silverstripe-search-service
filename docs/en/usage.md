@@ -107,6 +107,20 @@ and return an array of `DataObjectDocument` instances. Otherwise, you can turn o
 `auto_dependency_tracking` in the `IndexConfiguration` class and allow the document
 to compute its own dependencies through ORM introspection and querying.
 
+## The Indexer service
+
+For simplicity, all indexing requests, whether a single record from a CMS save or thousands
+of records as part of a bulk indexing task or job, get routed through the `Indexer` service. 
+This class is responsible for batching documents, removing those which should not be in the index,
+and tracking dependencies, if enabled.
+
+The class is architected similarly to a queued job. It has a `processNode()` method where the work is
+done for a given set of documents, along with a `finished()` method that returns true when the task
+is complete. 
+
+The `Indexer` class spawns new instances of itself for recursive patterns such as dependencies,
+so the number of nodes it must process is non-deterministic.
+
 ## More information
 
 * [Configuration](configuration.md)

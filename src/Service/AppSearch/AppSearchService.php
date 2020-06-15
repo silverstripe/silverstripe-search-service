@@ -12,6 +12,7 @@ use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use InvalidArgumentException;
 use Exception;
 use SilverStripe\SearchService\Schema\Field;
+use SilverStripe\SearchService\Service\BatchProcessor;
 use SilverStripe\SearchService\Service\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\IndexConfiguration;
@@ -79,9 +80,9 @@ class AppSearchService implements IndexingInterface
                 continue;
             }
 
-            $fields = $this->getBuilder()->export($item);
-
-            foreach (array_keys($item->getIndexes()) as $indexName) {
+            $fields = $this->getBuilder()->toArray($item);
+            $indexes = $this->getConfiguration()->getIndexesForDocument($item);
+            foreach (array_keys($indexes) as $indexName) {
                 if (!isset($documentMap[$indexName])) {
                     $documentMap[$indexName] = [];
                 }
@@ -118,14 +119,28 @@ class AppSearchService implements IndexingInterface
      */
     public function removeDocuments(array $items): BatchDocumentInterface
     {
-        $indexes = array_keys($this->getConfiguration()->getIndexes());
-        $ids = array_map(function (DocumentInterface $item) {
-            return $item->getIdentifier();
-        }, $items);
-        foreach ($indexes as $indexName) {
+        $documentMap = [];
+        /* @var DocumentInterface $item */
+        foreach ($items as $item) {
+            if (!$item instanceof DocumentInterface) {
+                throw new InvalidArgumentException(sprintf(
+                    '%s not passed an instance of %s',
+                    __FUNCTION__,
+                    DocumentInterface::class
+                ));
+            }
+            $indexes = $this->getConfiguration()->getIndexesForDocument($item);
+            foreach (array_keys($indexes) as $indexName) {
+                if (!isset($documentMap[$indexName])) {
+                    $documentMap[$indexName] = [];
+                }
+                $documentMap[$indexName][] = $item->getIdentifier();
+            }
+        }
+        foreach ($documentMap as $indexName => $idsToRemove) {
             $result = $this->getClient()->deleteDocuments(
                 static::environmentizeIndex($indexName),
-                $ids
+                $idsToRemove
             );
             $this->handleError($result);
         }
@@ -161,7 +176,7 @@ class AppSearchService implements IndexingInterface
             $this->handleError($response);
             if ($response) {
                 foreach ($response['results'] as $data) {
-                    $document = $this->getBuilder()->import($data);
+                    $document = $this->getBuilder()->fromArray($data);
                     if ($document) {
                         $docs[$document->getIdentifier()] = $document;
                     }
@@ -191,7 +206,7 @@ class AppSearchService implements IndexingInterface
             if ($response) {
                 $documents = [];
                 foreach ($response['results'] as $data) {
-                    $document = $this->getBuilder()->import($data);
+                    $document = $this->getBuilder()->fromArray($data);
                     if ($document) {
                         $documents[] = $document;
                     }
@@ -423,7 +438,7 @@ class AppSearchService implements IndexingInterface
      * @param string $indexName
      * @return string
      */
-    public static function environmentizeIndex(string $indexName)
+    public static function environmentizeIndex(string $indexName): string
     {
         $variant = IndexConfiguration::singleton()->getIndexVariant();
         if ($variant) {

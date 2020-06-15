@@ -24,11 +24,6 @@ interface DocumentInterface
     /**
      * @return array
      */
-    public function getIndexes(): array;
-
-    /**
-     * @return array
-     */
     public function toArray(): array;
 
     /**

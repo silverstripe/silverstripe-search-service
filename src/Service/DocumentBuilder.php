@@ -28,7 +28,7 @@ class DocumentBuilder
      * @param DocumentInterface $document
      * @return array
      */
-    public function export(DocumentInterface $document): array
+    public function toArray(DocumentInterface $document): array
     {
         $idField = $this->getConfiguration()->getIDField();
         $sourceClassField = $this->getConfiguration()->getSourceClassField();
@@ -50,7 +50,7 @@ class DocumentBuilder
      * @param array $data
      * @return DocumentInterface|null
      */
-    public function import(array $data): ?DocumentInterface
+    public function fromArray(array $data): ?DocumentInterface
     {
         $sourceClassField = $this->getConfiguration()->getSourceClassField();
         $sourceClass = $data[$sourceClassField] ?? null;
