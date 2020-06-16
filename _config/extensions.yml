@@ -10,6 +10,9 @@ SilverStripe\ORM\FieldType\DBDate:
 SilverStripe\ORM\FieldType\DBBoolean:
   extensions:
     - SilverStripe\SearchService\Extensions\DBBooleanExtension
+Symbiote\QueuedJobs\Controllers\QueuedJobsAdmin:
+  extensions:
+    - SilverStripe\SearchService\Extensions\QueuedJobsAdminExtension
 ---
 Name: 'silverstripe-search-service-cms'
 Only:
