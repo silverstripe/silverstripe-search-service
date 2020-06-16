@@ -201,14 +201,13 @@ class DataObjectDocument implements
     {
         $pageContentField = $this->config()->get('page_content_field');
         if ($this->getDataObject()->hasExtension(Versioned::class)) {
-            $dataObject = Versioned::get_one_by_stage(
-                get_class($this->getDataObject()),
-                Versioned::LIVE,
-                ['ID = ?' => $this->getDataObject()->ID]
-            );
+            $dataObject = Versioned::withVersionedMode(function () {
+                Versioned::set_stage(Versioned::LIVE);
+                return DataObject::get_by_id($this->getSourceClass(), $this->getDataObject()->ID);
+            });
         } else {
             $dataObject = DataObject::get_by_id(
-                get_class($this->getDataObject()),
+                $this->getSourceClass(),
                 $this->getDataObject()->ID
             );
         }
