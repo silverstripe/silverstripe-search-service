@@ -82,6 +82,19 @@ class AppSearchService implements IndexingInterface
             }
 
             $fields = $this->getBuilder()->toArray($item);
+
+            $documentMaxSize = $this->getConfiguration()->getDocumentMaxSize();
+            if ($documentMaxSize  && strlen(serialize($fields)) >= $documentMaxSize) {
+                trigger_error(sprintf(
+                    'Document title: %s, Document class: %s, Document ID %s: exceeds maximum allowed document size of %s bytes',
+                    $fields['title'],
+                    $fields['source_class'],
+                    $fields['record_id'],
+                    $documentMaxSize
+                ), E_USER_WARNING);
+                continue;
+            }
+
             $indexes = $this->getConfiguration()->getIndexesForDocument($item);
             foreach (array_keys($indexes) as $indexName) {
                 if (!isset($documentMap[$indexName])) {

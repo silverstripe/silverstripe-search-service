@@ -69,10 +69,15 @@ class IndexConfiguration
     private static $source_class_field = 'source_class';
 
     /**
+     * @var int|null
+     * @config
+     */
+    private static $document_max_size;
+
+    /**
      * @var string|null
      */
     private $indexVariant;
-
 
     /**
      * @var bool
@@ -187,6 +192,14 @@ class IndexConfiguration
     public function shouldTrackDependencies(): bool
     {
         return $this->config()->get('auto_dependency_tracking');
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getDocumentMaxSize(): ?int
+    {
+        return $this->config()->get('document_max_size');
     }
 
     /**
