@@ -2,6 +2,7 @@
 namespace SilverStripe\SearchService\DataObject;
 
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -27,7 +28,7 @@ class DataObjectBatchProcessor extends BatchProcessor
      */
     public function removeDocuments(array $documents): BatchDocumentInterface
     {
-        $timestamp = time() - $this->config()->get('buffer_seconds');
+        $timestamp = DBDatetime::now()->getTimestamp() - $this->config()->get('buffer_seconds');
 
         // Remove the dataobjects, ignore dependencies
         $job = IndexJob::create($documents, Indexer::METHOD_DELETE, null, false);

@@ -1,7 +1,9 @@
 <?php
 
 
-namespace SilverStripe\SearchService\Service;
+namespace SilverStripe\SearchService\Service\Traits;
+
+use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 
 trait RegistryAware
 {

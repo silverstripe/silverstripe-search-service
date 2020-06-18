@@ -2,28 +2,17 @@
 
 namespace SilverStripe\SearchService\Tasks;
 
-use Exception;
-use Psr\Log\LoggerInterface;
-use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
-use SilverStripe\Dev\Debug;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
-use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
-use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Jobs\ReindexJob;
-use SilverStripe\SearchService\Service\BatchProcessorAware;
-use SilverStripe\SearchService\Service\ConfigurationAware;
-use SilverStripe\SearchService\Service\DocumentChunkFetcher;
-use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
+use SilverStripe\SearchService\Service\Traits\BatchProcessorAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-use SilverStripe\SearchService\Service\ServiceAware;
-use InvalidArgumentException;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\SearchService\Service\SyncJobRunner;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class SearchReindex extends BuildTask
 {

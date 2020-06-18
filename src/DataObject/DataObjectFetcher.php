@@ -6,17 +6,15 @@ namespace SilverStripe\SearchService\DataObject;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
-use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-use SilverStripe\Versioned\Versioned;
 use InvalidArgumentException;
 
 class DataObjectFetcher implements DocumentFetcherInterface
@@ -25,17 +23,6 @@ class DataObjectFetcher implements DocumentFetcherInterface
     use Configurable;
     use Injectable;
     use ConfigurationAware;
-
-    /**
-     * @config
-     */
-    private static $attributes_blacklisted = [
-        'ID',
-        'Title',
-        'ClassName',
-        'LastEdited',
-        'Created'
-    ];
 
     /**
      * @var string

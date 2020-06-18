@@ -34,8 +34,8 @@
   },
   "autoload": {
       "psr-4": {
-          "Silverstripe\\SearchService\\": "src/",
-          "Silverstripe\\SearchService\\Tests\\": "tests/"
+          "SilverStripe\\SearchService\\": "src/",
+          "SilverStripe\\SearchService\\Tests\\": "tests/"
       }
   },
   "prefer-stable": true,

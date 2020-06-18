@@ -69,11 +69,10 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
-        if ($this->indexer->finished()) {
-            $this->isComplete = true;
-            return;
-        }
         $this->currentStep++;
         $this->indexer->processNode();
+        if ($this->indexer->finished()) {
+            $this->isComplete = true;
+        }
     }
 }

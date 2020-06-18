@@ -6,7 +6,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
-use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 
 /**
  * Syncs index settings to a search service.

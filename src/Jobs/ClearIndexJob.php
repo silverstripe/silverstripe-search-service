@@ -7,9 +7,11 @@ use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
+use RuntimeException;
+use InvalidArgumentException;
 
 /**
  * Class ClearIndexJob
@@ -44,6 +46,9 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         $this->indexName = $indexName;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
         $this->batchOffset = 0;
+        if ($this->batchSize < 1) {
+            throw new InvalidArgumentException('Batch size must be greater than 0');
+        }
     }
 
     /**
@@ -68,16 +73,23 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
     {
         $docs = $this->getIndexService()->listDocuments(
             $this->indexName,
-            $this->batchSize,
-            $this->batchOffset
+            $this->batchSize
         );
         if (!empty($docs)) {
             $this->getIndexService()->removeDocuments($docs);
         }
-        $this->batchOffset += $this->batchSize;
-        if ($this->batchOffset > $this->totalCount) {
+        $total = $this->getIndexService()->getDocumentTotal($this->indexName);
+        if ($total === 0) {
             $this->isComplete = true;
+            return;
         }
         $this->currentStep++;
+
+        if ($this->currentStep > $this->totalSteps) {
+            throw new RuntimeException(sprintf(
+                'ClearIndexJob was unable to delete all documents. Finished all steps and document total is still %s',
+                $total
+            ));
+        }
     }
 }

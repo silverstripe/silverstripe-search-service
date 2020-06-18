@@ -13,25 +13,25 @@ interface IndexingInterface extends BatchDocumentInterface
      * @return $this
      * @throws IndexingServiceException
      */
-    public function addDocument(DocumentInterface $item): self;
+    public function addDocument(DocumentInterface $item): IndexingInterface;
 
     /**
      * @param DocumentInterface $doc
      * @return $this
      * @throws IndexingServiceException
      */
-    public function removeDocument(DocumentInterface $doc): self;
+    public function removeDocument(DocumentInterface $doc): IndexingInterface;
 
     /**
      * @param string $id
-     * @return array|null
+     * @return DocumentInterface
      * @throws IndexingServiceException
      */
-    public function getDocument(string $id): ?array;
+    public function getDocument(string $id): ?DocumentInterface;
 
     /**
      * @param array $ids
-     * @return array
+     * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
     public function getDocuments(array $ids): array;

@@ -9,15 +9,14 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DB;
 use SilverStripe\SearchService\DataObject\DataObjectBatchProcessor;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
-use SilverStripe\SearchService\Service\BatchProcessorAware;
-use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\BatchProcessorAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\Versioned\Versioned;
 
 /**
@@ -32,12 +31,6 @@ class SearchServiceExtension extends DataExtension
     use ServiceAware;
     use ConfigurationAware;
     use BatchProcessorAware;
-
-    /**
-     * @var bool
-     * @config
-     */
-    private static $enable_indexer = true;
 
     /**
      * @var array

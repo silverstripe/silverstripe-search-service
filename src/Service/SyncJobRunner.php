@@ -18,10 +18,6 @@ class SyncJobRunner
      */
     public function runJob(QueuedJob $job, bool $verbose = true, $level = 0)
     {
-        if ($job instanceof ChildJobProvider) {
-            $job->setDeferChildJobs(true);
-        }
-
         if ($verbose) {
             echo sprintf(
                 '%sRunning%sjob %s%s',
@@ -34,22 +30,6 @@ class SyncJobRunner
         $job->setup();
         while (!$job->jobFinished()) {
             $job->process();
-        }
-        if ($job instanceof ChildJobProvider) {
-            $childJobs = $job->getChildJobs();
-            if (!empty($childJobs)) {
-                if ($verbose) {
-                    echo sprintf(
-                        '%s%s child jobs created%s',
-                        str_repeat('  ', $level),
-                        count($childJobs),
-                        PHP_EOL
-                    );
-                }
-                foreach ($job->getChildJobs() as $childJob) {
-                    $this->runJob($childJob, $verbose, $level + 1);
-                }
-            }
         }
     }
 }

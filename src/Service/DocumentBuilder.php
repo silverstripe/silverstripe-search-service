@@ -6,6 +6,8 @@ namespace SilverStripe\SearchService\Service;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\RegistryAware;
 
 class DocumentBuilder
 {

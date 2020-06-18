@@ -11,6 +11,8 @@ use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use InvalidArgumentException;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 
 class Indexer
 {
@@ -200,6 +202,9 @@ class Indexer
      */
     public function setBatchSize(int $batchSize): Indexer
     {
+        if ($batchSize < 1) {
+            throw new InvalidArgumentException('Batch size must be greater than 0');
+        }
         $this->batchSize = $batchSize;
         return $this;
     }

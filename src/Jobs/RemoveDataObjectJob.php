@@ -4,6 +4,7 @@
 namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Service\Indexer;
@@ -28,7 +29,7 @@ class RemoveDataObjectJob extends IndexJob
     public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
-        $this->timestamp = $timestamp ?: time();
+        $this->timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
         $this->document = $document;
     }
 

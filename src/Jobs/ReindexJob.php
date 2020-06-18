@@ -3,22 +3,22 @@
 namespace SilverStripe\SearchService\Jobs;
 
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\ORM\ValidationException;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
-use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
+use InvalidArgumentException;
 
 /**
  * @property DocumentFetcherInterface[] $fetchers
  * @property int $fetchIndex
  * @property int $fetchOffset
  * @property int $batchSize
- * @property string|null $onlyClass
+ * @property array $onlyClasses
  */
 class ReindexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -39,14 +39,17 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     private $registry;
 
     /**
-     * @param string|null $onlyClass
+     * @param array $onlyClasses
      * @param int $batchSize
      */
-    public function __construct(?string $onlyClass = null, ?int $batchSize = null)
+    public function __construct(?array $onlyClasses = [], ?int $batchSize = null)
     {
         parent::__construct();
-        $this->onlyClass = $onlyClass;
+        $this->onlyClasses = $onlyClasses;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
+        if ($this->batchSize < 1) {
+            throw new InvalidArgumentException('Batch size must be greater than 0');
+        }
     }
 
     /**
@@ -57,8 +60,8 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     public function getTitle()
     {
         $title = 'Search service reindex all documents';
-        if ($this->onlyClass) {
-            $title .= ' of class ' . $this->onlyClass;
+        if (!empty($this->onlyClasses)) {
+            $title .= ' of class ' . implode(',', $this->onlyClasses);
         }
 
         return $title;
@@ -76,7 +79,9 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     {
         Versioned::set_stage(Versioned::LIVE);
         $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
-        $classes = $this->onlyClass ? [$this->onlyClass] : $this->getConfiguration()->getSearchableBaseClasses();
+        $classes = count($this->onlyClasses) ?
+            $this->onlyClasses :
+            $this->getConfiguration()->getSearchableBaseClasses();
 
         /* @var DocumentFetcherInterface[] $fetchers */
         $fetchers = [];

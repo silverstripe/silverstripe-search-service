@@ -6,6 +6,7 @@ SilverStripe\Core\Injector\Injector:
     class: SilverStripe\SearchService\Service\BatchProcessor
     constructor:
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
+
   SilverStripe\SearchService\Interfaces\BatchDocumentInterface.dataobject:
     class: SilverStripe\SearchService\DataObject\DataObjectBatchProcessor
     constructor:
@@ -32,10 +33,6 @@ SilverStripe\Core\Injector\Injector:
       indexService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
       batchProcessor: '%$SilverStripe\SearchService\Interfaces\BatchDocumentInterface.default'
-
-  SilverStripe\SearchService\Tasks\SearchInspect:
-    constructor:
-      indexService: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
 
   SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry:
     constructor:

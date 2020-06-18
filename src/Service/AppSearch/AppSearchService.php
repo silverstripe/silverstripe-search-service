@@ -4,6 +4,7 @@ namespace SilverStripe\SearchService\Services\AppSearch;
 
 use Elastic\AppSearch\Client\Client;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
@@ -12,8 +13,7 @@ use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use InvalidArgumentException;
 use Exception;
 use SilverStripe\SearchService\Schema\Field;
-use SilverStripe\SearchService\Service\BatchProcessor;
-use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 
@@ -21,6 +21,7 @@ class AppSearchService implements IndexingInterface
 {
     use Configurable;
     use ConfigurationAware;
+    use Injectable;
 
     const DEFAULT_FIELD_TYPE = 'text';
 
@@ -150,19 +151,19 @@ class AppSearchService implements IndexingInterface
 
     /**
      * @param string $id
-     * @return array|null
+     * @return DocumentInterface|null
      * @throws IndexingServiceException
      */
-    public function getDocument(string $id): ?array
+    public function getDocument(string $id): ?DocumentInterface
     {
         $result = $this->getDocuments([$id]);
 
-        return $result[$id] ?? null;
+        return $result[0] ?? null;
     }
 
     /**
      * @param array $ids
-     * @return array
+     * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
     public function getDocuments(array $ids): array
@@ -267,6 +268,13 @@ class AppSearchService implements IndexingInterface
                     continue;
                 }
                 if ($definedType !== $type) {
+                    $needsUpdate = true;
+                    break;
+                }
+            }
+            foreach ($definedSchema as $fieldName => $type) {
+                $existingType = $result[$fieldName] ?? null;
+                if (!$existingType) {
                     $needsUpdate = true;
                     break;
                 }

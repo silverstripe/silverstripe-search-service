@@ -12,6 +12,7 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\DB;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\ORM\UnsavedRelationList;
@@ -25,12 +26,12 @@ use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Schema\Field;
-use SilverStripe\SearchService\Service\ConfigurationAware;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentChunkFetcher;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
-use SilverStripe\SearchService\Service\ServiceAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
@@ -163,9 +164,9 @@ class DataObjectDocument implements
         $table = $schema->tableForField($this->getDataObject()->ClassName, 'SearchIndexed');
 
         if ($table) {
-            $newValue = $isDeleted ? 'null' : 'NOW()';
+            $newValue = $isDeleted ? 'null' : "'" . DBDatetime::now()->Rfc2822() . "'";
             DB::query(sprintf(
-                'UPDATE %s SET SearchIndexed = %s WHERE ID = %s',
+                "UPDATE %s SET SearchIndexed = %s WHERE ID = %s",
                 $table,
                 $newValue,
                 $this->getDataObject()->ID
@@ -317,92 +318,6 @@ class DataObjectDocument implements
     }
 
     /**
-     * @param array $path
-     * @param DataObject|DataList|null $context
-     * @return array
-     * @throws LogicException
-     */
-    private function parsePath(array $path, $context = null): ?array
-    {
-        $subject = $context ?: $this->getDataObject();
-        $nextField = array_shift($path);
-        if ($subject instanceof DataObject) {
-            $result = $subject->obj($nextField);
-            if ($result instanceof DBField) {
-                $dependency = $subject === $this->getDataObject() ? null : $subject;
-                return [$dependency, $result];
-            }
-            return $this->parsePath($path, $result);
-        }
-
-        if ($subject instanceof DataList || $subject instanceof UnsavedRelationList) {
-            $singleton = DataObject::singleton($subject->dataClass());
-            if ($singleton->hasField($nextField)) {
-                $value = $subject->column($nextField);
-                return [$subject, $value];
-            }
-
-            $maybeList = $singleton->obj($nextField);
-            if ($maybeList instanceof RelationList || $maybeList instanceof UnsavedRelationList) {
-                return $this->parsePath($path, $subject->relation($nextField));
-            }
-        }
-
-        throw new LogicException(sprintf(
-            'Cannot resolve field %s on list of class %s',
-            $nextField,
-            $subject->dataClass()
-        ));
-    }
-
-    /**
-     * @param string $field
-     * @return ViewableData|null
-     */
-    private function resolveField(string $field): ?ViewableData
-    {
-        $subject = $this->getDataObject();
-        $result = $subject->obj($field);
-
-        if ($result && $result instanceof DBField) {
-            return $result;
-        }
-
-        $normalFields = array_merge(
-            array_keys(
-                DataObject::getSchema()
-                    ->fieldSpecs($subject, DataObjectSchema::DB_ONLY)
-            ),
-            array_keys(
-                $subject->hasMany()
-            ),
-            array_keys(
-                $subject->manyMany()
-            )
-        );
-
-        $lowercaseFields = array_map('strtolower', $normalFields);
-        $lookup = array_combine($lowercaseFields, $normalFields);
-        $fieldName = $lookup[strtolower($field)] ?? null;
-
-        return $fieldName ? $subject->obj($fieldName) : null;
-    }
-
-    /**
-     * @param Field $field
-     * @return array
-     */
-    private function getFieldTuple(Field $field): array
-    {
-        if ($field->getProperty()) {
-            $path = explode('.', $field->getProperty());
-            return $this->parsePath($path);
-        }
-
-        return [null, $this->resolveField($field->getSearchFieldName())];
-    }
-
-    /**
      * @param Field $field
      * @return ViewableData|null
      */
@@ -549,6 +464,95 @@ class DataObjectDocument implements
     public function getPageCrawler(): ?PageCrawler
     {
         return $this->pageCrawler;
+    }
+
+    /**
+     * @param array $path
+     * @param DataObject|DataList|null $context
+     * @return array
+     * @throws LogicException
+     */
+    private function parsePath(array $path, $context = null): ?array
+    {
+        $subject = $context ?: $this->getDataObject();
+        $nextField = array_shift($path);
+        if ($subject instanceof DataObject) {
+            $result = $subject->obj($nextField);
+            if ($result instanceof DBField) {
+                $dependency = $subject === $this->getDataObject() ? null : $subject;
+                return [$dependency, $result];
+            }
+            return $this->parsePath($path, $result);
+        }
+
+        if ($subject instanceof DataList || $subject instanceof UnsavedRelationList) {
+            if (!$nextField) {
+                return [$subject, $subject];
+            }
+            $singleton = DataObject::singleton($subject->dataClass());
+            if ($singleton->hasField($nextField)) {
+                $value = $subject->column($nextField);
+                return [$subject, $value];
+            }
+
+            $maybeList = $singleton->obj($nextField);
+            if ($maybeList instanceof RelationList || $maybeList instanceof UnsavedRelationList) {
+                return $this->parsePath($path, $subject->relation($nextField));
+            }
+        }
+
+        throw new LogicException(sprintf(
+            'Cannot resolve field %s on list of class %s',
+            $nextField,
+            $subject->dataClass()
+        ));
+    }
+
+    /**
+     * @param string $field
+     * @return ViewableData|null
+     */
+    private function resolveField(string $field): ?ViewableData
+    {
+        $subject = $this->getDataObject();
+        $result = $subject->obj($field);
+
+        if ($result && $result instanceof DBField) {
+            return $result;
+        }
+
+        $normalFields = array_merge(
+            array_keys(
+                DataObject::getSchema()
+                    ->fieldSpecs($subject, DataObjectSchema::DB_ONLY)
+            ),
+            array_keys(
+                $subject->hasMany()
+            ),
+            array_keys(
+                $subject->manyMany()
+            )
+        );
+
+        $lowercaseFields = array_map('strtolower', $normalFields);
+        $lookup = array_combine($lowercaseFields, $normalFields);
+        $fieldName = $lookup[strtolower($field)] ?? null;
+
+        return $fieldName ? $subject->obj($fieldName) : null;
+    }
+
+    /**
+     * @param Field $field
+     * @return array
+     */
+    private function getFieldTuple(Field $field): array
+    {
+        if ($field->getProperty()) {
+            $path = explode('.', $field->getProperty());
+            return $this->parsePath($path);
+        }
+
+        return [null, $this->resolveField($field->getSearchFieldName())];
     }
 
     public function serialize(): ?string

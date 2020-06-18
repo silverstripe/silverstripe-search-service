@@ -1,0 +1,45 @@
+SilverStripe\SearchService\Tests\Fake\TagFake:
+  one:
+    Title: Tag one
+  two:
+    Title: Tag two
+  three:
+    Title: Tag three
+
+SilverStripe\SearchService\Tests\Fake\ImageFake:
+  one:
+    URL: '/image-one/'
+    Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.two,=>SilverStripe\SearchService\Tests\Fake\TagFake.three
+  two:
+    URL: '/image-two/'
+    Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.one,=>SilverStripe\SearchService\Tests\Fake\TagFake.two
+
+SilverStripe\Security\Member:
+  one:
+    FirstName: member-one-first
+    Surname: member-one-last
+  two:
+    FirstName: member-two-first
+    Surname: member-two-last
+  three:
+    FirstName: member-three-first
+    Surname: member-three-last
+
+SilverStripe\SearchService\Tests\Fake\DataObjectFake:
+  one:
+    Title: Dataobject one
+    Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.one,=>SilverStripe\SearchService\Tests\Fake\TagFake.two
+    Member: =>SilverStripe\Security\Member.one
+    Images: =>SilverStripe\SearchService\Tests\Fake\ImageFake.one
+    Sort: 1
+  two:
+    Title: Dataobject two
+    Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.two,=>SilverStripe\SearchService\Tests\Fake\TagFake.three
+    Member: =>SilverStripe\Security\Member.two
+    Images: =>SilverStripe\SearchService\Tests\Fake\ImageFake.two
+    Sort: 2
+  three:
+    Title: Dataobject three
+    Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.one
+    Member: =>SilverStripe\Security\Member.three
+    Sort: 3
