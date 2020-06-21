@@ -83,9 +83,9 @@ class AppSearchService implements IndexingInterface
 
             $fields = $this->getBuilder()->toArray($item);
 
-            $documentMaxSize = $this->getConfiguration()->getDocumentMaxSize();
-            if ($documentMaxSize  && strlen(serialize($fields)) >= $documentMaxSize) {
-                trigger_error(sprintf(
+            $documentMaxSize = $this->getMaxDocumentSize();
+            if ($documentMaxSize  && strlen(json_encode($fields)) >= $documentMaxSize) {
+                throw new IndexingServiceException(sprintf(
                     'Document title: %s, Document class: %s, Document ID %s: exceeds maximum allowed document size of %s bytes',
                     $fields['title'],
                     $fields['source_class'],
@@ -160,6 +160,14 @@ class AppSearchService implements IndexingInterface
         }
 
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxDocumentSize(): int
+    {
+        return $this->getConfiguration()->get('max_document_size');
     }
 
     /**

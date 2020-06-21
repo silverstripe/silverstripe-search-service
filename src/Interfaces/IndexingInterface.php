@@ -7,7 +7,6 @@ use SilverStripe\SearchService\Exception\IndexingServiceException;
 
 interface IndexingInterface extends BatchDocumentInterface
 {
-
     /**
      * @param DocumentInterface $item
      * @return $this
@@ -63,4 +62,9 @@ interface IndexingInterface extends BatchDocumentInterface
      * @throws IndexConfigurationException
      */
     public function validateField(string $field): void;
+
+    /**
+     * @return int
+     */
+    public function getMaxDocumentSize(): int;
 }

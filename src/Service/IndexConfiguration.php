@@ -69,10 +69,10 @@ class IndexConfiguration
     private static $source_class_field = 'source_class';
 
     /**
-     * @var int|null
+     * @var int
      * @config
      */
-    private static $document_max_size;
+    private static $max_document_size = 102400;
 
     /**
      * @var string|null
@@ -197,9 +197,9 @@ class IndexConfiguration
     /**
      * @return int|null
      */
-    public function getDocumentMaxSize(): ?int
+    public function getMaxDocumentSize(): ?int
     {
-        return $this->config()->get('document_max_size');
+        return $this->config()->get('max_document_size');
     }
 
     /**
