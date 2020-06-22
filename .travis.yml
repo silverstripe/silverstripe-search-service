@@ -5,6 +5,8 @@ dist: trusty
 env:
   global:
     - COMPOSER_ROOT_VERSION=2.x-dev
+    - APP_SEARCH_API_KEY='test'
+    - APP_SEARCH_ENDPOINT='test'
 
 matrix:
   include:
