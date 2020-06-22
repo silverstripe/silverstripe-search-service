@@ -2,8 +2,6 @@
 
 namespace SilverStripe\SearchService\Tests\DataObject;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\Control\Controller;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\DataObject\DataObjectFetcher;

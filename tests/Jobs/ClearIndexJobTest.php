@@ -7,9 +7,6 @@ use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
-
 class ClearIndexJobTest extends SearchServiceTest
 {
     protected static $extra_dataobjects = [

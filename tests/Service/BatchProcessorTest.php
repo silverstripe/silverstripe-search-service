@@ -3,8 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Service;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Service\BatchProcessor;

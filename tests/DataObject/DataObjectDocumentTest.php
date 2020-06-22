@@ -2,8 +2,6 @@
 
 namespace SilverStripe\SearchService\Tests\DataObject;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\RelationList;

@@ -3,8 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Service;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use PhpParser\Comment\Doc;
 use SilverStripe\Control\Controller;
 use SilverStripe\SearchService\Service\DocumentBuilder;

@@ -2,8 +2,6 @@
 
 namespace SilverStripe\SearchService\Tests\DataObject;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\FieldType\DBDatetime;

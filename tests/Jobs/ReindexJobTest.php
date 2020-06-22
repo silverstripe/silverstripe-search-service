@@ -3,8 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Jobs;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\DataObject\DataObjectFetcher;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;

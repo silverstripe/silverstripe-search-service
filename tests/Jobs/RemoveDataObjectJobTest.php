@@ -13,9 +13,6 @@ use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
-
 class RemoveDataObjectJobTest extends SearchServiceTest
 {
     protected static $fixture_file = '../fixtures.yml';

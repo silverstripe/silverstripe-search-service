@@ -3,8 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Jobs;
 
-require_once(__DIR__ . '/../SearchServiceTest.php');
-
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;

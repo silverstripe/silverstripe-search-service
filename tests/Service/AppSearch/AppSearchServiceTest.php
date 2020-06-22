@@ -3,8 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Service\AppSearch;
 
-require_once(__DIR__ . '/../../SearchServiceTest.php');
-
 use Elastic\AppSearch\Client\Client;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\DocumentBuilder;
