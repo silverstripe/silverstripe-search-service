@@ -242,8 +242,16 @@ class IndexConfiguration
         }
 
         $classes = $index['includeClasses'] ?? [];
+        $result = [];
 
-        return array_keys($classes);
+        foreach ($classes as $className => $spec) {
+            if ($spec === false) {
+                continue;
+            }
+            $result[] = $className;
+        }
+
+        return $result;
     }
 
     /**
@@ -252,17 +260,11 @@ class IndexConfiguration
     public function getSearchableClasses(): array
     {
         $classes = [];
-        foreach ($this->getIndexes() as $config) {
-            $includedClasses = $config['includeClasses'] ?? [];
-            foreach ($includedClasses as $class => $spec) {
-                if ($spec === false) {
-                    continue;
-                }
-                $classes[$class] = true;
-            }
+        foreach ($this->getIndexes() as $indexName => $config) {
+            $classes = array_merge($classes, $this->getClassesForIndex($indexName));
         }
 
-        return array_keys($classes);
+        return array_unique($classes);
     }
 
     /**
@@ -295,7 +297,6 @@ class IndexConfiguration
                 $spec = $includedClasses[$candidate] ?? null;
                 if (is_array($spec) && !empty($spec)) {
                     $fields = $spec['fields'] ?? [];
-                    $fieldObjs = [];
                     foreach ($fields as $searchName => $data) {
                         if ($data === false) {
                             continue;
@@ -308,8 +309,8 @@ class IndexConfiguration
                         );
                     }
                 }
-                $candidate = get_parent_class($candidate);
             }
+            $candidate = get_parent_class($candidate);
         }
         return $fieldObjs;
     }
