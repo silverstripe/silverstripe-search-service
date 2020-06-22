@@ -79,7 +79,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     {
         Versioned::set_stage(Versioned::LIVE);
         $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
-        $classes = count($this->onlyClasses) ?
+        $classes = $this->onlyClasses && count($this->onlyClasses) ?
             $this->onlyClasses :
             $this->getConfiguration()->getSearchableBaseClasses();
 

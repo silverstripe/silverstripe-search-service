@@ -57,7 +57,7 @@ class SearchReindex extends BuildTask
         Environment::increaseTimeLimitTo();
 
         $targetClass = $request->getVar('onlyClass');
-        $job = ReindexJob::create([$targetClass]);
+        $job = ReindexJob::create($targetClass ? [$targetClass] : null);
         SyncJobRunner::singleton()->runJob($job);
     }
 }
