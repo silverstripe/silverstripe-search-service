@@ -87,7 +87,7 @@ abstract class SearchServiceTest extends SapphireTest
         }
         throw new \PHPUnit_Framework_ExpectationFailedException(sprintf(
             'Failed to assert that any item in the array satisfies the callback: %s',
-            print_r($arr, true),
+            print_r($arr, true)
         ));
     }
 }
