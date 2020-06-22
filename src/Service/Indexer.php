@@ -206,6 +206,8 @@ class Indexer
             throw new InvalidArgumentException('Batch size must be greater than 0');
         }
         $this->batchSize = $batchSize;
+        $this->chunks = array_chunk($this->documents, $batchSize);
+
         return $this;
     }
 

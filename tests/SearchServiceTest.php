@@ -8,13 +8,12 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
-use SilverStripe\SearchService\Service\BatchProcessor;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\Fake\IndexConfigurationFake;
 use SilverStripe\SearchService\Tests\Fake\ServiceFake;
 
-class SearchServiceTest extends SapphireTest
+abstract class SearchServiceTest extends SapphireTest
 {
     /**
      * @return IndexConfigurationFake

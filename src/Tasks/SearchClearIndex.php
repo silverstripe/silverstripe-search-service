@@ -14,6 +14,7 @@ use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\SearchService\Service\SyncJobRunner;
+use InvalidArgumentException;
 
 class SearchClearIndex extends BuildTask
 {
@@ -59,8 +60,7 @@ class SearchClearIndex extends BuildTask
 
         $targetIndex = $request->getVar('index');
         if (!$targetIndex) {
-            echo "Must specify an index in the 'index' parameter." . PHP_EOL;
-            die();
+            throw new InvalidArgumentException("Must specify an index in the 'index' parameter.");
         }
         $job = ClearIndexJob::create($targetIndex);
         SyncJobRunner::singleton()->runJob($job);

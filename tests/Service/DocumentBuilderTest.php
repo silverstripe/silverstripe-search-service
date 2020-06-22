@@ -17,6 +17,7 @@ class DocumentBuilderTest extends SearchServiceTest
 {
     public function testToArray()
     {
+        DocumentFake::$count = 0;
         $config = $this->mockConfig();
         $builder = new DocumentBuilder($config, DocumentFetchCreatorRegistry::singleton());
         $arr = $builder->toArray(new DocumentFake('Fake', [

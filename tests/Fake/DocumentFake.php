@@ -4,15 +4,17 @@
 namespace SilverStripe\SearchService\Tests\Fake;
 
 
+use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 
-class DocumentFake implements DocumentInterface
+class DocumentFake implements DocumentInterface, DependencyTracker
 {
     public $sourceClass;
     public $index = true;
     public $isIndexed = false;
     public $fields = [];
     public $id;
+    public $dependentDocuments = [];
 
     public static $count = 0;
 
@@ -20,7 +22,7 @@ class DocumentFake implements DocumentInterface
     {
         $this->sourceClass = $class;
         $this->fields = $fields;
-        $this->id = $class . '--' . static::$count;
+        $this->id = $fields['id'] ?? $class . '--' . static::$count;
         static::$count++;
     }
 
@@ -47,5 +49,10 @@ class DocumentFake implements DocumentInterface
     public function shouldIndex(): bool
     {
         return $this->index;
+    }
+
+    public function getDependentDocuments(): array
+    {
+        return $this->dependentDocuments;
     }
 }
