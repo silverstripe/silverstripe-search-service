@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Fake;
 
-
 use Elastic\AppSearch\Client\Client;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 

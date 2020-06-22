@@ -205,7 +205,6 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertArrayHasKey('record_id', $meta);
         $this->assertEquals(DataObjectFake::class, $meta['record_base_class']);
         $this->assertEquals($dataObject->ID, $meta['record_id']);
-
     }
 
     public function testGetIndexedFields()
@@ -347,6 +346,5 @@ class DataObjectDocumentTest extends SearchServiceTest
         $mock->onAddToSearchIndexes(DocumentAddHandler::AFTER_ADD);
         $mock->onRemoveFromSearchIndexes(DocumentRemoveHandler::BEFORE_REMOVE);
         $mock->onRemoveFromSearchIndexes(DocumentRemoveHandler::AFTER_REMOVE);
-
     }
 }

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Fake;
 
-
 use SilverStripe\SearchService\Interfaces\DocumentFetchCreatorInterface;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 

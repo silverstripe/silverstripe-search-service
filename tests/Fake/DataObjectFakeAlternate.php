@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Fake;
 
-
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
 

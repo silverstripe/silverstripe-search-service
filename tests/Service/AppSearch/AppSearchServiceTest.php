@@ -86,7 +86,6 @@ class AppSearchServiceTest extends SearchServiceTest
                     [$this->equalTo('tests-index1'), $expectedDocs],
                     [$this->equalTo('tests-index2'), $expectedDocs]
                 );
-
         } else {
             $this->client->expects($this->never())
                 ->method('indexDocuments');
@@ -117,7 +116,6 @@ class AppSearchServiceTest extends SearchServiceTest
             );
 
         $this->appSearch->addDocuments([$fake1, $fake2]);
-
     }
 
     public function testRemoveDocuments()
@@ -133,7 +131,6 @@ class AppSearchServiceTest extends SearchServiceTest
             );
 
         $this->appSearch->removeDocuments([$fake1, $fake2]);
-
     }
 
     public function testRemoveDocument()
@@ -169,7 +166,6 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertArrayHasKey('field', $result[1]->fields);
         $this->assertEquals('value1', $result[0]->fields['field']);
         $this->assertEquals('value2', $result[1]->fields['field']);
-
     }
 
     public function testGetDocument()

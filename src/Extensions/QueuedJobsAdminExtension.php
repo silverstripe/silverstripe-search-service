@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Extensions;
 
-
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\Form;

@@ -50,7 +50,5 @@ class ClearIndexJobTest extends SearchServiceTest
         $job->process();
         $this->assertTrue($job->jobFinished());
         $this->assertEquals(0, $service->getDocumentTotal('myindex'));
-
     }
-
 }

@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Service;
 
-
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\DataObject\DataObjectFetchCreator;
 use SilverStripe\SearchService\DataObject\DataObjectFetcher;
@@ -37,6 +36,5 @@ class DocumentFetchCreatorRegistryTest extends SapphireTest
         $registry->removeFetchCreator($fake);
         $fetcher = $registry->getFetcher('Fake');
         $this->assertNull($fetcher);
-
     }
 }

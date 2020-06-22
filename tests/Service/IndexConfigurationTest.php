@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Service;
 
-
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\Core\Config\Config;
@@ -75,7 +74,6 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertFalse(in_array('index6', $indexNames));
 
         $this->assertEmpty($config->getIndexesForClassName(FakeAppsearchClient::class));
-
     }
 
     public function testGetIndexesForDocument()
@@ -213,7 +211,6 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertContains(DataObjectFake::class, $classes);
         $this->assertContains(Controller::class, $classes);
         $this->assertContains(Member::class, $classes);
-
     }
 
     public function testGetFieldsForClass()
@@ -278,7 +275,6 @@ class IndexConfigurationTest extends SapphireTest
         }, $fields);
         $this->assertContains('field10', $names);
         $this->assertContains('field11', $names);
-
     }
 
     public function testGetFieldsForIndex()
@@ -331,8 +327,6 @@ class IndexConfigurationTest extends SapphireTest
 
         $result = $config->getFieldsForIndex('index6');
         $this->assertEmpty($result);
-
-
     }
 
     protected function bootstrapIndexes()

@@ -87,7 +87,6 @@ class BatchProcessorTest extends SearchServiceTest
             new DocumentFake('Fake', ['test' => 'foo']),
             new DocumentFake('Fake', ['test' => 'bar'])
         ]);
-
     }
 
     public function testRemoveDocumentsQueued()
@@ -114,5 +113,4 @@ class BatchProcessorTest extends SearchServiceTest
             new DocumentFake('Fake', ['test' => 'bar'])
         ]);
     }
-
 }

@@ -49,7 +49,6 @@ class IndexerTest extends SearchServiceTest
 
         $indexer->setBatchSize(50);
         $this->assertEquals(1, $indexer->getChunkCount());
-
     }
 
     public function testIndexing()
@@ -136,7 +135,6 @@ class IndexerTest extends SearchServiceTest
         $this->assertArrayHasKey('updated', $service->documents['node-1']);
         $this->assertEquals('1', $service->documents['node-0']['updated']);
         $this->assertEquals('2', $service->documents['node-1']['updated']);
-
     }
 
     public function testDependentDocuments()

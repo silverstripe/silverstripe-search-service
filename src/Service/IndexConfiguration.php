@@ -291,7 +291,7 @@ class IndexConfiguration
     {
         $candidate = $class;
         $fieldObjs = [];
-        while($candidate) {
+        while ($candidate) {
             foreach ($this->getIndexes() as $config) {
                 $includedClasses = $config['includeClasses'] ?? [];
                 $spec = $includedClasses[$candidate] ?? null;

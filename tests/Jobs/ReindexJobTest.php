@@ -60,6 +60,5 @@ class ReindexJobTest extends SearchServiceTest
         $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
             return $fetcher instanceof FakeFetcher;
         });
-
     }
 }

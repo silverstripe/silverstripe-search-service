@@ -3,7 +3,6 @@
 
 namespace SilverStripe\SearchService\Tests\Schema;
 
-
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\Schema\Field;
 

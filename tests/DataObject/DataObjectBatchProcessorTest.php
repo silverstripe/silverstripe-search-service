@@ -34,7 +34,7 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         $syncRunnerMock = $this->getMockBuilder(SyncJobRunner::class)
             ->setMethods(['runJob'])
             ->getMock();
-        $cb = function(RemoveDataObjectJob $arg) {
+        $cb = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
             $this->assertCount(1, $arg->indexer->getDocuments());
             $this->assertEquals(Indexer::METHOD_ADD, $arg->indexer->getMethod());
@@ -63,6 +63,5 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
                 new DataObjectDocumentFake(new DataObjectFake()),
             ]
         );
-
     }
 }

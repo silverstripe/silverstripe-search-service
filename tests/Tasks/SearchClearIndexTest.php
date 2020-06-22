@@ -33,6 +33,5 @@ class SearchClearIndexTest extends SapphireTest
 
         $this->expectException('InvalidArgumentException');
         $task->run($request);
-
     }
 }
