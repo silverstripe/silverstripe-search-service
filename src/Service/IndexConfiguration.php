@@ -195,9 +195,9 @@ class IndexConfiguration
     }
 
     /**
-     * @return int|null
+     * @return int
      */
-    public function getMaxDocumentSize(): ?int
+    public function getMaxDocumentSize(): int
     {
         return $this->config()->get('max_document_size');
     }

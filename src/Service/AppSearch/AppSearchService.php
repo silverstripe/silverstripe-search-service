@@ -164,10 +164,11 @@ class AppSearchService implements IndexingInterface
 
     /**
      * @return int
+     * @throws IndexingServiceException
      */
     public function getMaxDocumentSize(): int
     {
-        return $this->getConfiguration()->get('max_document_size');
+        return $this->getConfiguration()->getMaxDocumentSize();
     }
 
     /**

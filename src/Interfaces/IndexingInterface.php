@@ -22,6 +22,12 @@ interface IndexingInterface extends BatchDocumentInterface
     public function removeDocument(DocumentInterface $doc): IndexingInterface;
 
     /**
+     * @return int
+     * @throws IndexingServiceException
+     */
+    public function getMaxDocumentSize(): int;
+
+    /**
      * @param string $id
      * @return DocumentInterface
      * @throws IndexingServiceException
@@ -62,9 +68,4 @@ interface IndexingInterface extends BatchDocumentInterface
      * @throws IndexConfigurationException
      */
     public function validateField(string $field): void;
-
-    /**
-     * @return int
-     */
-    public function getMaxDocumentSize(): int;
 }
