@@ -85,6 +85,8 @@ class AppSearchService implements IndexingInterface
 
             $documentMaxSize = $this->getMaxDocumentSize();
             if ($documentMaxSize  && strlen(json_encode($fields)) >= $documentMaxSize) {
+
+                // Todo: Display to the user that this record was not indexed.
                 throw new IndexingServiceException(sprintf(
                     'Document title: %s, Document class: %s, Document ID %s: exceeds maximum allowed document size of %s bytes',
                     $fields['title'],
