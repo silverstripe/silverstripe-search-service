@@ -4,31 +4,42 @@
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\Traits\RegistryAware;
+use SilverStripe\SearchService\Service\Traits\ServiceAware;
 
 class DocumentBuilder
 {
     use Injectable;
     use ConfigurationAware;
     use RegistryAware;
+    use ServiceAware;
 
     /**
      * DocumentBuilder constructor.
      * @param IndexConfiguration $configuration
      * @param DocumentFetchCreatorRegistry $registry
+     * @param IndexingInterface $service
      */
-    public function __construct(IndexConfiguration $configuration, DocumentFetchCreatorRegistry $registry)
+    public function __construct(
+        IndexConfiguration $configuration,
+        DocumentFetchCreatorRegistry $registry,
+        IndexingInterface $service
+    )
     {
         $this->setConfiguration($configuration);
         $this->setRegistry($registry);
+        $this->setIndexService($service);
     }
 
     /**
      * @param DocumentInterface $document
      * @return array
+     * @throws IndexingServiceException
      */
     public function toArray(DocumentInterface $document): array
     {
@@ -44,6 +55,7 @@ class DocumentBuilder
         }
 
         $data[$sourceClassField] = $document->getSourceClass();
+        $this->truncateDocument($data);
 
         return $data;
     }
@@ -68,5 +80,19 @@ class DocumentBuilder
         }
 
         return $fetcher->createDocument($data);
+    }
+
+    /**
+     * @param array $data
+     * @throws IndexingServiceException
+     */
+    private function truncateDocument(array $data): array
+    {
+        $documentMaxSize = $this->getIndexService()->getMaxDocumentSize();
+        if ($documentMaxSize  && strlen(json_encode($data)) >= $documentMaxSize) {
+            // truncate the document here
+        }
+
+        return $data;
     }
 }

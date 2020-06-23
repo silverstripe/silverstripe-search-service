@@ -5,10 +5,15 @@ namespace SilverStripe\SearchService\Tests\Service;
 
 use PhpParser\Comment\Doc;
 use SilverStripe\Control\Controller;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
+use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\FakeFetchCreator;
+use SilverStripe\SearchService\Tests\Fake\ServiceFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class DocumentBuilderTest extends SearchServiceTest
@@ -57,5 +62,35 @@ class DocumentBuilderTest extends SearchServiceTest
         ]);
 
         $this->assertNull($document);
+    }
+
+    public function testDocumentTruncation()
+    {
+        $fake = new ServiceFake();
+        $fake->maxDocSize = 100;
+
+        Injector::inst()->registerService($fake, IndexingInterface::class);
+
+        $builder = DocumentBuilder::create();
+        $document = new DocumentFake('Fake', [
+            'field1' => str_repeat('a', 500)
+        ]);
+        $array = $builder->toArray($document);
+        $this->assertLessThanOrEqual($fake->maxDocSize, strlen(json_encode($array)));
+
+        $document = new DocumentFake('Fake', [
+            'field1' => str_repeat('a', 50)
+        ]);
+
+        // Try a couple different doc sizes that far exceed the size of this document
+        $fake->maxDocSize = 10000;
+        $array = $builder->toArray($document);
+        $size1 = strlen(json_encode($array));
+
+        $fake->maxDocSize = 5000;
+        $array = $builder->toArray($document);
+        $size2 = strlen(json_encode($array));
+
+        $this->assertEquals($size1, $size2);
     }
 }

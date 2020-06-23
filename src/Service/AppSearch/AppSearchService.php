@@ -36,6 +36,12 @@ class AppSearchService implements IndexingInterface
     private $builder;
 
     /**
+     * @var int
+     * @config
+     */
+    private static $max_document_size = 102400;
+
+    /**
      * AppSearchService constructor.
      * @param Client $client
      * @param IndexConfiguration $configuration
@@ -82,20 +88,6 @@ class AppSearchService implements IndexingInterface
             }
 
             $fields = $this->getBuilder()->toArray($item);
-
-            $documentMaxSize = $this->getMaxDocumentSize();
-            if ($documentMaxSize  && strlen(json_encode($fields)) >= $documentMaxSize) {
-
-                // Todo: Display to the user that this record was not indexed.
-                throw new IndexingServiceException(sprintf(
-                    'Document title: %s, Document class: %s, Document ID %s: exceeds maximum allowed document size of %s bytes',
-                    $fields['title'],
-                    $fields['source_class'],
-                    $fields['record_id'],
-                    $documentMaxSize
-                ), E_USER_WARNING);
-                continue;
-            }
 
             $indexes = $this->getConfiguration()->getIndexesForDocument($item);
             foreach (array_keys($indexes) as $indexName) {
@@ -166,11 +158,10 @@ class AppSearchService implements IndexingInterface
 
     /**
      * @return int
-     * @throws IndexingServiceException
      */
     public function getMaxDocumentSize(): int
     {
-        return $this->getConfiguration()->getMaxDocumentSize();
+        return $this->config()->get('max_document_size');
     }
 
     /**
