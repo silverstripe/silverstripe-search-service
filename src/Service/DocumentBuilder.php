@@ -4,20 +4,19 @@
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\Traits\RegistryAware;
-use SilverStripe\SearchService\Service\Traits\ServiceAware;
 
 class DocumentBuilder
 {
     use Injectable;
     use ConfigurationAware;
     use RegistryAware;
-    use ServiceAware;
 
     /**
      * DocumentBuilder constructor.
@@ -27,13 +26,11 @@ class DocumentBuilder
      */
     public function __construct(
         IndexConfiguration $configuration,
-        DocumentFetchCreatorRegistry $registry,
-        IndexingInterface $service
+        DocumentFetchCreatorRegistry $registry
     )
     {
         $this->setConfiguration($configuration);
         $this->setRegistry($registry);
-        $this->setIndexService($service);
     }
 
     /**
@@ -55,7 +52,7 @@ class DocumentBuilder
         }
 
         $data[$sourceClassField] = $document->getSourceClass();
-        $this->truncateDocument($data);
+        $data = $this->truncateDocument($data);
 
         return $data;
     }
@@ -88,9 +85,19 @@ class DocumentBuilder
      */
     private function truncateDocument(array $data): array
     {
-        $documentMaxSize = $this->getIndexService()->getMaxDocumentSize();
+        $indexService = Injector::inst()->get(IndexingInterface::class);
+        $documentMaxSize = $indexService->getMaxDocumentSize();
+
         if ($documentMaxSize  && strlen(json_encode($data)) >= $documentMaxSize) {
-            // truncate the document here
+            while (strlen(json_encode($data)) >= $documentMaxSize) {
+                // Sort the array so the longest value is always on top.
+                uasort($data, function($a, $b) {
+                    return strlen(json_encode($b)) - strlen(json_encode($a));
+                });
+
+                $item = array_slice($data, 0, 1, true);
+                $data[key($item)] = substr(current($item), 0, -(strlen(current($item)) / 2));
+            }
         }
 
         return $data;

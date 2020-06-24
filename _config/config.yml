@@ -46,4 +46,3 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
       registry: '%$SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry'
-      service: '%$SilverStripe\SearchService\Interfaces\IndexingInterface'
