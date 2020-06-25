@@ -90,13 +90,17 @@ class DocumentBuilder
 
         if ($documentMaxSize  && strlen(json_encode($data)) >= $documentMaxSize) {
             while (strlen(json_encode($data)) >= $documentMaxSize) {
-                // Sort the array so the longest value is always on top.
-                uasort($data, function($a, $b) {
-                    return strlen(json_encode($b)) - strlen(json_encode($a));
-                });
+                $max = 0;
+                $key = '';
+                foreach($data as $k => $v) {
+                    $size = strlen(json_encode($v));
+                    if ($size > $max) {
+                        $max = $size;
+                        $key = $k;
+                    }
+                }
 
-                $item = array_slice($data, 0, 1, true);
-                $data[key($item)] = substr(current($item), 0, -(strlen(current($item)) / 2));
+                $data[$key] = substr($data[$key], 0, -(strlen($data[$key]) / 2));
             }
         }
 
