@@ -27,8 +27,7 @@ class DocumentBuilder
     public function __construct(
         IndexConfiguration $configuration,
         DocumentFetchCreatorRegistry $registry
-    )
-    {
+    ) {
         $this->setConfiguration($configuration);
         $this->setRegistry($registry);
     }
@@ -92,7 +91,7 @@ class DocumentBuilder
             while (strlen(json_encode($data)) >= $documentMaxSize) {
                 $max = 0;
                 $key = '';
-                foreach($data as $k => $v) {
+                foreach ($data as $k => $v) {
                     $size = strlen(json_encode($v));
                     if ($size > $max) {
                         $max = $size;
