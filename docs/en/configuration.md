@@ -177,7 +177,7 @@ Let's look at all the settings on the `IndexConfiguration` class:
             <td>"source_class"</td>
         </tr>
         <tr>
-            <td>document_max_size</td>
+            <td>max_document_size</td>
             <td>int|null</td>
             <td>An int specifying the max size a document can be in bytes. If set any document
             that is larger than the defined size will not be indexed and a warning will be thrown
