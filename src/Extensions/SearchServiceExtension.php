@@ -79,9 +79,14 @@ class SearchServiceExtension extends DataExtension
      */
     public function requireDefaultRecords()
     {
-        if (!$this->hasConfigured) {
-            $this->getIndexService()->configure();
-            $this->hasConfigured = true;
+        // Wrap this in a try-catch so that dev/build can continue (with warnings) when APP_SEARCH_ENDPOINT isn't set
+        try {
+            if (!$this->hasConfigured) {
+                $this->getIndexService()->configure();
+                $this->hasConfigured = true;
+            }
+        } catch (Exception $e) {
+            user_error(sprintf('Unable to configure search indexes: %s', $e->getMessage()), E_USER_WARNING);
         }
     }
     /**
