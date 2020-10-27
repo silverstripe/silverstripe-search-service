@@ -1,0 +1,6 @@
+---
+Name: search-service-default
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Interfaces\IndexingInterface:
+    class: SilverStripe\SearchService\Services\Naive\NaiveSearchService

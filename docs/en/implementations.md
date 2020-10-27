@@ -3,9 +3,17 @@
 This module is a set of abstractions for creating search-as-a-service integrations. This section
 of the documentation covers the details of each one.
 
+## Naive search
+
+This is the service that is enabled by default. It does not interact with any specific service, and is
+there to fill the whole in the abstraction layer when search is not yet being used. It is also a good option
+to have enabled when running tests and/or doing CI builds.
+
 ## Elastic AppSearch
 
-This module comes bundled with an implementation for [Elastic AppSearch](https://www.elastic.co/app-search/). While most of the details are abstracted away in the `AppSearchService` class, there are some key things to know about configuring AppSearch.
+This module comes bundled with an implementation for [Elastic AppSearch](https://www.elastic.co/app-search/).
+While most of the details are abstracted away in the `AppSearchService` class, there are some key things to
+know about configuring AppSearch.
 
 ### Activating AppSearch
 
@@ -43,14 +51,11 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 ```
 
 **Note**: Be careful about whimsically changing your schema. AppSearch may need to be fully
-reindexed if you change the data type of a field. 
+reindexed if you change the data type of a field.
 
 ## More information
 
 * [Usage](usage.md)
 * [Configuration](configuration.md)
-* [Customising and extending](customising.md) 
+* [Customising and extending](customising.md)
 * [Overview and Rationale](overview.md)
-
-
-

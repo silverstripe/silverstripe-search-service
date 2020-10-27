@@ -25,11 +25,6 @@ composer require "silverstripe/silverstripe-search-service"
 * silverstripe/versioned
 * symbiote/silverstripe-queuedjobs
 
-## 🚨 Before using 🚨
-
-You must select which search service you will use after installing this module. If left undefined,
-your `dev/build` process will throw a runtime error. See the [implementations documentation](docs/en/implementations.md) for more information about how to activate a search service.
-
 ## Documentation
 
 See the [developer documentation](docs/en/index.md).

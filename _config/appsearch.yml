@@ -4,6 +4,7 @@ Only:
   envvarset: 'APP_SEARCH_API_KEY'
 After:
   - 'silverstripe-search-service-dataobject'
+  - 'search-service-default'
 ---
 SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Interfaces\IndexingInterface:
@@ -26,4 +27,3 @@ SilverStripe\SearchService\DataObject\DataObjectDocument:
   id_field: record_id
   base_class_field: record_base_class
   page_content_field: page_content
-
