@@ -119,11 +119,12 @@ class DataObjectFetcher implements DocumentFetcherInterface
     {
         /* @var DBDatetime $since */
         $since = DBField::create_field('Datetime', $this->until);
-        $date = $since->Rfc822();
+        $date = $since->Rfc2822();
         $list = DataList::create($this->dataObjectClass)
             ->where(
                 ['SearchIndexed IS NULL OR SearchIndexed < ?' => $date]
             );
+
         return $list->limit($limit, $offset);
     }
 }
