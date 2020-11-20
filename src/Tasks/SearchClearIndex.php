@@ -15,6 +15,7 @@ use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\SearchService\Service\SyncJobRunner;
 use InvalidArgumentException;
+use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class SearchClearIndex extends BuildTask
 {
@@ -63,6 +64,10 @@ class SearchClearIndex extends BuildTask
             throw new InvalidArgumentException("Must specify an index in the 'index' parameter.");
         }
         $job = ClearIndexJob::create($targetIndex);
-        SyncJobRunner::singleton()->runJob($job);
+        if ($this->getConfiguration()->shouldUseSyncJobs()) {
+            SyncJobRunner::singleton()->runJob($job, false);
+        } else {
+            QueuedJobService::singleton()->queueJob($job);
+        }
     }
 }

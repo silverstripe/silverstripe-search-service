@@ -13,6 +13,7 @@ use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\SearchService\Service\SyncJobRunner;
+use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class SearchReindex extends BuildTask
 {
@@ -58,6 +59,11 @@ class SearchReindex extends BuildTask
 
         $targetClass = $request->getVar('onlyClass');
         $job = ReindexJob::create($targetClass ? [$targetClass] : null);
-        SyncJobRunner::singleton()->runJob($job);
+
+        if ($this->getConfiguration()->shouldUseSyncJobs()) {
+            SyncJobRunner::singleton()->runJob($job, false);
+        } else {
+            QueuedJobService::singleton()->queueJob($job);
+        }
     }
 }
