@@ -92,9 +92,9 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
             }
         }
 
-        $steps = array_reduce($fetchers, function ($total, $fetcher) {
+        $steps = (int) array_reduce($fetchers, function ($total, $fetcher) {
             /* @var DocumentFetcherInterface $fetcher */
-            return $total + ceil($fetcher->getTotalDocuments() / $this->batchSize);
+            return $total + $fetcher->getTotalDocuments();
         }, 0);
 
         $this->totalSteps = $steps;
@@ -118,11 +118,11 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         }
 
         $documents = $fetcher->fetch($this->batchSize, $this->fetchOffset);
-
         $indexer = Indexer::create($documents, Indexer::METHOD_ADD, $this->batchSize);
         $indexer->setProcessDependencies(false);
         while (!$indexer->finished()) {
             $indexer->processNode();
+            $this->currentStep++;
         }
 
         $nextOffset = $this->fetchOffset + $this->batchSize;
@@ -132,7 +132,6 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         } else {
             $this->fetchOffset = $nextOffset;
         }
-        $this->currentStep++;
     }
 
     /**
