@@ -46,7 +46,7 @@ class PageCrawler
 
         $page = null;
         try {
-            $response = Director::test($item->Link());
+            $response = Director::test($item->AbsoluteLink());
             $page = $response->getBody();
         } catch (Exception $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
