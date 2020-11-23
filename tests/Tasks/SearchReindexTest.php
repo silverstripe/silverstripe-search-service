@@ -4,17 +4,18 @@ namespace SilverStripe\SearchService\Tests\Tasks;
 
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Dev\SapphireTest;
-use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Service\SyncJobRunner;
-use SilverStripe\SearchService\Tasks\SearchClearIndex;
 use SilverStripe\SearchService\Tasks\SearchReindex;
+use SilverStripe\SearchService\Tests\SearchServiceTest;
 
-class SearchReindexTest extends SapphireTest
+class SearchReindexTest extends SearchServiceTest
 {
     public function testTask()
     {
+        $config = $this->mockConfig();
+        $config->set('use_sync_jobs', true);
+
         $mock = $this->getMockBuilder(SyncJobRunner::class)
             ->setMethods(['runJob'])
             ->getMock();

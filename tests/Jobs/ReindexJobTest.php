@@ -47,9 +47,8 @@ class ReindexJobTest extends SearchServiceTest
 
         $job->setup();
         $totalSteps = $job->getJobData()->totalSteps;
-        // 20 dataobjectfake in batches of six = 4
-        // 10 Fake documents in batches of six = 2
-        $this->assertEquals(6, $totalSteps);
+        // 20 dataobjectfake + 10 Fake documents
+        $this->assertEquals(30, $totalSteps);
 
         $this->assertCount(2, $job->fetchers);
         $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
