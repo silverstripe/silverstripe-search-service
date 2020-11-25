@@ -16,7 +16,8 @@ class ClientFactory implements Factory
 
         if (!$endPoint || !$apiKey) {
             throw new Exception(sprintf(
-                'The %s implementation requires environment variables: APP_SEARCH_ENDPOINT and APP_SEARCH_API_KEY'
+                'The %s implementation requires environment variables: APP_SEARCH_ENDPOINT and APP_SEARCH_API_KEY',
+                ClientBuilder::class
             ));
         }
 
