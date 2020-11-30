@@ -57,4 +57,9 @@ class NaiveSearchService implements IndexingInterface
     {
         return $this;
     }
+
+    public function getMaxDocumentSize(): int
+    {
+        return 0;
+    }
 }
