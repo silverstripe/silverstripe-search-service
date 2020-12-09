@@ -297,13 +297,7 @@ class DataObjectDocumentTest extends SearchServiceTest
             'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
             $array['htmlstring']
         );
-        $this->assertEquals(
-            'a<br />
-multi<br />
-line<br />
-string',
-            $array['multi']
-        );
+        $this->assertEquals('a multi line string', $array['multi']);
 
         $config->set('include_page_html', false);
         $doc = DataObjectDocument::create($dataObject);
@@ -319,10 +313,7 @@ string',
             'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
             $array['htmlstring']
         );
-        $this->assertEquals(
-            'a multi line string',
-            $array['multi']
-        );
+        $this->assertEquals('a multi line string', $array['multi']);
     }
 
     public function testGetDependentDocuments()

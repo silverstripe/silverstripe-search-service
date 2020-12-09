@@ -9,6 +9,6 @@ class DBFieldExtension extends Extension
 {
     public function getSearchValue(bool $shouldIncludeHTML = true)
     {
-        return preg_replace('/\s+/S', " ", strip_tags($this->owner->forTemplate()));
+        return preg_replace('/\s+/S', " ", strip_tags($this->owner->getValue()));
     }
 }
