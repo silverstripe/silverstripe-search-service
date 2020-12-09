@@ -7,8 +7,11 @@ use SilverStripe\Core\Extension;
 
 class DBFieldExtension extends Extension
 {
-    public function getSearchValue()
+    public function getSearchValue(bool $shouldIncludeHTML = true)
     {
-        return $this->owner->forTemplate();
+        if ($shouldIncludeHTML) {
+            return $this->owner->forTemplate();
+        }
+        return preg_replace('/\s+/S', " ", strip_tags($this->owner->forTemplate()));
     }
 }
