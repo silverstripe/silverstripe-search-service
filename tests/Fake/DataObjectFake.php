@@ -73,4 +73,9 @@ class DataObjectFake extends DataObject implements TestOnly
     {
         return new self();
     }
+
+    public function getSomeHTML(): string
+    {
+        return '<h1>WHAT ARE WE YELLING ABOUT?</h1> Then a break<br />Then a new line\nand a tab\t';
+    }
 }

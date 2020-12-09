@@ -271,6 +271,27 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals(['Tag two', 'Tag three'], $value);
     }
 
+    public function testGetSearchValueNoHTML()
+    {
+        $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
+        $doc = DataObjectDocument::create($dataObject);
+
+        $value = $doc->getFieldValue(new Field('getSomeHTML'));
+        $this->assertEquals(
+            '<h1>WHAT ARE WE YELLING ABOUT?</h1> Then a break<br />Then a new line\nand a tab\t',
+            $value
+        );
+
+        $config = $this->mockConfig();
+        $config->set('shouldIncludeHtml', false);
+
+        $value = $doc->getFieldValue(new Field('getSomeHTML'));
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $value
+        );
+    }
+
     public function testGetDependentDocuments()
     {
         $config = $this->mockConfig();
