@@ -10,6 +10,12 @@ SilverStripe\ORM\FieldType\DBDate:
 SilverStripe\ORM\FieldType\DBBoolean:
   extensions:
     - SilverStripe\SearchService\Extensions\DBBooleanExtension
+SilverStripe\ORM\FieldType\DBHTMLText:
+  extensions:
+    - SilverStripe\SearchService\Extensions\DBHTMLFieldExtension
+SilverStripe\ORM\FieldType\DBHTMLVarchar:
+  extensions:
+    - SilverStripe\SearchService\Extensions\DBHTMLFieldExtension
 Symbiote\QueuedJobs\Controllers\QueuedJobsAdmin:
   extensions:
     - SilverStripe\SearchService\Extensions\QueuedJobsAdminExtension

@@ -276,7 +276,8 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config = $this->mockConfig();
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
-                new Field('html', 'getSomeHTML'),
+                new Field('htmltext', 'getDBHTMLText'),
+                new Field('htmlstring', 'getHTMLString'),
                 new Field('multi', 'getAMultiLineString'),
             ]
         ]);
@@ -285,11 +286,16 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc = DataObjectDocument::create($dataObject);
 
         $array = $doc->toArray();
-        $this->assertArrayHasKey('html', $array);
+        $this->assertArrayHasKey('htmltext', $array);
+        $this->assertArrayHasKey('htmlstring', $array);
         $this->assertArrayHasKey('multi', $array);
         $this->assertEquals(
             "<h1>WHAT ARE WE YELLING ABOUT?</h1> Then a break <br />Then a new line\nand a tab\t",
-            $array['html']
+            $array['htmltext']
+        );
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $array['htmlstring']
         );
         $this->assertEquals(
             'a<br />
@@ -302,11 +308,16 @@ string',
         $config->set('include_page_html', false);
         $doc = DataObjectDocument::create($dataObject);
         $array = $doc->toArray();
-        $this->assertArrayHasKey('html', $array);
+        $this->assertArrayHasKey('htmltext', $array);
+        $this->assertArrayHasKey('htmlstring', $array);
         $this->assertArrayHasKey('multi', $array);
         $this->assertEquals(
             'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
-            $array['html']
+            $array['htmltext']
+        );
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $array['htmlstring']
         );
         $this->assertEquals(
             'a multi line string',

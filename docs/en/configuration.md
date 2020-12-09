@@ -146,7 +146,7 @@ Let's look at all the settings on the `IndexConfiguration` class:
             <td>include_page_html</td>
             <td>bool</td>
             <td>If true, leave HTML in the crawled page content defined above.</td>
-            <td>true</td>
+            <td>false</td>
         </tr>
         <tr>
             <td>use_sync_jobs</td>
