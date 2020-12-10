@@ -9,15 +9,6 @@ use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 
 class DBHTMLFieldExtension extends Extension
 {
-    use ConfigurationAware;
-
-    /**
-     * @var array
-     */
-    private static $dependencies = [
-        'Configuration' => '%$' . IndexConfiguration::class,
-    ];
-
     /**
      * For HTML fields, we have to call ->forTemplate() so that shortcodes get processed
      *
@@ -25,7 +16,7 @@ class DBHTMLFieldExtension extends Extension
      */
     public function getSearchValue()
     {
-        if ($this->getConfiguration()->shouldIncludePageHTML()) {
+        if (SearchServiceExtension::singleton()->getConfiguration()->shouldIncludePageHTML()) {
             return $this->owner->forTemplate();
         }
         return preg_replace('/\s+/S', " ", strip_tags($this->owner->forTemplate()));
