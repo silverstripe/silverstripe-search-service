@@ -18,6 +18,10 @@ class DataObjectFake extends DataObject implements TestOnly
         'Sort' => 'Int'
     ];
 
+    private static $casting = [
+        'getDBHTMLText' => 'HTMLText',
+    ];
+
     private static $many_many = [
         'Tags' => TagFake::class,
     ];
@@ -72,5 +76,25 @@ class DataObjectFake extends DataObject implements TestOnly
     public function getCustomGetterDataObj(): self
     {
         return new self();
+    }
+
+    public function getAMultiLineString(): string
+    {
+        return <<<TXT
+a
+multi
+line
+string
+TXT;
+    }
+
+    public function getDBHTMLText(): string
+    {
+        return "<h1>WHAT ARE WE YELLING ABOUT?</h1> Then a break <br />Then a new line\nand a tab\t";
+    }
+
+    public function getHTMLString(): string
+    {
+        return $this->getDBHTMLText();
     }
 }

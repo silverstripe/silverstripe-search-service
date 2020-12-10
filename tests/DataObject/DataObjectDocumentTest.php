@@ -271,6 +271,51 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals(['Tag two', 'Tag three'], $value);
     }
 
+    public function testGetSearchValueNoHTML()
+    {
+        $config = $this->mockConfig();
+        $config->set('getFieldsForClass', [
+            DataObjectFake::class => [
+                new Field('htmltext', 'getDBHTMLText'),
+                new Field('htmlstring', 'getHTMLString'),
+                new Field('multi', 'getAMultiLineString'),
+            ]
+        ]);
+        $config->set('include_page_html', true);
+        $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
+        $doc = DataObjectDocument::create($dataObject);
+
+        $array = $doc->toArray();
+        $this->assertArrayHasKey('htmltext', $array);
+        $this->assertArrayHasKey('htmlstring', $array);
+        $this->assertArrayHasKey('multi', $array);
+        $this->assertEquals(
+            "<h1>WHAT ARE WE YELLING ABOUT?</h1> Then a break <br />Then a new line\nand a tab\t",
+            $array['htmltext']
+        );
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $array['htmlstring']
+        );
+        $this->assertEquals('a multi line string', $array['multi']);
+
+        $config->set('include_page_html', false);
+        $doc = DataObjectDocument::create($dataObject);
+        $array = $doc->toArray();
+        $this->assertArrayHasKey('htmltext', $array);
+        $this->assertArrayHasKey('htmlstring', $array);
+        $this->assertArrayHasKey('multi', $array);
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $array['htmltext']
+        );
+        $this->assertEquals(
+            'WHAT ARE WE YELLING ABOUT? Then a break Then a new line and a tab ',
+            $array['htmlstring']
+        );
+        $this->assertEquals('a multi line string', $array['multi']);
+    }
+
     public function testGetDependentDocuments()
     {
         $config = $this->mockConfig();

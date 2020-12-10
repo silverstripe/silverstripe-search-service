@@ -43,7 +43,7 @@ class IndexConfiguration
      * @var bool
      * @config
      */
-    private static $include_page_html = true;
+    private static $include_page_html = false;
 
     /**
      * @var array
