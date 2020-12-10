@@ -13,16 +13,19 @@ use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
+use SilverStripe\SearchService\Tests\Fake\VersionedDataObjectFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
+use SilverStripe\Versioned\Versioned;
 
 class DataObjectDocumentTest extends SearchServiceTest
 {
     protected static $fixture_file = '../fixtures.yml';
 
     protected static $extra_dataobjects = [
+        VersionedDataObjectFake::class,
         DataObjectFake::class,
         TagFake::class,
         ImageFake::class,
@@ -46,7 +49,9 @@ class DataObjectDocumentTest extends SearchServiceTest
     public function testShouldIndex()
     {
         $config = $this->mockConfig();
-        $dataobject = new DataObjectFake(['ID' => 5, 'ShowInSearch' => true]);
+        /** @var Versioned $dataobject */
+        $dataobject = new VersionedDataObjectFake(['ID' => 5, 'ShowInSearch' => true]);
+        $dataobject->publishSingle();
         $doc = DataObjectDocument::create($dataobject);
 
         $dataobject->can_view = false;
@@ -60,9 +65,15 @@ class DataObjectDocumentTest extends SearchServiceTest
 
         $dataobject->ShowInSearch = false;
         $this->assertFalse($doc->shouldIndex());
+        $dataobject->ShowInSearch = true;
+        $this->assertTrue($doc->shouldIndex());
+
+        $dataobject->doUnpublish();
+        $this->assertFalse($doc->shouldIndex());
+        $dataobject->publishSingle();
+        $this->assertTrue($doc->shouldIndex());
 
         $config->set('enabled', false);
-
         $this->assertFalse($doc->shouldIndex());
     }
 

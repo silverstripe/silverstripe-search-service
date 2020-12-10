@@ -140,6 +140,11 @@ class DataObjectDocument implements
             return false;
         }
 
+        // Dataobject is only in draft
+        if ($dataObject->hasExtension(Versioned::class) && !$dataObject->isLiveVersion()) {
+            return false;
+        }
+
         // Indexing is globally disabled
         if (!$this->getConfiguration()->isEnabled()) {
             return false;
