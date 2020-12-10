@@ -214,11 +214,10 @@ class DataObjectDocument implements
         }
 
         $toIndex = [];
-        $shouldIncludeHTML = $this->getConfiguration()->shouldIncludePageHTML();
 
         if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
             $content = $this->getPageCrawler()->getMainContent($dataObject);
-            if (!$shouldIncludeHTML) {
+            if (!$this->getConfiguration()->shouldIncludePageHTML()) {
                 $content = strip_tags($content);
             }
             $toIndex[$pageContentField] = $content;
@@ -268,7 +267,7 @@ class DataObjectDocument implements
                         $field->getSearchFieldName()
                     ));
                 } elseif ($dbField instanceof DBField) {
-                    $value = $dbField->getSearchValue($shouldIncludeHTML);
+                    $value = $dbField->getSearchValue();
                     $attributes[$field->getSearchFieldName()] = $value;
                     continue;
                 }

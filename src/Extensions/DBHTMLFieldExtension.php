@@ -4,18 +4,28 @@
 namespace SilverStripe\SearchService\Extensions;
 
 use SilverStripe\Core\Extension;
+use SilverStripe\SearchService\Service\IndexConfiguration;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 
 class DBHTMLFieldExtension extends Extension
 {
+    use ConfigurationAware;
+
     /**
-     * For HTML fields, we have to call ->forTemplate() so that shortcode get processed
+     * @var array
+     */
+    private static $dependencies = [
+        'Configuration' => '%$' . IndexConfiguration::class,
+    ];
+
+    /**
+     * For HTML fields, we have to call ->forTemplate() so that shortcodes get processed
      *
-     * @param bool $shouldIncludeHTML
      * @return string|string[]|null
      */
-    public function getSearchValue(bool $shouldIncludeHTML = true)
+    public function getSearchValue()
     {
-        if ($shouldIncludeHTML) {
+        if ($this->getConfiguration()->shouldIncludePageHTML()) {
             return $this->owner->forTemplate();
         }
         return preg_replace('/\s+/S', " ", strip_tags($this->owner->forTemplate()));

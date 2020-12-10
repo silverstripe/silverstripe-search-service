@@ -7,7 +7,7 @@ use SilverStripe\Core\Extension;
 
 class DBBooleanExtension extends Extension
 {
-    public function getSearchValue(bool $shouldIncludeHTML = true)
+    public function getSearchValue()
     {
         return $this->owner->getValue();
     }
