@@ -7,7 +7,6 @@ use SilverStripe\SearchService\Exception\IndexingServiceException;
 
 interface IndexingInterface extends BatchDocumentInterface
 {
-
     /**
      * @param DocumentInterface $item
      * @return $this
@@ -21,6 +20,12 @@ interface IndexingInterface extends BatchDocumentInterface
      * @throws IndexingServiceException
      */
     public function removeDocument(DocumentInterface $doc): IndexingInterface;
+
+    /**
+     * @return int
+     * @throws IndexingServiceException
+     */
+    public function getMaxDocumentSize(): int;
 
     /**
      * @param string $id

@@ -15,6 +15,8 @@ class ServiceFake implements IndexingInterface
 
     public $documents = [];
 
+    public $maxDocSize = 1000;
+
     public function addDocument(DocumentInterface $item): IndexingInterface
     {
         $this->documents[$item->getIdentifier()] = DocumentBuilder::singleton()->toArray($item);
@@ -88,5 +90,10 @@ class ServiceFake implements IndexingInterface
     public function validateField(string $field): void
     {
         return;
+    }
+
+    public function getMaxDocumentSize(): int
+    {
+        return $this->maxDocSize;
     }
 }

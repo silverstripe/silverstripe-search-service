@@ -73,7 +73,6 @@ class IndexConfiguration
      */
     private $indexVariant;
 
-
     /**
      * @var bool
      * @config

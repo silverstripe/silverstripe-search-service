@@ -36,6 +36,12 @@ class AppSearchService implements IndexingInterface
     private $builder;
 
     /**
+     * @var int
+     * @config
+     */
+    private static $max_document_size = 102400;
+
+    /**
      * AppSearchService constructor.
      * @param Client $client
      * @param IndexConfiguration $configuration
@@ -82,6 +88,7 @@ class AppSearchService implements IndexingInterface
             }
 
             $fields = $this->getBuilder()->toArray($item);
+
             $indexes = $this->getConfiguration()->getIndexesForDocument($item);
             foreach (array_keys($indexes) as $indexName) {
                 if (!isset($documentMap[$indexName])) {
@@ -147,6 +154,14 @@ class AppSearchService implements IndexingInterface
         }
 
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxDocumentSize(): int
+    {
+        return $this->config()->get('max_document_size');
     }
 
     /**
