@@ -9,6 +9,6 @@ class DBDateExtension extends Extension
 {
     public function getSearchValue()
     {
-        return $this->owner->getTimestamp();
+        return $this->owner->Rfc3339();
     }
 }
