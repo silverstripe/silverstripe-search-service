@@ -68,4 +68,19 @@ class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInter
     {
         return 0;
     }
+
+    public function getExternalURL(): ?string
+    {
+        return null;
+    }
+
+    public function getExternalURLDescription(): ?string
+    {
+        return null;
+    }
+
+    public function getDocumentationURL(): ?string
+    {
+        return null;
+    }
 }
