@@ -4,6 +4,7 @@
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -14,6 +15,7 @@ class IndexConfiguration
 {
     use Configurable;
     use Injectable;
+    use Extensible;
 
     /**
      * @var bool
@@ -227,7 +229,11 @@ class IndexConfiguration
      */
     public function getIndexesForDocument(DocumentInterface $doc): array
     {
-        return $this->getIndexesForClassName($doc->getSourceClass());
+        $indexes = $this->getIndexesForClassName($doc->getSourceClass());
+
+        $this->extend('updateIndexesForDocument', $doc, $indexes);
+
+        return $indexes;
     }
 
     /**

@@ -4,6 +4,6 @@ After: '#silverstripe-search-service'
 Only:
   moduleexists: 'silverstripe/subsites'
 ---
-SilverStripe\Core\Injector\Injector:
-  SilverStripe\SearchService\Service\IndexConfiguration:
-    class: SilverStripe\SearchService\Service\Subsites\IndexConfiguration
+SilverStripe\SearchService\Service\IndexConfiguration:
+  extensions:
+    - SilverStripe\SearchService\Extensions\SubsiteIndexConfigurationExtension
