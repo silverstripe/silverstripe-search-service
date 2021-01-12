@@ -11,9 +11,8 @@ class SubsiteIndexConfigurationExtension extends Extension
     /**
      * @param DocumentInterface $doc
      * @param array $indexes
-     * @return array
      */
-    public function updateIndexesForDocument(DocumentInterface $doc, array $indexes): array
+    public function updateIndexesForDocument(DocumentInterface $doc, array &$indexes): void
     {
         $docSubsiteId = null;
         if ($doc instanceof DataObjectDocument) {
@@ -26,7 +25,5 @@ class SubsiteIndexConfigurationExtension extends Extension
                 unset($indexes[$indexName]);
             }
         }
-
-        return $indexes;
     }
 }
