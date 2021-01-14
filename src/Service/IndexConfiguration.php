@@ -81,6 +81,11 @@ class IndexConfiguration
     private static $auto_dependency_tracking = true;
 
     /**
+     * @var array
+     */
+    private $indexesForClassName = [];
+
+    /**
      * IndexConfiguration constructor.
      * @param string|null $indexVariant
      */
@@ -206,21 +211,26 @@ class IndexConfiguration
      */
     public function getIndexesForClassName(string $class): array
     {
-        $matches = [];
-        foreach ($this->getIndexes() as $indexName => $data) {
-            $classes = $data['includeClasses'] ?? [];
-            foreach ($classes as $candidate => $spec) {
-                if ($spec === false) {
-                    continue;
-                }
-                if ($class === $candidate || is_subclass_of($class, $candidate)) {
-                    $matches[$indexName] = $data;
-                    break;
+
+        if (!isset($this->indexesForClassName[$class])) {
+            $matches = [];
+            foreach ($this->getIndexes() as $indexName => $data) {
+                $classes = $data['includeClasses'] ?? [];
+                foreach ($classes as $candidate => $spec) {
+                    if ($spec === false) {
+                        continue;
+                    }
+                    if ($class === $candidate || is_subclass_of($class, $candidate)) {
+                        $matches[$indexName] = $data;
+                        break;
+                    }
                 }
             }
+
+            $this->indexesForClassName[$class] = $matches;
         }
 
-        return $matches;
+        return $this->indexesForClassName[$class];
     }
 
     /**
