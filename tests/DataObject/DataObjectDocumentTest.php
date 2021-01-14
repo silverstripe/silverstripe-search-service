@@ -10,6 +10,7 @@ use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
+use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
@@ -27,6 +28,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         TagFake::class,
         ImageFake::class,
         DataObjectSubclassFake::class,
+        DataObjectFakeVersioned::class,
     ];
 
     public function testGetIdentifier()
@@ -389,5 +391,28 @@ class DataObjectDocumentTest extends SearchServiceTest
         $mock->onAddToSearchIndexes(DocumentAddHandler::AFTER_ADD);
         $mock->onRemoveFromSearchIndexes(DocumentRemoveHandler::BEFORE_REMOVE);
         $mock->onRemoveFromSearchIndexes(DocumentRemoveHandler::AFTER_REMOVE);
+    }
+
+    public function testDeletedDataObject()
+    {
+        $dataObject = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
+        $dataObject->Title = 'Published';
+        $dataObject->publishRecursive();
+        $id = $dataObject->ID;
+
+        $doc = DataObjectDocument::create($dataObject)->setShouldFallbackToLatestVersion(true);
+        $dataObject->delete();
+
+        /** @var DataObjectDocument $serialDoc */
+        $serialDoc = unserialize(serialize($doc));
+        $this->assertEquals($id, $serialDoc->getDataObject()->ID);
+
+        $doc->setShouldFallbackToLatestVersion(false);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            sprintf("DataObject %s : %s does not exist", DataObjectFakeVersioned::class, $id)
+        );
+
+        unserialize(serialize($doc));
     }
 }

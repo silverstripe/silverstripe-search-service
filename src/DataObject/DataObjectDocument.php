@@ -575,7 +575,7 @@ class DataObjectDocument implements
     {
         return serialize([
             'className' => $this->getDataObject()->baseClass(),
-            'id' => $this->getDataObject()->ID,
+            'id' => $this->getDataObject()->ID ?: $this->getDataObject()->OldID,
             'fallback' => $this->shouldFallbackToLatestVersion,
         ]);
     }
@@ -594,9 +594,9 @@ class DataObjectDocument implements
                 $data['className'],
                 $data['id']
             );
-            if (!$dataObject) {
-                throw new Exception(sprintf('DataObject %s : %s does not exist', $data['className'], $data['id']));
-            }
+        }
+        if (!$dataObject) {
+            throw new Exception(sprintf('DataObject %s : %s does not exist', $data['className'], $data['id']));
         }
         $this->setDataObject($dataObject);
         foreach (static::config()->get('dependencies') as $name => $service) {
