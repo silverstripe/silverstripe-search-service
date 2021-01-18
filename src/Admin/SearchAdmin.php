@@ -7,6 +7,8 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\NumericField;
@@ -18,6 +20,7 @@ use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\Subsites\Model\Subsite;
 use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
@@ -41,13 +44,47 @@ class SearchAdmin extends LeftAndMain
 
         /** @var IndexingInterface $indexService */
         $indexService = Injector::inst()->get(IndexingInterface::class);
+        $externalURL = $indexService->getExternalURL();
+        $docsURL = $indexService->getDocumentationURL();
 
         $fields = [];
-        $fields[] = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
-        $fields[] = LiteralField::create(
-            'Divider',
-            '<div class="clear" style="height: 32px; border-top: 1px solid #ced5e1"></div>'
-        );
+        if ($externalURL !== null || $docsURL !== null) {
+            $fields[] = HeaderField::create('ExternalLinksHeader', 'External Links')
+                ->setAttribute('style', 'font-weight: 300;');
+
+            if ($externalURL !== null) {
+                $fields[] = LiteralField::create(
+                    'ExternalURL',
+                    sprintf(
+                        '<div><a href="%s" target="_blank" style="font-size: medium">%s</a></div>',
+                        $externalURL,
+                        $indexService->getExternalURLDescription() ?? 'External URL'
+                    )
+                );
+            }
+
+            if ($docsURL !== null) {
+                $fields[] = LiteralField::create(
+                    'DocsURL',
+                    sprintf(
+                        '<div><a href="%s" target="_blank" style="font-size: medium">Documentation URL</a></div>',
+                        $docsURL
+                    )
+                );
+            }
+
+            $fields[] = LiteralField::create(
+                'Divider',
+                '<div class="clear" style="margin-top: 16px; height: 32px; border-top: 1px solid #ced5e1"></div>'
+            );
+        }
+
+        /** @var GridField $docsGrid */
+        $docsGrid = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
+        $docsGrid->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
+
+        $fields[] = $docsGrid;
+
         $fields[] = HeaderField::create('QueuedJobsHeader', 'Queued Jobs Status')
             ->setAttribute('style', 'font-weight: 300;');
 
@@ -86,35 +123,6 @@ class SearchAdmin extends LeftAndMain
         ->setReadonly(true)
         ->setRightTitle('i.e. status is one of: ' . implode(', ', $stoppedStatuses));
 
-        $externalURL = $indexService->getExternalURL();
-        $docsURL = $indexService->getDocumentationURL();
-
-        if ($externalURL !== null || $docsURL !== null) {
-            $fields[] = HeaderField::create('ExternalLinksHeader', 'External Links')
-                ->setAttribute('style', 'font-weight: 300;');
-
-            if ($externalURL !== null) {
-                $fields[] = LiteralField::create(
-                    'ExternalURL',
-                    sprintf(
-                        '<div><a href="%s" target="_blank" style="font-size: medium">%s</a></div>',
-                        $externalURL,
-                        $indexService->getExternalURLDescription() ?? 'External URL'
-                    )
-                );
-            }
-
-            if ($docsURL !== null) {
-                $fields[] = LiteralField::create(
-                    'DocsURL',
-                    sprintf(
-                        '<div><a href="%s" target="_blank" style="font-size: medium">Documentation URL</a></div>',
-                        $docsURL
-                    )
-                );
-            }
-        }
-
         return $form->setFields(FieldList::create($fields));
     }
 
@@ -132,8 +140,20 @@ class SearchAdmin extends LeftAndMain
         $configuration = SearchServiceExtension::singleton()->getConfiguration();
         foreach ($configuration->getIndexes() as $index => $data) {
             $localCount = 0;
+            $stashValue = null;
+            $where = 'SearchIndexed IS NOT NULL';
+            if (isset($data['subsite_id']) && is_numeric($data['subsite_id'])) {
+                $stashValue = Subsite::$disable_subsite_filter;
+                Subsite::disable_subsite_filter(true);
+                $where .= " AND SubsiteID = {$data['subsite_id']}";
+            }
+
             foreach ($configuration->getClassesForIndex($index) as $class) {
-                $localCount += $class::get()->where('SearchIndexed IS NOT NULL')->count();
+                $localCount += $class::get()->where($where)->count();
+            }
+
+            if ($stashValue !== null) {
+                Subsite::disable_subsite_filter($stashValue);
             }
 
             $result = new IndexedDocumentsResult();
