@@ -13,6 +13,7 @@ use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\DataQuery;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Jobs\ClearIndexJob;
@@ -20,7 +21,6 @@ use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
-use SilverStripe\Subsites\Model\Subsite;
 use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
@@ -140,20 +140,11 @@ class SearchAdmin extends LeftAndMain
         $configuration = SearchServiceExtension::singleton()->getConfiguration();
         foreach ($configuration->getIndexes() as $index => $data) {
             $localCount = 0;
-            $stashValue = null;
-            $where = 'SearchIndexed IS NOT NULL';
-            if (isset($data['subsite_id']) && is_numeric($data['subsite_id'])) {
-                $stashValue = Subsite::$disable_subsite_filter;
-                Subsite::disable_subsite_filter(true);
-                $where .= " AND SubsiteID = {$data['subsite_id']}";
-            }
-
             foreach ($configuration->getClassesForIndex($index) as $class) {
-                $localCount += $class::get()->where($where)->count();
-            }
-
-            if ($stashValue !== null) {
-                Subsite::disable_subsite_filter($stashValue);
+                $query = new DataQuery($class);
+                $query->where('SearchIndexed IS NOT NULL');
+                $this->extend('updateQuery', $query, $data);
+                $localCount += $query->count();
             }
 
             $result = new IndexedDocumentsResult();
@@ -162,6 +153,8 @@ class SearchAdmin extends LeftAndMain
             $result->RemoteDocs = $indexer->getDocumentTotal($index);
             $list->push($result);
         }
+
+        $this->extend('updateDocumentList', $list);
 
         return $list;
     }

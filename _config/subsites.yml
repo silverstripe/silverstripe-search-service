@@ -6,4 +6,7 @@ Only:
 ---
 SilverStripe\SearchService\Service\IndexConfiguration:
   extensions:
-    - SilverStripe\SearchService\Extensions\SubsiteIndexConfigurationExtension
+    - SilverStripe\SearchService\Extensions\Subsites\IndexConfigurationExtension
+SilverStripe\SearchService\Admin\SearchAdmin:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\SearchAdminExtension
