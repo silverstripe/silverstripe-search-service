@@ -2,6 +2,7 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
@@ -25,6 +26,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ConfigurationAware;
+    use Extensible;
 
     /**
      * @var array
@@ -120,6 +122,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
+        $this->extend('onBeforeProcess');
         /* @var DocumentFetcherInterface $fetcher */
         $fetcher = $this->fetchers[$this->fetchIndex] ?? null;
         if (!$fetcher) {
@@ -143,6 +146,8 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
             $this->fetchOffset = $nextOffset;
         }
         $this->currentStep++;
+
+        $this->extend('onAfterProcess');
     }
 
     /**

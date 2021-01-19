@@ -10,3 +10,6 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 SilverStripe\SearchService\Admin\SearchAdmin:
   extensions:
     - SilverStripe\SearchService\Extensions\Subsites\SearchAdminExtension
+SilverStripe\SearchService\Jobs\ReindexJob:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\ReindexJobExtension
