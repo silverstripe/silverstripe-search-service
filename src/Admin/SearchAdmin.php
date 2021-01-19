@@ -143,6 +143,7 @@ class SearchAdmin extends LeftAndMain
             foreach ($configuration->getClassesForIndex($index) as $class) {
                 $query = new DataQuery($class);
                 $query->where('SearchIndexed IS NOT NULL');
+                $query->where('ShowInSearch = 1');
                 $this->extend('updateQuery', $query, $data);
                 $localCount += $query->count();
             }
