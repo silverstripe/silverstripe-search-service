@@ -588,7 +588,7 @@ class DataObjectDocument implements
     {
         $data = unserialize($serialized);
         $dataObject = DataObject::get_by_id($data['className'], $data['id']);
-        if (!$dataObject && $data['fallback']) {
+        if (!$dataObject && DataObject::has_extension($data['className'], Versioned::class) && $data['fallback']) {
             // get the latest version - usually this is an object that has been deleted
             $dataObject = Versioned::get_latest_version(
                 $data['className'],
