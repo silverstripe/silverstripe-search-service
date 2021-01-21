@@ -83,6 +83,11 @@ class DataObjectDocument implements
     private $pageCrawler;
 
     /**
+     * @var bool
+     */
+    private $shouldFallbackToLatestVersion = false;
+
+    /**
      * @var array
      */
     private static $dependencies = [
@@ -117,6 +122,17 @@ class DataObjectDocument implements
     public function getSourceClass(): string
     {
         return $this->getDataObject()->ClassName;
+    }
+
+    /**
+     * @param bool $fallback
+     * @return $this
+     */
+    public function setShouldFallbackToLatestVersion(bool $fallback = true): DataObjectDocument
+    {
+        $this->shouldFallbackToLatestVersion = $fallback;
+
+        return $this;
     }
 
     /**
@@ -559,7 +575,8 @@ class DataObjectDocument implements
     {
         return serialize([
             'className' => $this->getDataObject()->baseClass(),
-            'id' => $this->getDataObject()->ID,
+            'id' => $this->getDataObject()->ID ?: $this->getDataObject()->OldID,
+            'fallback' => $this->shouldFallbackToLatestVersion,
         ]);
     }
 
@@ -571,6 +588,13 @@ class DataObjectDocument implements
     {
         $data = unserialize($serialized);
         $dataObject = DataObject::get_by_id($data['className'], $data['id']);
+        if (!$dataObject && DataObject::has_extension($data['className'], Versioned::class) && $data['fallback']) {
+            // get the latest version - usually this is an object that has been deleted
+            $dataObject = Versioned::get_latest_version(
+                $data['className'],
+                $data['id']
+            );
+        }
         if (!$dataObject) {
             throw new Exception(sprintf('DataObject %s : %s does not exist', $data['className'], $data['id']));
         }

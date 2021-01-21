@@ -105,7 +105,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function removeFromIndexes(): void
     {
-        $document = DataObjectDocument::create($this->owner);
+        $document = DataObjectDocument::create($this->owner)->setShouldFallbackToLatestVersion();
         $this->getBatchProcessor()->removeDocuments([$document]);
     }
 

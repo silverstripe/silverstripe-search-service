@@ -43,3 +43,8 @@ SilverStripe\SearchService\Tests\Fake\DataObjectFake:
     Tags: =>SilverStripe\SearchService\Tests\Fake\TagFake.one
     Member: =>SilverStripe\Security\Member.three
     Sort: 3
+
+SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned:
+  one:
+    ID: 123
+    Title: Dataobject one Versioned

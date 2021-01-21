@@ -30,6 +30,10 @@ class RemoveDataObjectJob extends IndexJob
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
         $this->timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
+        if ($document !== null) {
+            // We do this so that if the Dataobject is deleted, not just unpublished, we can still act upon it
+            $document->setShouldFallbackToLatestVersion();
+        }
         $this->document = $document;
     }
 
