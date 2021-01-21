@@ -49,8 +49,8 @@ class DataObjectDocumentTest extends SearchServiceTest
     {
         $config = $this->mockConfig();
         $dataobject = new DataObjectFake(['ID' => 5, 'ShowInSearch' => true]);
-        $config->set('getIndexesForDocument', ['index' => 'data']);
         $doc = DataObjectDocument::create($dataobject);
+        $config->set('getIndexesForDocument', [$doc->getIdentifier() => ['index' => 'data']]);
 
         $dataobject->can_view = false;
         $this->assertFalse($doc->shouldIndex());
