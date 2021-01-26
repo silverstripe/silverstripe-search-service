@@ -3,10 +3,12 @@
 namespace SilverStripe\SearchService\Admin;
 
 use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridField_FormAction;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\HeaderField;
@@ -15,12 +17,14 @@ use SilverStripe\Forms\NumericField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataQuery;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\GridField\SearchReindexFormAction;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\SearchService\Tasks\SearchReindex;
 use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
@@ -82,8 +86,25 @@ class SearchAdmin extends LeftAndMain
         /** @var GridField $docsGrid */
         $docsGrid = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
         $docsGrid->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
+        $docsGrid->getConfig()->addComponent(new SearchReindexFormAction());
 
         $fields[] = $docsGrid;
+
+        $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
+        $fields[] = LiteralField::create('ReindexAllURL',
+            sprintf(
+                '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
+                    <a href="%s" target="_blank" style="
+                        font-size: small;
+                        background-color: #da273b;
+                        color: white;
+                        padding: 7px;
+                        border-radius: 3px;"
+                    >Trigger Full Reindex on All</a>
+                </div>',
+                $fullReindexBaseURL
+            )
+        );
 
         $fields[] = HeaderField::create('QueuedJobsHeader', 'Queued Jobs Status')
             ->setAttribute('style', 'font-weight: 300;');
@@ -138,6 +159,7 @@ class SearchAdmin extends LeftAndMain
         $indexer = Injector::inst()->get(IndexingInterface::class);
 
         $configuration = SearchServiceExtension::singleton()->getConfiguration();
+
         foreach ($configuration->getIndexes() as $index => $data) {
             $localCount = 0;
             foreach ($configuration->getClassesForIndex($index) as $class) {
