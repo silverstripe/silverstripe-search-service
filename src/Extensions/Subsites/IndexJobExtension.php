@@ -5,7 +5,7 @@ namespace SilverStripe\SearchService\Extensions\Subsites;
 use SilverStripe\Core\Extension;
 use SilverStripe\Subsites\Model\Subsite;
 
-class ReindexJobExtension extends Extension
+class IndexJobExtension extends Extension
 {
     /**
      * @var bool|null

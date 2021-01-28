@@ -2,6 +2,7 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Service\Indexer;
@@ -17,6 +18,7 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
+    use Extensible;
 
     /**
      * @param DocumentInterface[] $documents
@@ -69,8 +71,11 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
+        $this->extend('onBeforeProcess');
         $this->currentStep++;
         $this->indexer->processNode();
+        $this->extend('onAfterProcess');
+
         if ($this->indexer->finished()) {
             $this->isComplete = true;
         }

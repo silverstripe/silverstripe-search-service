@@ -12,4 +12,7 @@ SilverStripe\SearchService\Admin\SearchAdmin:
     - SilverStripe\SearchService\Extensions\Subsites\SearchAdminExtension
 SilverStripe\SearchService\Jobs\ReindexJob:
   extensions:
-    - SilverStripe\SearchService\Extensions\Subsites\ReindexJobExtension
+    - SilverStripe\SearchService\Extensions\Subsites\IndexJobExtension
+SilverStripe\SearchService\Jobs\IndexJob:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\IndexJobExtension

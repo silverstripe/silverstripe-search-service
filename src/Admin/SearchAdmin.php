@@ -91,7 +91,8 @@ class SearchAdmin extends LeftAndMain
         $fields[] = $docsGrid;
 
         $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
-        $fields[] = LiteralField::create('ReindexAllURL',
+        $fields[] = LiteralField::create(
+            'ReindexAllURL',
             sprintf(
                 '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
                     <a href="%s" target="_blank" style="
