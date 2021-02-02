@@ -8,11 +8,14 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Service\SyncJobRunner;
 use SilverStripe\SearchService\Tasks\SearchClearIndex;
+use SilverStripe\SearchService\Tests\SearchServiceTest;
 
-class SearchClearIndexTest extends SapphireTest
+class SearchClearIndexTest extends SearchServiceTest
 {
     public function testTask()
     {
+        $config = $this->mockConfig();
+        $config->set('use_sync_jobs', true);
         $mock = $this->getMockBuilder(SyncJobRunner::class)
             ->setMethods(['runJob'])
             ->getMock();
