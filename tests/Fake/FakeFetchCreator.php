@@ -13,7 +13,7 @@ class FakeFetchCreator implements DocumentFetchCreatorInterface
         return $type === 'Fake';
     }
 
-    public function createFetcher(string $class, ?int $until = null): DocumentFetcherInterface
+    public function createFetcher(string $class): DocumentFetcherInterface
     {
         return new FakeFetcher();
     }

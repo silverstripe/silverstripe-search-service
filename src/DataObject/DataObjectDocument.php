@@ -380,7 +380,7 @@ class DataObjectDocument implements
             $fields = $this->getConfiguration()->getFieldsForClass($class);
 
             $registry = DocumentFetchCreatorRegistry::singleton();
-            $fetcher = $registry->getFetcher($class, time());
+            $fetcher = $registry->getFetcher($class);
             if (!$fetcher) {
                 continue;
             }

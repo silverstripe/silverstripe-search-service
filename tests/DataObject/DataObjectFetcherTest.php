@@ -16,12 +16,6 @@ class DataObjectFetcherTest extends SearchServiceTest
         DataObjectFake::class
     ];
 
-    public function testConstructor()
-    {
-        $this->expectException('InvalidArgumentException');
-        DataObjectFetcher::create(Controller::class);
-    }
-
     public function testFetch()
     {
         $fetcher = DataObjectFetcher::create(DataObjectFake::class);

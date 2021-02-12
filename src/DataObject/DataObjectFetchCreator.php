@@ -23,11 +23,10 @@ class DataObjectFetchCreator implements DocumentFetchCreatorInterface
 
     /**
      * @param string $class
-     * @param int|null $since
      * @return DocumentFetcherInterface
      */
-    public function createFetcher(string $class, ?int $since = null): DocumentFetcherInterface
+    public function createFetcher(string $class): DocumentFetcherInterface
     {
-        return DataObjectFetcher::create($class, $since);
+        return DataObjectFetcher::create($class);
     }
 }

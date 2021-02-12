@@ -13,8 +13,7 @@ interface DocumentFetchCreatorInterface
 
     /**
      * @param string $class
-     * @param int|null $until
      * @return DocumentFetcherInterface
      */
-    public function createFetcher(string $class, ?int $until = null): DocumentFetcherInterface;
+    public function createFetcher(string $class): DocumentFetcherInterface;
 }

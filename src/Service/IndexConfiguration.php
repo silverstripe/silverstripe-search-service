@@ -28,12 +28,6 @@ class IndexConfiguration
     private static $batch_size = 100;
 
     /**
-     * @var string
-     * @config
-     */
-    private static $sync_interval = '5 minutes';
-
-    /**
      * @var bool
      * @config
      */
@@ -102,14 +96,6 @@ class IndexConfiguration
     public function getBatchSize(): int
     {
         return $this->config()->get('batch_size');
-    }
-
-    /**
-     * @return string
-     */
-    public function getSyncInterval(): string
-    {
-        return $this->config()->get('sync_interval');
     }
 
     /**

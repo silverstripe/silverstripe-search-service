@@ -26,11 +26,6 @@ class IndexConfigurationFake extends IndexConfiguration
         return $this->override['batch_size'] ?? parent::getBatchSize();
     }
 
-    public function getSyncInterval(): string
-    {
-        return $this->override['sync_interval'] ?? parent::getSyncInterval();
-    }
-
     public function shouldCrawlPageContent(): bool
     {
         return $this->override['crawl_page_content'] ?? parent::shouldCrawlPageContent();
