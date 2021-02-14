@@ -30,11 +30,6 @@ class DataObjectFetcher implements DocumentFetcherInterface
     private $dataObjectClass;
 
     /**
-     * @var int|null
-     */
-    private $until;
-
-    /**
      * @var array
      */
     private static $dependencies = [
@@ -45,9 +40,8 @@ class DataObjectFetcher implements DocumentFetcherInterface
     /**
      * DataObjectFetcher constructor.
      * @param string $class
-     * @param int|null $until
      */
-    public function __construct(string $class, ?int $until = null)
+    public function __construct(string $class)
     {
         if (!is_subclass_of($class, DataObject::class)) {
             throw new InvalidArgumentException(sprintf(
@@ -58,7 +52,6 @@ class DataObjectFetcher implements DocumentFetcherInterface
         }
 
         $this->dataObjectClass = $class;
-        $this->until = $until;
     }
 
     /**
@@ -117,14 +110,7 @@ class DataObjectFetcher implements DocumentFetcherInterface
      */
     private function createDataList(?int $limit = null, ?int $offset = null): DataList
     {
-        /* @var DBDatetime $since */
-        $since = DBField::create_field('Datetime', $this->until);
-        $date = $since->Rfc2822();
-        $list = DataList::create($this->dataObjectClass)
-            ->where(
-                ['SearchIndexed IS NULL OR SearchIndexed < ?' => $date]
-            );
-
+        $list = DataList::create($this->dataObjectClass);
         return $list->limit($limit, $offset);
     }
 }

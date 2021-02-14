@@ -56,14 +56,13 @@ class DocumentFetchCreatorRegistry
 
     /**
      * @param string $class
-     * @param int|null $until
      * @return DocumentFetchCreatorInterface|null
      */
-    public function getFetcher(string $class, ?int $until = null): ?DocumentFetcherInterface
+    public function getFetcher(string $class): ?DocumentFetcherInterface
     {
         foreach ($this->fetchCreators as $creator) {
             if ($creator->appliesTo($class)) {
-                return $creator->createFetcher($class, $until);
+                return $creator->createFetcher($class);
             }
         }
 

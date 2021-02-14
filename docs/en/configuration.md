@@ -127,14 +127,6 @@ Let's look at all the settings on the `IndexConfiguration` class:
             <td>100</td>
         </tr>
         <tr>
-            <td>sync_interval</td>
-            <td>string</td>
-            <td>The minimum amount of time a document can be stale before it should be reindexed.
-                Only applies to bulk reindexing.
-            </td>
-            <td>"5 minutes"</td>
-        </tr>
-        <tr>
             <td>crawl_page_content</td>
             <td>bool</td>
             <td>If true, attempt to render pages in a controller and extract their content

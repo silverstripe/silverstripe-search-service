@@ -78,7 +78,6 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     public function setup()
     {
         Versioned::set_stage(Versioned::LIVE);
-        $until = strtotime('-' . $this->getConfiguration()->getSyncInterval());
         $classes = $this->onlyClasses && count($this->onlyClasses) ?
             $this->onlyClasses :
             $this->getConfiguration()->getSearchableBaseClasses();
@@ -86,7 +85,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         /* @var DocumentFetcherInterface[] $fetchers */
         $fetchers = [];
         foreach ($classes as $class) {
-            $fetcher = $this->getRegistry()->getFetcher($class, $until);
+            $fetcher = $this->getRegistry()->getFetcher($class);
             if ($fetcher) {
                 $fetchers[$class] = $fetcher;
             }
