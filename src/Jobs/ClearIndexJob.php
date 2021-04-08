@@ -37,12 +37,17 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 
     /**
      * ClearIndexJob constructor.
-     * @param string $indexName
+     * @param string|null $indexName
      * @param int|null $batchSize
      */
-    public function __construct(string $indexName, ?int $batchSize = null)
+    public function __construct(?string $indexName = null, ?int $batchSize = null)
     {
         parent::__construct();
+
+        if (!$indexName) {
+            return;
+        }
+
         $this->indexName = $indexName;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
         $this->batchOffset = 0;
