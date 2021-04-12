@@ -3,10 +3,11 @@
 namespace SilverStripe\SearchService\Services\Naive;
 
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
+use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 
-class NaiveSearchService implements IndexingInterface
+class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInterface
 {
     public function addDocument(DocumentInterface $item): IndexingInterface
     {
@@ -21,6 +22,11 @@ class NaiveSearchService implements IndexingInterface
     public function removeDocuments(array $items): BatchDocumentInterface
     {
         return $this;
+    }
+
+    public function removeAllDocuments(string $indexName): int
+    {
+        return 0;
     }
 
     public function getDocuments(array $ids): array

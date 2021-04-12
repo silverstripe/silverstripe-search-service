@@ -3,7 +3,10 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
@@ -31,11 +34,6 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
     ];
 
     /**
-     * @var int
-     */
-    private $totalCount = 0;
-
-    /**
      * ClearIndexJob constructor.
      * @param string|null $indexName
      * @param int|null $batchSize
@@ -51,6 +49,7 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         $this->indexName = $indexName;
         $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
         $this->batchOffset = 0;
+
         if ($this->batchSize < 1) {
             throw new InvalidArgumentException('Batch size must be greater than 0');
         }
@@ -61,9 +60,8 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function setup()
     {
-        $this->totalCount = $this->getIndexService()->getDocumentTotal($this->indexName);
-        $this->totalSteps = ceil($this->totalCount / $this->batchSize);
-        $this->isComplete = $this->totalCount === 0;
+        // Attempt to remove all documents up to 5 times to allow for eventually-consistent data stores
+        $this->totalSteps = 5;
     }
 
     public function getTitle()
@@ -76,24 +74,48 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
-        $docs = $this->getIndexService()->listDocuments(
-            $this->indexName,
-            $this->batchSize
-        );
-        if (!empty($docs)) {
-            $this->getIndexService()->removeDocuments($docs);
-        }
-        $total = $this->getIndexService()->getDocumentTotal($this->indexName);
-        if ($total === 0) {
+        Environment::increaseMemoryLimitTo();
+        Environment::increaseTimeLimitTo();
+
+        if (!method_exists($this->getIndexService(), 'removeAllDocuments')) {
+            Injector::inst()->get(LoggerInterface::class)->error(sprintf(
+                'Index service "%s" does not implement the BatchDocumentRemovalInterface, cannot remove all documents',
+                get_class($this->getIndexService())
+            ));
+
             $this->isComplete = true;
             return;
         }
+
         $this->currentStep++;
+        $total = $this->getIndexService()->getDocumentTotal($this->indexName);
+        $numRemoved = $this->getIndexService()->removeAllDocuments($this->indexName);
+        $totalAfter = $this->getIndexService()->getDocumentTotal($this->indexName);
+
+        Injector::inst()->get(LoggerInterface::class)->notice(sprintf(
+            '[Step %d]: Before there were %d documents. We removed %d documents this iteration, leaving %d remaining.',
+            $this->currentStep,
+            $total,
+            $numRemoved,
+            $totalAfter
+        ));
+
+        if ($totalAfter === 0) {
+            $this->isComplete = true;
+            Injector::inst()->get(LoggerInterface::class)->notice(sprintf(
+                'Successfully removed all documents from index %s',
+                $this->indexName
+            ));
+
+            return;
+        }
 
         if ($this->currentStep > $this->totalSteps) {
             throw new RuntimeException(sprintf(
-                'ClearIndexJob was unable to delete all documents. Finished all steps and document total is still %s',
-                $total
+                'ClearIndexJob was unable to delete all documents after %d attempts. Finished all steps and the'
+                    . ' document total is still %d',
+                $this->totalSteps,
+                $totalAfter
             ));
         }
     }

@@ -115,6 +115,34 @@ class AppSearchServiceTest extends SearchServiceTest
 
         $this->appSearch->addDocuments([$fake1, $fake2]);
     }
+    
+    public function testRemoveAllDocuments()
+    {
+        $this->client->expects($this->exactly(2))
+            ->method('listDocuments')
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'results' => [
+                        [ 'id' => 100 ],
+                        [ 'id' => 101 ],
+                        [ 'id' => 102 ]
+                    ]
+                ],
+                [
+                    'results' => []
+                ]
+            );
+
+        $this->client->expects($this->exactly(1))
+            ->method('deleteDocuments')
+            ->willReturn([
+                [ 'deleted' => true ],
+                [ 'deleted' => true ],
+                [ 'deleted' => true ],
+            ]);
+
+        $this->assertSame(3, $this->appSearch->removeAllDocuments('test'));
+    }
 
     public function testRemoveDocuments()
     {
