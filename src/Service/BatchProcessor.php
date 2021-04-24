@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Injector\Injectable;
