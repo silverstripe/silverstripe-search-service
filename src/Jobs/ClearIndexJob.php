@@ -8,6 +8,7 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
+use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
@@ -77,10 +78,11 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
 
-        if (!method_exists($this->getIndexService(), 'removeAllDocuments')) {
+        if (!$this->getIndexService() instanceof BatchDocumentRemovalInterface) {
             Injector::inst()->get(LoggerInterface::class)->error(sprintf(
-                'Index service "%s" does not implement the BatchDocumentRemovalInterface, cannot remove all documents',
-                get_class($this->getIndexService())
+                'Index service "%s" does not implement the %s interface. Cannot remove all documents',
+                get_class($this->getIndexService()),
+                BatchDocumentRemovalInterface::class
             ));
 
             $this->isComplete = true;
