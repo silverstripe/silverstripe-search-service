@@ -1,0 +1,9 @@
+---
+Name: 'silverstripe-search-service-subsites'
+After: '#silverstripe-search-service'
+Only:
+  moduleexists: 'silverstripe/subsites'
+---
+SilverStripe\SearchService\Service\IndexConfiguration:
+  extensions:
+    - SilverStripe\SearchService\Extensions\SubsiteIndexConfigurationExtension

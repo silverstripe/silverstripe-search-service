@@ -212,6 +212,45 @@ SilverStripe\SearchService\Service\PageCrawler:
   content_xpath_selector: '//body'
 ```
 
+## Subsites
+
+Due to the way that filtering works with Elastic App Search, you may want to split
+each subsite's content into a separate engine. To do so, you can use the following
+configuration:
+
+```yaml
+SilverStripe\SearchService\Service\IndexConfiguration:
+  indexes:
+    content-subsite0:
+      subsite_id: 0
+      includeClasses:
+        Page: &page_defaults
+          fields:
+            title: true
+            content: true
+            summary: true
+        My\Other\Class: &other_class_defaults
+          fields:
+            title:
+              property: Title
+            summary:
+              property: Summary
+    content-subsite4:
+      subsite_id: 4
+      includeClasses:
+        Page:
+          <<: *page_defaults
+          My\Other\Class:
+          <<: *other_class_defaults
+
+```
+
+Note the syntax to reduce the need for copy-paste if you want to duplicate the
+same configuration across.
+
+This is handled via `SubsiteIndexConfigurationExtension` - this logic could be
+replicated for other scenarios like languages if required.
+
 ## More information
 
 * [Usage](usage.md)

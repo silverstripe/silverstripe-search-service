@@ -4,6 +4,7 @@
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -14,6 +15,7 @@ class IndexConfiguration
 {
     use Configurable;
     use Injectable;
+    use Extensible;
 
     /**
      * @var bool
@@ -68,10 +70,20 @@ class IndexConfiguration
     private $indexVariant;
 
     /**
+     * @var string[]
+     */
+    private $onlyIndexes = [];
+
+    /**
      * @var bool
      * @config
      */
     private static $auto_dependency_tracking = true;
+
+    /**
+     * @var array
+     */
+    private $indexesForClassName = [];
 
     /**
      * IndexConfiguration constructor.
@@ -134,12 +146,31 @@ class IndexConfiguration
     }
 
     /**
+     * @param array $indexes
+     * @return $this
+     */
+    public function setOnlyIndexes(array $indexes): IndexConfiguration
+    {
+        $this->onlyIndexes = $indexes;
+        return $this;
+    }
+
+    /**
      * @return array
      * @config
      */
     public function getIndexes(): array
     {
-        return $this->config()->get('indexes');
+        $indexes = $this->config()->get('indexes');
+        if ($this->onlyIndexes && !empty($this->onlyIndexes)) {
+            foreach ($indexes as $index => $configuration) {
+                if (!in_array($index, $this->onlyIndexes)) {
+                    unset($indexes[$index]);
+                }
+            }
+        }
+
+        return $indexes;
     }
 
     /**
@@ -180,21 +211,26 @@ class IndexConfiguration
      */
     public function getIndexesForClassName(string $class): array
     {
-        $matches = [];
-        foreach ($this->getIndexes() as $indexName => $data) {
-            $classes = $data['includeClasses'] ?? [];
-            foreach ($classes as $candidate => $spec) {
-                if ($spec === false) {
-                    continue;
-                }
-                if ($class === $candidate || is_subclass_of($class, $candidate)) {
-                    $matches[$indexName] = $data;
-                    break;
+
+        if (!isset($this->indexesForClassName[$class])) {
+            $matches = [];
+            foreach ($this->getIndexes() as $indexName => $data) {
+                $classes = $data['includeClasses'] ?? [];
+                foreach ($classes as $candidate => $spec) {
+                    if ($spec === false) {
+                        continue;
+                    }
+                    if ($class === $candidate || is_subclass_of($class, $candidate)) {
+                        $matches[$indexName] = $data;
+                        break;
+                    }
                 }
             }
+
+            $this->indexesForClassName[$class] = $matches;
         }
 
-        return $matches;
+        return $this->indexesForClassName[$class];
     }
 
     /**
@@ -203,7 +239,11 @@ class IndexConfiguration
      */
     public function getIndexesForDocument(DocumentInterface $doc): array
     {
-        return $this->getIndexesForClassName($doc->getSourceClass());
+        $indexes = $this->getIndexesForClassName($doc->getSourceClass());
+
+        $this->extend('updateIndexesForDocument', $doc, $indexes);
+
+        return $indexes;
     }
 
     /**
