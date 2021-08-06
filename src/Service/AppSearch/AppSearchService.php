@@ -172,7 +172,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
      * @param string $indexName The index name to remove all documents from
      * @return int The total number of documents removed
      */
-    public function removeAllDocuments($indexName): int
+    public function removeAllDocuments(string $indexName): int
     {
         $cfg = $this->getConfiguration();
         $client = $this->getClient();
