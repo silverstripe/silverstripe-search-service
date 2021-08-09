@@ -8,14 +8,13 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridField;
-use SilverStripe\Forms\GridField\GridField_FormAction;
-use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataQuery;
+use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 use SilverStripe\SearchService\GridField\SearchReindexFormAction;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
@@ -25,10 +24,12 @@ use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
 use SilverStripe\SearchService\Tasks\SearchReindex;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\PermissionProvider;
 use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
-class SearchAdmin extends LeftAndMain
+class SearchAdmin extends LeftAndMain implements PermissionProvider
 {
     private static $url_segment = 'search-service';
 
@@ -36,11 +37,13 @@ class SearchAdmin extends LeftAndMain
 
     private static $menu_icon_class = 'font-icon-search';
 
+    private static $required_permission_codes = 'CMS_ACCESS_SearchAdmin';
+
     /**
      * @param null $id
      * @param null $fields
      * @return Form
-     * @throws \SilverStripe\SearchService\Exception\IndexingServiceException
+     * @throws IndexingServiceException
      */
     public function getEditForm($id = null, $fields = null): Form
     {
@@ -83,18 +86,21 @@ class SearchAdmin extends LeftAndMain
             );
         }
 
-        /** @var GridField $docsGrid */
         $docsGrid = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
         $docsGrid->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
-        $docsGrid->getConfig()->addComponent(new SearchReindexFormAction());
+        $isAdmin = Permission::check('ADMIN');
+        if ($isAdmin) {
+            $docsGrid->getConfig()->addComponent(new SearchReindexFormAction());
+        }
 
         $fields[] = $docsGrid;
 
-        $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
-        $fields[] = LiteralField::create(
-            'ReindexAllURL',
-            sprintf(
-                '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
+        if ($isAdmin) {
+            $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
+            $fields[] = LiteralField::create(
+                'ReindexAllURL',
+                sprintf(
+                    '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
                     <a href="%s" target="_blank" style="
                         font-size: small;
                         background-color: #da273b;
@@ -103,9 +109,10 @@ class SearchAdmin extends LeftAndMain
                         border-radius: 3px;"
                     >Trigger Full Reindex on All</a>
                 </div>',
-                $fullReindexBaseURL
-            )
-        );
+                    $fullReindexBaseURL
+                )
+            );
+        }
 
         $fields[] = HeaderField::create('QueuedJobsHeader', 'Queued Jobs Status')
             ->setAttribute('style', 'font-weight: 300;');
@@ -150,7 +157,7 @@ class SearchAdmin extends LeftAndMain
 
     /**
      * @return ArrayList
-     * @throws \SilverStripe\SearchService\Exception\IndexingServiceException
+     * @throws IndexingServiceException
      */
     private function buildIndexedDocumentsList(): ArrayList
     {
@@ -183,5 +190,24 @@ class SearchAdmin extends LeftAndMain
         $this->extend('updateDocumentList', $list);
 
         return $list;
+    }
+
+    public function providePermissions(): array
+    {
+        $title = $this->menu_title();
+        return [
+            'CMS_ACCESS_SearchAdmin' => [
+                'name' => _t(
+                    'SilverStripe\\CMS\\Controllers\\CMSMain.ACCESS',
+                    "Access to '{title}' section",
+                    ['title' => $title]
+                ),
+                'category' => _t('SilverStripe\\Security\\Permission.CMS_ACCESS_CATEGORY', 'CMS Access'),
+                'help' => _t(
+                    __CLASS__ . '.ACCESS_HELP',
+                    'Allow viewing of search configuration and status, and links to external resources.'
+                )
+            ],
+        ];
     }
 }
