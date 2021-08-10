@@ -5,7 +5,18 @@ but there are some important concepts to understand about what is happening inte
 and how to manage your index with so much activity happening implicitly through content
 changes.
 
-## In the CMS
+## CMS Admin
+
+For admin users and other users with the `CMS_ACCESS_SearchAdmin` permission, there will be a
+Left and Main "dashboard" labelled "Search Service" available. This contains data about objects
+that are indexed, links to documentation and other resources, and the ability to trigger a
+reindex (with `ADMIN` permissions).
+
+![Search Service Admin](../img/search-service-admin.png)
+
+See `IndexingInterface` for how these external links are configured for your implementation.
+
+## Pages and other DataObjects
 
 Publish and unpublish events will instantiate an `IndexJob`, described below. If the
 `use_sync_jobs` setting is on, it will be viewable in the index upon completion of the
