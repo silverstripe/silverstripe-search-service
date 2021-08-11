@@ -34,7 +34,7 @@ class ReindexJobTest extends SearchServiceTest
     public function testJob()
     {
         $config = $this->mockConfig();
-        $config->set('isClassIndexed', [
+        $config->set('use_sync_jobs', [
             DataObjectFake::class => true,
             'Fake' => true,
         ]);

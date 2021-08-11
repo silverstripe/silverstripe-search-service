@@ -68,4 +68,22 @@ interface IndexingInterface extends BatchDocumentInterface
      * @throws IndexConfigurationException
      */
     public function validateField(string $field): void;
+
+    /**
+     * For display in the CMS
+     * @return string|null
+     */
+    public function getExternalURL(): ?string;
+
+    /**
+     * Text to display for the above URL
+     * @return string|null
+     */
+    public function getExternalURLDescription(): ?string;
+
+    /**
+     * URL to display in the CMS to link to documentation
+     * @return string|null
+     */
+    public function getDocumentationURL(): ?string;
 }

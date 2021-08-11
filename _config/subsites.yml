@@ -6,4 +6,13 @@ Only:
 ---
 SilverStripe\SearchService\Service\IndexConfiguration:
   extensions:
-    - SilverStripe\SearchService\Extensions\SubsiteIndexConfigurationExtension
+    - SilverStripe\SearchService\Extensions\Subsites\IndexConfigurationExtension
+SilverStripe\SearchService\Admin\SearchAdmin:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\SearchAdminExtension
+SilverStripe\SearchService\Jobs\ReindexJob:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\IndexJobExtension
+SilverStripe\SearchService\Jobs\IndexJob:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Subsites\IndexJobExtension

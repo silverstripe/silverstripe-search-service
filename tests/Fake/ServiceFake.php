@@ -109,4 +109,19 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
     {
         return $this->maxDocSize;
     }
+
+    public function getExternalURL(): ?string
+    {
+        return null;
+    }
+
+    public function getExternalURLDescription(): ?string
+    {
+        return null;
+    }
+
+    public function getDocumentationURL(): ?string
+    {
+        return null;
+    }
 }

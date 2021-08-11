@@ -1,12 +1,12 @@
 <?php
 
-namespace SilverStripe\SearchService\Extensions;
+namespace SilverStripe\SearchService\Extensions\Subsites;
 
 use SilverStripe\Core\Extension;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 
-class SubsiteIndexConfigurationExtension extends Extension
+class IndexConfigurationExtension extends Extension
 {
     /**
      * @param DocumentInterface $doc
