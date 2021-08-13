@@ -238,6 +238,16 @@ class DataObjectDocument implements
             );
         }
 
+        if (!$dataObject || !$dataObject->exists()) {
+            throw new IndexConfigurationException(
+                sprintf(
+                    "Unable to index %s with ID %d: dataobject not found",
+                    $this->getSourceClass(),
+                    $this->getDataObject()->ID
+                )
+            );
+        }
+
         $toIndex = [];
 
         if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
