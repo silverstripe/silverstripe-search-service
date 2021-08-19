@@ -73,24 +73,40 @@ class DocumentBuilderTest extends SearchServiceTest
 
         $builder = DocumentBuilder::create();
         $document = new DocumentFake('Fake', [
-            'field1' => str_repeat('a', 500)
+            'field1' => str_repeat('a', 500),
         ]);
         $array = $builder->toArray($document);
-        $this->assertLessThanOrEqual($fake->maxDocSize, strlen(json_encode($array)));
+        $postData = json_encode($array, JSON_PRESERVE_ZERO_FRACTION);
+        $this->assertNotFalse($postData, 'Document failed to successfully json_encode');
+        $this->assertLessThanOrEqual($fake->maxDocSize, strlen($postData));
 
         $document = new DocumentFake('Fake', [
-            'field1' => str_repeat('a', 50)
+            'field1' => str_repeat('a', 50),
         ]);
 
         // Try a couple different doc sizes that far exceed the size of this document
         $fake->maxDocSize = 10000;
         $array = $builder->toArray($document);
-        $size1 = strlen(json_encode($array));
+        $postData = json_encode($array, JSON_PRESERVE_ZERO_FRACTION);
+        $this->assertNotFalse($postData, 'Document failed to successfully json_encode');
+        $size1 = strlen($postData);
 
         $fake->maxDocSize = 5000;
         $array = $builder->toArray($document);
-        $size2 = strlen(json_encode($array));
+        $postData = json_encode($array, JSON_PRESERVE_ZERO_FRACTION);
+        $this->assertNotFalse($postData, 'Document failed to successfully json_encode');
+        $size2 = strlen($postData);
 
         $this->assertEquals($size1, $size2);
+
+        // Try a non-latin document with awkward splits
+        $fake->maxDocSize = 53;
+        $document = new DocumentFake('Fake', [
+            'field1' => str_repeat('日', 117),
+        ]);
+        $array = $builder->toArray($document);
+        $postData = json_encode($array, JSON_PRESERVE_ZERO_FRACTION);
+        $this->assertNotFalse($postData, 'Document failed to successfully json_encode');
+        $this->assertLessThanOrEqual($fake->maxDocSize, strlen($postData));
     }
 }
