@@ -22,7 +22,6 @@ class DocumentBuilder
      * DocumentBuilder constructor.
      * @param IndexConfiguration $configuration
      * @param DocumentFetchCreatorRegistry $registry
-     * @param IndexingInterface $service
      */
     public function __construct(
         IndexConfiguration $configuration,
@@ -51,9 +50,8 @@ class DocumentBuilder
         }
 
         $data[$sourceClassField] = $document->getSourceClass();
-        $data = $this->truncateDocument($data);
 
-        return $data;
+        return $this->truncateDocument($data);
     }
 
     /**
@@ -91,6 +89,7 @@ class DocumentBuilder
             while (strlen(json_encode($data)) >= $documentMaxSize) {
                 $max = 0;
                 $key = '';
+                // Determine which field is the largest, so we can halve that to have the most impact
                 foreach ($data as $k => $v) {
                     $size = strlen(json_encode($v));
                     if ($size > $max) {
@@ -99,7 +98,8 @@ class DocumentBuilder
                     }
                 }
 
-                $data[$key] = substr($data[$key], 0, -(strlen($data[$key]) / 2));
+                // Make sure we don't chop any characters in the middle making them UTF-8 invalid and non-jsonable
+                $data[$key] = mb_substr($data[$key], 0, -(mb_strlen($data[$key]) / 2));
             }
         }
 
