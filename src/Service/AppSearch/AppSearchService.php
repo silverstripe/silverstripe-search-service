@@ -3,9 +3,11 @@
 namespace SilverStripe\SearchService\Services\AppSearch;
 
 use Elastic\AppSearch\Client\Client;
+use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
@@ -89,7 +91,14 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
                 continue;
             }
 
-            $fields = $this->getBuilder()->toArray($item);
+            try {
+                $fields = $this->getBuilder()->toArray($item);
+            } catch (IndexConfigurationException $e) {
+                Injector::inst()->get(LoggerInterface::class)->warning(
+                    sprintf("Failed to convert document to array: %s", $e->getMessage())
+                );
+                continue;
+            }
 
             $indexes = $this->getConfiguration()->getIndexesForDocument($item);
 
@@ -109,11 +118,18 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
         }
 
         foreach ($documentMap as $indexName => $docsToAdd) {
-            $result = $this->getClient()->indexDocuments(
-                static::environmentizeIndex($indexName),
-                $docsToAdd
-            );
-            $this->handleError($result);
+            try {
+                $result = $this->getClient()->indexDocuments(
+                    static::environmentizeIndex($indexName),
+                    $docsToAdd
+                );
+                $this->handleError($result);
+            } catch (Exception $e) {
+                Injector::inst()->get(LoggerInterface::class)->error(
+                    sprintf("Failed to index documents: %s", $e->getMessage())
+                );
+                continue;
+            }
         }
         return $this;
     }
@@ -368,7 +384,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
         }
         if (preg_match('/[^a-z0-9_]/', $field)) {
             throw new IndexConfigurationException(sprintf(
-                'Invalid field name: %s. Must contain only alphanumeric characters and underscores.',
+                'Invalid field name: %s. Must contain only lowercase alphanumeric characters and underscores.',
                 $field
             ));
         }
