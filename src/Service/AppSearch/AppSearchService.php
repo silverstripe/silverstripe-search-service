@@ -2,7 +2,18 @@
 
 namespace SilverStripe\SearchService\Services\AppSearch;
 
-use Elastic\AppSearch\Client\Client;
+use Elastic\EnterpriseSearch\AppSearch\Endpoints as AppEndpoints;
+use Elastic\EnterpriseSearch\AppSearch\Request\CreateEngine;
+use Elastic\EnterpriseSearch\AppSearch\Request\DeleteDocuments;
+use Elastic\EnterpriseSearch\AppSearch\Request\GetDocuments;
+use Elastic\EnterpriseSearch\AppSearch\Request\GetSchema;
+use Elastic\EnterpriseSearch\AppSearch\Request\IndexDocuments;
+use Elastic\EnterpriseSearch\AppSearch\Request\ListDocuments;
+use Elastic\EnterpriseSearch\AppSearch\Request\ListEngines;
+use Elastic\EnterpriseSearch\AppSearch\Request\PutSchema;
+use Elastic\EnterpriseSearch\AppSearch\Schema\Engine;
+use Elastic\EnterpriseSearch\AppSearch\Schema\SchemaUpdateRequest;
+use Elastic\EnterpriseSearch\Client;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
@@ -119,11 +130,12 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
 
         foreach ($documentMap as $indexName => $docsToAdd) {
             try {
-                $result = $this->getClient()->indexDocuments(
+                $documentRequest = new IndexDocuments(
                     static::environmentizeIndex($indexName),
                     $docsToAdd
                 );
-                $this->handleError($result);
+                $result = $this->getAppSearch()->indexDocuments($documentRequest);
+                $this->handleError($result->asArray());
             } catch (Exception $e) {
                 Injector::inst()->get(LoggerInterface::class)->error(
                     sprintf("Failed to index documents: %s", $e->getMessage())
@@ -172,11 +184,9 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
             }
         }
         foreach ($documentMap as $indexName => $idsToRemove) {
-            $result = $this->getClient()->deleteDocuments(
-                static::environmentizeIndex($indexName),
-                $idsToRemove
-            );
-            $this->handleError($result);
+            $request = new DeleteDocuments(static::environmentizeIndex($indexName), $idsToRemove);
+            $result = $this->getAppSearch()->deleteDocuments($request);
+            $this->handleError($result->asArray());
         }
 
         return $this;
@@ -192,11 +202,14 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
     public function removeAllDocuments(string $indexName): int
     {
         $cfg = $this->getConfiguration();
-        $client = $this->getClient();
+        $appSearch = $this->getAppSearch();
         $indexName = static::environmentizeIndex($indexName);
         $numDeleted = 0;
 
-        $documents = $client->listDocuments($indexName, 1, $cfg->getBatchSize());
+        $listRequest = new ListDocuments($indexName);
+        $listRequest->setCurrentPage(1);
+        $listRequest->setPageSize($cfg->getBatchSize());
+        $documents = $appSearch->listDocuments($listRequest)->asArray();
 
         // Loop forever until we no longer get any results
         while (is_array($documents) && sizeof($documents['results']) > 0) {
@@ -208,7 +221,8 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
             }
 
             // Actually delete the documents
-            $deletedDocs = $client->deleteDocuments($indexName, $idsToRemove);
+            $deleteRequest = new DeleteDocuments($indexName, $idsToRemove);
+            $deletedDocs = $appSearch->deleteDocuments($deleteRequest)->asArray();
 
             // Keep an accurate running count of the number of documents deleted.
             foreach ($deletedDocs as $doc) {
@@ -218,7 +232,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
             }
 
             // Re-fetch $documents now that we've deleted this batch
-            $documents = $client->listDocuments($indexName, 1, $cfg->getBatchSize());
+            $documents = $appSearch->listDocuments($listRequest)->asArray();
         }
 
         return $numDeleted;
@@ -253,11 +267,12 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
     {
         $docs = [];
         foreach (array_keys($this->getConfiguration()->getIndexes()) as $indexName) {
-            $response = $this->getClient()->getDocuments(
-                static::environmentizeIndex($indexName),
-                $ids
-            );
+            $request = new GetDocuments(static::environmentizeIndex($indexName), $ids);
+            $response = $this->getAppSearch()
+                ->getDocuments($request)
+                ->asArray();
             $this->handleError($response);
+
             if ($response) {
                 foreach ($response['results'] as $data) {
                     $document = $this->getBuilder()->fromArray($data);
@@ -281,12 +296,12 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
     public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
     {
         try {
-            $response = $this->getClient()->listDocuments(
-                static::environmentizeIndex($indexName),
-                $offset,
-                $limit
-            );
+            $listRequest = new ListDocuments(static::environmentizeIndex($indexName));
+            $listRequest->setCurrentPage($offset);
+            $listRequest->setPageSize($limit);
+            $response = $this->getAppSearch()->listDocuments($listRequest)->asArray();
             $this->handleError($response);
+
             if ($response) {
                 $documents = [];
                 foreach ($response['results'] as $data) {
@@ -311,12 +326,11 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
      */
     public function getDocumentTotal(string $indexName): int
     {
-
-        $response = $this->getClient()->listDocuments(
-            static::environmentizeIndex($indexName)
-        );
+        $listRequest = new ListDocuments(static::environmentizeIndex($indexName));
+        $response = $this->getAppSearch()->listDocuments($listRequest)->asArray();
         $this->handleError($response);
         $total = $response['meta']['page']['total_results'] ?? null;
+
         if ($total === null) {
             throw new IndexingServiceException(sprintf(
                 'Total results not provided in meta content'
@@ -339,7 +353,9 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
             $envIndex = static::environmentizeIndex($indexName);
             $this->findOrMakeIndex($envIndex);
 
-            $result = $this->getClient()->getSchema($envIndex);
+            $result = $this->getAppSearch()
+                ->getSchema(new GetSchema($envIndex))
+                ->asArray();
             $this->handleError($result);
 
             $fields = $this->getConfiguration()->getFieldsForIndex($indexName);
@@ -363,8 +379,15 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
                 }
             }
             if ($needsUpdate) {
-                $response = $this->getClient()->updateSchema($envIndex, $definedSchema);
-                $this->handleError($response);
+                $schemaUpdateRequest = new SchemaUpdateRequest();
+
+                foreach ($definedSchema as $k => $v) {
+                    $schemaUpdateRequest->{$k} = $v;
+                }
+
+                $putSchema = new PutSchema($envIndex, $schemaUpdateRequest);
+                $response = $this->getAppSearch()->putSchema($putSchema);
+                $this->handleError($response->asArray());
             }
         }
     }
@@ -408,6 +431,11 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
         return $this;
     }
 
+    public function getAppSearch(): AppEndpoints
+    {
+        return $this->getClient()->appSearch();
+    }
+
     /**
      * @return DocumentBuilder
      */
@@ -433,13 +461,18 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
      */
     private function findOrMakeIndex(string $index)
     {
-        $engines = $this->getClient()->listEngines();
+        $engines = $this->getAppSearch()
+            ->listEngines(new ListEngines())
+            ->asArray();
         $this->handleError($engines);
         $results = $engines['results'] ?? [];
         $allEngines = array_column($results, 'name');
+
         if (!in_array($index, $allEngines)) {
-            $result = $this->getClient()->createEngine($index);
-            $this->handleError($result);
+            $engine = new Engine($index);
+            $request = new CreateEngine($engine);
+            $result = $this->getAppSearch()->createEngine($request);
+            $this->handleError($result->asArray());
         }
     }
 
