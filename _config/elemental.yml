@@ -1,0 +1,9 @@
+---
+Name: 'silverstripe-search-service-elemental'
+After: '#silverstripe-search-service'
+Only:
+  moduleexists: 'dnadesign/silverstripe-elemental'
+---
+DNADesign\Elemental\Models\BaseElement:
+  extensions:
+    - SilverStripe\SearchService\Extensions\Elemental\IndexParentPageExtension
