@@ -81,6 +81,14 @@ class IndexConfiguration
     private static $auto_dependency_tracking = true;
 
     /**
+     * @var bool
+     * @config
+     *
+     * @link IndexParentPageExtension
+     */
+    private static $index_parent_page_of_elements = true;
+
+    /**
      * @var array
      */
     private $indexesForClassName = [];
