@@ -203,7 +203,6 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
     {
         $cfg = $this->getConfiguration();
         $appSearch = $this->getAppSearch();
-        $indexName = static::environmentizeIndex($indexName);
         $numDeleted = 0;
 
         $listRequest = new ListDocuments($indexName);
@@ -326,7 +325,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
      */
     public function getDocumentTotal(string $indexName): int
     {
-        $listRequest = new ListDocuments(static::environmentizeIndex($indexName));
+        $listRequest = new ListDocuments($indexName);
         $response = $this->getAppSearch()->listDocuments($listRequest)->asArray();
         $this->handleError($response);
         $total = $response['meta']['page']['total_results'] ?? null;
