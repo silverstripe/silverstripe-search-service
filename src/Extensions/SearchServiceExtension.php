@@ -67,9 +67,13 @@ class SearchServiceExtension extends DataExtension
     public function updateCMSFields(FieldList $fields)
     {
         if ($this->getConfiguration()->isEnabled()) {
-            $fields->addFieldsToTab('Root.Main', [
-                ReadonlyField::create('SearchIndexed', _t(__CLASS__.'.LastIndexed', 'Last indexed in search'))
-            ]);
+            $field = ReadonlyField::create('SearchIndexed', _t(__CLASS__.'.LastIndexed', 'Last indexed in search'));
+
+            if ($fields->hasTabSet()) {
+                $fields->addFieldToTab('Root.Main', $field);
+            } else {
+                $fields->push($field);
+            }
         }
     }
 
