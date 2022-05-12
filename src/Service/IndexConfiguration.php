@@ -3,6 +3,7 @@
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Environment;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -94,6 +95,11 @@ class IndexConfiguration
     public function getIndexes(): array
     {
         $indexes = $this->config()->get('indexes');
+
+        // Convert environment variable defined in YML config to its value
+        array_walk($indexes, function (array &$configuration): void {
+            $configuration = $this->environmentVariableToValue($configuration);
+        });
 
         if (!$this->onlyIndexes) {
             return $indexes;
@@ -265,6 +271,28 @@ class IndexConfiguration
         }
 
         return $fields;
+    }
+
+    /**
+     * For every configuration item if value is environment variable then convert it to its value
+     */
+    protected function environmentVariableToValue(array $configuration): array
+    {
+        foreach ($configuration as $name => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $environmentValue = Environment::getEnv($value);
+
+            if (!$environmentValue) {
+                continue;
+            }
+
+            $configuration[$name] = $environmentValue;
+        }
+
+        return $configuration;
     }
 
 }

@@ -58,3 +58,9 @@ SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned:
   two:
     Title: Dataobject two Versioned
     ShowInSearch: 0
+
+SilverStripe\Subsites\Model\Subsite:
+  subsite1:
+    Title: 'Subsite 1'
+  subsite2:
+    Title: 'Subsite 2'

@@ -21,6 +21,7 @@ use SilverStripe\ORM\UnsavedRelationList;
 use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Extensions\DBFieldExtension;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
+use SilverStripe\SearchService\Interfaces\DataObjectDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -43,7 +44,8 @@ class DataObjectDocument implements
     DependencyTracker,
     DocumentRemoveHandler,
     DocumentAddHandler,
-    DocumentMetaProvider
+    DocumentMetaProvider,
+    DataObjectDocumentInterface
 {
 
     use Injectable;
