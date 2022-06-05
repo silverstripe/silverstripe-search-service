@@ -48,6 +48,7 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
     public function getEditForm($id = null, $fields = null): Form
     {
         $form = parent::getEditForm($id, $fields);
+        $isAdmin = Permission::check('ADMIN');
 
         /** @var IndexingInterface $indexService */
         $indexService = Injector::inst()->get(IndexingInterface::class);
@@ -86,21 +87,39 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
             );
         }
 
-        $docsGrid = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
-        $docsGrid->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
-        $isAdmin = Permission::check('ADMIN');
-        if ($isAdmin) {
-            $docsGrid->getConfig()->addComponent(new SearchReindexFormAction());
-        }
+        $indexedDocumentsList = $this->buildIndexedDocumentsList();
 
-        $fields[] = $docsGrid;
+        if (!$indexedDocumentsList->count() && !$indexedDocumentsList->dataClass()) {
+            // No indexes have been configured
 
-        if ($isAdmin) {
-            $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
-            $fields[] = LiteralField::create(
-                'ReindexAllURL',
-                sprintf(
-                    '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
+            // Indexed documents warning field
+            $indexedDocumentsWarningField = LiteralField::create(
+                'IndexedDocumentsWarning',
+                '<div class="alert alert-warning">' .
+                    '<strong>No indexes found.</strong>' .
+                    'Indexes must be configured before indexed documents can be listed or re-indexed' .
+                '</div>'
+            );
+
+            $fields[] = $indexedDocumentsWarningField;
+        } else {
+            // Indexed documents field
+            $indexDocumentsField = GridField::create('IndexedDocuments', 'Documents by Index', $indexedDocumentsList);
+            $indexDocumentsField->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
+
+            if ($isAdmin) {
+                $indexDocumentsField->getConfig()->addComponent(new SearchReindexFormAction());
+            }
+
+            $fields[] = $indexDocumentsField;
+
+            // Reindex all URL field
+            if ($isAdmin) {
+                $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
+                $fields[] = LiteralField::create(
+                    'ReindexAllURL',
+                    sprintf(
+                        '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
                     <a href="%s" target="_blank" style="
                         font-size: small;
                         background-color: #da273b;
@@ -109,9 +128,10 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
                         border-radius: 3px;"
                     >Trigger Full Reindex on All</a>
                 </div>',
-                    $fullReindexBaseURL
-                )
-            );
+                        $fullReindexBaseURL
+                    )
+                );
+            }
         }
 
         $fields[] = HeaderField::create('QueuedJobsHeader', 'Queued Jobs Status')

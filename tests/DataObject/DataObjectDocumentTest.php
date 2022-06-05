@@ -173,11 +173,11 @@ class DataObjectDocumentTest extends SearchServiceTest
 //            ]
 //        ]);
 //        $this->expectException(IndexConfigurationException::class);
-//        $this->expectExceptionMessageRegExp('/associative/');
+//        $this->expectExceptionMessageMatches('/associative/');
 //        $doc->toArray();
 //
 //        $this->expectException(IndexConfigurationException::class);
-//        $this->expectExceptionMessageRegExp('/non scalar/');
+//        $this->expectExceptionMessageMatches('/non scalar/');
 //        $config->set('getFieldsForClass', [
 //            DataObjectFake::class => [
 //                new Field('customgettermixed', 'CustomGetterMixedArray'),
@@ -186,7 +186,7 @@ class DataObjectDocumentTest extends SearchServiceTest
 //        $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/DataObject or RelationList/');
+        $this->expectExceptionMessageMatches('/DataObject or RelationList/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('tags', 'Tags'),
@@ -195,7 +195,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/DataObject or RelationList/');
+        $this->expectExceptionMessageMatches('/DataObject or RelationList/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterdataobject', 'CustomGetterDataObj'),
@@ -204,7 +204,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/cannot be resolved/');
+        $this->expectExceptionMessageMatches('/cannot be resolved/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterobj', 'CustomGetterObj'),

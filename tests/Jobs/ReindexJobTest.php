@@ -19,13 +19,13 @@ class ReindexJobTest extends SearchServiceTest
         DataObjectFake::class,
     ];
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         FakeFetcher::load(10);
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
         FakeFetcher::$records = [];

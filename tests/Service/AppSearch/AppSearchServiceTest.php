@@ -43,7 +43,7 @@ class AppSearchServiceTest extends SearchServiceTest
      */
     protected $client;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         DocumentFake::$count = 0;
@@ -115,7 +115,7 @@ class AppSearchServiceTest extends SearchServiceTest
 
         $this->appSearch->addDocuments([$fake1, $fake2]);
     }
-    
+
     public function testRemoveAllDocuments()
     {
         $this->client->expects($this->exactly(2))

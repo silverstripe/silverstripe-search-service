@@ -343,6 +343,7 @@ class IndexConfiguration
                     }
                 }
             }
+
             $candidate = get_parent_class($candidate);
         }
         return $fieldObjs;

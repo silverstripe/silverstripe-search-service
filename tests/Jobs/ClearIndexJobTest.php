@@ -55,10 +55,10 @@ class ClearIndexJobTest extends SearchServiceTest
     public function testGetTitle()
     {
         $job = ClearIndexJob::create('indexName');
-        $this->assertContains('indexName', $job->getTitle());
+        $this->assertStringContainsString('indexName', $job->getTitle());
 
         $job = ClearIndexJob::create('random_index_name');
-        $this->assertContains('random_index_name', $job->getTitle());
+        $this->assertStringContainsString('random_index_name', $job->getTitle());
     }
 
     public function testProcess()
@@ -89,7 +89,7 @@ class ClearIndexJobTest extends SearchServiceTest
         // The 6th time we process should fail with a RuntimeException
         $msg = 'ClearIndexJob was unable to delete all documents after 5 attempts. Finished all steps and the document'
             .   ' total is still 10';
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage($msg);
         $job->process();

@@ -33,7 +33,6 @@ class DataObjectBatchProcessor extends BatchProcessor
         // Remove the dataobjects, ignore dependencies
         $job = IndexJob::create($documents, Indexer::METHOD_DELETE, null, false);
         $this->run($job);
-
         foreach ($documents as $doc) {
             $childJob = RemoveDataObjectJob::create($doc, $timestamp);
             $this->run($childJob);

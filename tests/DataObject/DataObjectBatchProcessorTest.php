@@ -30,25 +30,32 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         DBDatetime::set_mock_now(1000);
 
         $syncRunnerMock = $this->getMockBuilder(SyncJobRunner::class)
-            ->setMethods(['runJob'])
+            ->onlyMethods(['runJob'])
             ->getMock();
-        $cb = function (RemoveDataObjectJob $arg) {
+
+        $removeJobCallback = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
-            $this->assertCount(1, $arg->indexer->getDocuments());
+            $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->document);
             $this->assertEquals(Indexer::METHOD_ADD, $arg->indexer->getMethod());
             $this->assertEquals(900, $arg->timestamp);
+
+            return true;
         };
 
         $syncRunnerMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-                $this->callback(function (IndexJob $arg) {
-                    $this->assertInstanceOf(IndexJob::class, $arg);
-                    $this->assertCount(2, $arg->indexer->getDocuments());
-                    $this->assertEquals(Indexer::METHOD_DELETE, $arg->indexer->getMethod());
-                }),
-                $this->callback($cb),
-                $this->callback($cb)
+                [
+                    $this->callback(function (IndexJob $arg) {
+                        $this->assertInstanceOf(IndexJob::class, $arg);
+                        $this->assertCount(2, $arg->indexer->getDocuments());
+                        $this->assertEquals(Indexer::METHOD_DELETE, $arg->indexer->getMethod());
+
+                        return true;
+                    })
+                ],
+                [$this->callback($removeJobCallback)],
+                [$this->callback($removeJobCallback)]
             );
 
         Injector::inst()->registerService($syncRunnerMock, SyncJobRunner::class);
