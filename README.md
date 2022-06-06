@@ -7,7 +7,7 @@
 
 This module for Silverstripe CMS provides a set of abstraction layers that integrate the
 CMS with a search-as-a-service provider, such as Elastic or Algolia. Out of the box, it
-supports indexing DataObjects with Elastic AppSearch, but can be extended to work with
+supports indexing DataObjects with Elastic EnterpriseSearch, but can be extended to work with
 other sources of content and/or service providers.
 
 This module does not provide any frontend functionality such as UI or querying APIs.

@@ -22,7 +22,7 @@ use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
-use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService;
 use SilverStripe\SearchService\Tasks\SearchReindex;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
@@ -201,7 +201,7 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
             }
 
             $result = new IndexedDocumentsResult();
-            $result->IndexName = AppSearchService::environmentizeIndex($index);
+            $result->IndexName = EnterpriseSearchService::environmentizeIndex($index);
             $result->DBDocs = $localCount;
             $result->RemoteDocs = $indexer->getDocumentTotal($index);
             $list->push($result);

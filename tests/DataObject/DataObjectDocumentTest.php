@@ -218,9 +218,9 @@ class DataObjectDocumentTest extends SearchServiceTest
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
         $doc = DataObjectDocument::create($dataObject);
         $meta = $doc->provideMeta();
-        $this->assertArrayHasKey('record_base_class', $meta);
+        $this->assertArrayHasKey('recordBaseClass', $meta);
         $this->assertArrayHasKey('record_id', $meta);
-        $this->assertEquals(DataObjectFake::class, $meta['record_base_class']);
+        $this->assertEquals(DataObjectFake::class, $meta['recordBaseClass']);
         $this->assertEquals($dataObject->ID, $meta['record_id']);
     }
 

@@ -8,7 +8,7 @@ querying data.
 ## Defaults
 
 Out of the box, an implementation is included for indexing DataObject based content
-with [Elastic AppSearch](https://www.elastic.co/app-search/). ([More about the AppSearch implementation](implementations.md#appsearch))
+with [Elastic EnterpriseSearch](https://www.elastic.co/app-search/). ([More about the EnterpriseSearch implementation](implementations.md#EnterpriseSearch))
 
 ## Extending
 

@@ -13,7 +13,7 @@ use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakeAlternate;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
-use SilverStripe\SearchService\Tests\Fake\FakeAppsearchClient;
+use SilverStripe\SearchService\Tests\Fake\FakeEnterpriseSearchClient;
 use SilverStripe\SearchService\Tests\Fake\FakeFetcher;
 use SilverStripe\Security\Member;
 use SilverStripe\View\ViewableData;
@@ -73,7 +73,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertFalse(in_array('index5', $indexNames));
         $this->assertFalse(in_array('index6', $indexNames));
 
-        $this->assertEmpty($config->getIndexesForClassName(FakeAppsearchClient::class));
+        $this->assertEmpty($config->getIndexesForClassName(FakeEnterpriseSearchClient::class));
     }
 
     public function testGetIndexesForDocument()
@@ -117,7 +117,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertFalse(in_array('index5', $indexNames));
         $this->assertFalse(in_array('index6', $indexNames));
 
-        $this->assertEmpty($config->getIndexesForDocument(new DocumentFake(FakeAppsearchClient::class)));
+        $this->assertEmpty($config->getIndexesForDocument(new DocumentFake(FakeEnterpriseSearchClient::class)));
     }
 
     public function testIsClassIndexed()
@@ -132,7 +132,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertTrue($config->isClassIndexed(Controller::class));
         $this->assertTrue($config->isClassIndexed(DataObjectFakeAlternate::class));
         $this->assertFalse($config->isClassIndexed(FakeFetcher::class));
-        $this->assertFalse($config->isClassIndexed(FakeAppsearchClient::class));
+        $this->assertFalse($config->isClassIndexed(FakeEnterpriseSearchClient::class));
     }
 
     public function testGetClassesForIndex()
@@ -247,7 +247,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertContains('field3', $names);
         $this->assertContains('field9', $names);
 
-        $fields = $config->getFieldsForClass(FakeAppsearchClient::class);
+        $fields = $config->getFieldsForClass(FakeEnterpriseSearchClient::class);
         $this->assertEmpty($fields);
 
         Config::modify()->merge(
@@ -256,7 +256,7 @@ class IndexConfigurationTest extends SapphireTest
             [
                 'index5' => [
                     'includeClasses' => [
-                        FakeAppsearchClient::class => [
+                        FakeEnterpriseSearchClient::class => [
                             'fields' => [
                                 'field10' => true,
                                 'field11' => true,
@@ -268,7 +268,7 @@ class IndexConfigurationTest extends SapphireTest
             ]
         );
 
-        $fields = $config->getFieldsForClass(FakeAppsearchClient::class);
+        $fields = $config->getFieldsForClass(FakeEnterpriseSearchClient::class);
         $this->assertCount(2, $fields);
         $names = array_map(function (Field $field) {
             return $field->getSearchFieldName();
@@ -386,7 +386,7 @@ class IndexConfigurationTest extends SapphireTest
                 ],
                 'index5' => [
                     'includeClasses' => [
-                        FakeAppsearchClient::class => false
+                        FakeEnterpriseSearchClient::class => false
                     ],
                 ],
                 'index6' => [],

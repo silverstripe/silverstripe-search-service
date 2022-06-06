@@ -3,10 +3,10 @@
 
 namespace SilverStripe\SearchService\Tests\Fake;
 
-use Elastic\AppSearch\Client\Client;
+use Elastic\EnterpriseSearch\Client;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 
-class FakeAppsearchClient extends Client
+class FakeEnterpriseSearchClient extends Client
 {
     public function indexDocuments($engineName, $docs)
     {

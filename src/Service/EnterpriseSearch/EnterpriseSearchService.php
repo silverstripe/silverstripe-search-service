@@ -1,8 +1,8 @@
 <?php
 
-namespace SilverStripe\SearchService\Services\AppSearch;
+namespace SilverStripe\SearchService\Service\EnterpriseSearch;
 
-use Elastic\AppSearch\Client\Client;
+use Elastic\EnterpriseSearch\Client;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
@@ -21,7 +21,7 @@ use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 
-class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterface
+class EnterpriseSearchService implements IndexingInterface, BatchDocumentRemovalInterface
 {
     use Configurable;
     use ConfigurationAware;
@@ -46,7 +46,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
     private static $max_document_size = 102400;
 
     /**
-     * AppSearchService constructor.
+     * EnterpriseSearchService constructor.
      * @param Client $client
      * @param IndexConfiguration $configuration
      * @param DocumentBuilder $exporter
@@ -400,9 +400,9 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
 
     /**
      * @param Client $client
-     * @return AppSearchService
+     * @return EnterpriseSearchService
      */
-    public function setClient(Client $client): AppSearchService
+    public function setClient(Client $client): EnterpriseSearchService
     {
         $this->client = $client;
         return $this;
@@ -418,9 +418,9 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
 
     /**
      * @param DocumentBuilder $builder
-     * @return AppSearchService
+     * @return EnterpriseSearchService
      */
-    public function setBuilder(DocumentBuilder $builder): AppSearchService
+    public function setBuilder(DocumentBuilder $builder): EnterpriseSearchService
     {
         $this->builder = $builder;
         return $this;
@@ -465,7 +465,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
             return;
         }
         throw new IndexingServiceException(sprintf(
-            'AppSearch API error: %s',
+            'EnterpriseSearch API error: %s',
             print_r($allErrors, true)
         ));
     }
@@ -539,7 +539,7 @@ class AppSearchService implements IndexingInterface, BatchDocumentRemovalInterfa
 
     public function getExternalURL(): ?string
     {
-        return Environment::getEnv('APP_SEARCH_ENDPOINT') ?: null;
+        return Environment::getEnv('ENTERPRISE_SEARCH_ENDPOINT') ?: null;
     }
 
     public function getExternalURLDescription(): ?string

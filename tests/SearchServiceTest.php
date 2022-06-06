@@ -2,7 +2,7 @@
 
 namespace SilverStripe\SearchService\Tests;
 
-use Elastic\AppSearch\Client\Client;
+use Elastic\EnterpriseSearch\Client;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;

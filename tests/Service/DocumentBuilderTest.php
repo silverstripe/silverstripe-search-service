@@ -10,7 +10,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
-use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\FakeFetchCreator;
 use SilverStripe\SearchService\Tests\Fake\ServiceFake;

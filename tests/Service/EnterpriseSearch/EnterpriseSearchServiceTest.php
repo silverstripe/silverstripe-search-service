@@ -1,13 +1,13 @@
 <?php
 
 
-namespace SilverStripe\SearchService\Tests\Service\AppSearch;
+namespace SilverStripe\SearchService\Tests\Service\EnterpriseSearch;
 
-use Elastic\AppSearch\Client\Client;
+use Elastic\EnterpriseSearch\Client;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
-use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\FakeFetchCreator;
@@ -17,7 +17,7 @@ use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
 
-class AppSearchServiceTest extends SearchServiceTest
+class EnterpriseSearchServiceTest extends SearchServiceTest
 {
     protected static $fixture_file = '../../fixtures.yml';
 
@@ -34,9 +34,9 @@ class AppSearchServiceTest extends SearchServiceTest
     protected $config;
 
     /**
-     * @var AppSearchService&\PHPUnit_Framework_MockObject_MockObject
+     * @var EnterpriseSearchService&\PHPUnit_Framework_MockObject_MockObject
      */
-    protected $appSearch;
+    protected $enterpriseSearch;
 
     /**
      * @var Client&\PHPUnit_Framework_MockObject_MockObject
@@ -61,7 +61,7 @@ class AppSearchServiceTest extends SearchServiceTest
         ]);
 
         $this->client = $this->mockClient();
-        $this->appSearch = new AppSearchService(
+        $this->enterpriseSearch = new EnterpriseSearchService(
             $this->client,
             $this->config,
             DocumentBuilder::singleton()
@@ -90,7 +90,7 @@ class AppSearchServiceTest extends SearchServiceTest
         }
 
 
-        $this->appSearch->addDocument($fake1);
+        $this->enterpriseSearch->addDocument($fake1);
     }
 
     /**
@@ -113,7 +113,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 [$this->equalTo('tests-index2'), $expectedDocs]
             );
 
-        $this->appSearch->addDocuments([$fake1, $fake2]);
+        $this->enterpriseSearch->addDocuments([$fake1, $fake2]);
     }
 
     public function testRemoveAllDocuments()
@@ -141,7 +141,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 [ 'deleted' => true ],
             ]);
 
-        $this->assertSame(3, $this->appSearch->removeAllDocuments('test'));
+        $this->assertSame(3, $this->enterpriseSearch->removeAllDocuments('test'));
     }
 
     public function testRemoveDocuments()
@@ -156,7 +156,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 [$this->equalTo('tests-index2'), ['Fake--0', 'Fake--1']]
             );
 
-        $this->appSearch->removeDocuments([$fake1, $fake2]);
+        $this->enterpriseSearch->removeDocuments([$fake1, $fake2]);
     }
 
     public function testRemoveDocument()
@@ -169,7 +169,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 [$this->equalTo('tests-index2'), ['Fake--0']]
             );
 
-        $this->appSearch->removeDocument($fake1);
+        $this->enterpriseSearch->removeDocument($fake1);
     }
 
     public function testGetDocuments()
@@ -184,7 +184,7 @@ class AppSearchServiceTest extends SearchServiceTest
                ['id' => 1, 'source_class' => 'Fake', 'field' => 'value1'],
                ['id' => 2, 'source_class' => 'Fake', 'field' => 'value2']
             ]]);
-        $result = $this->appSearch->getDocuments(['id1', 'id2']);
+        $result = $this->enterpriseSearch->getDocuments(['id1', 'id2']);
         $this->assertCount(2, $result);
         $this->assertInstanceOf(DocumentFake::class, $result[0]);
         $this->assertInstanceOf(DocumentFake::class, $result[1]);
@@ -205,7 +205,7 @@ class AppSearchServiceTest extends SearchServiceTest
             ->willReturn(['results' => [
                 ['source_class' => 'Fake', 'field' => 'value2']
             ]]);
-        $result = $this->appSearch->getDocument('id2');
+        $result = $this->enterpriseSearch->getDocument('id2');
         $this->assertNotNull($result);
         $this->assertInstanceOf(DocumentFake::class, $result);
         $this->assertArrayHasKey('field', $result->fields);
@@ -225,7 +225,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 ['source_class' => 'Fake', 'field' => 'value1'],
                 ['source_class' => 'Fake', 'field' => 'value2']
             ]]);
-        $result = $this->appSearch->listDocuments('index1');
+        $result = $this->enterpriseSearch->listDocuments('index1');
         $this->assertCount(2, $result);
         $this->assertInstanceOf(DocumentFake::class, $result[0]);
         $this->assertInstanceOf(DocumentFake::class, $result[1]);
@@ -247,7 +247,7 @@ class AppSearchServiceTest extends SearchServiceTest
                     ]
                 ]
             ]);
-        $result = $this->appSearch->getDocumentTotal('index1');
+        $result = $this->enterpriseSearch->getDocumentTotal('index1');
         $this->assertEquals(9, $result);
     }
 
@@ -336,7 +336,7 @@ class AppSearchServiceTest extends SearchServiceTest
                 ]
             );
 
-        $this->appSearch->configure();
+        $this->enterpriseSearch->configure();
     }
 
     public function provideShouldIndex()
