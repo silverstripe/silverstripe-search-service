@@ -10,14 +10,14 @@ SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Interfaces\IndexingInterface:
     class: SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService
     constructor:
-      client: '%$Elastic\EnterpriseSearch\Client\Client'
+      client: '%$Elastic\EnterpriseSearch\Client'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
       builder: '%$SilverStripe\SearchService\Service\DocumentBuilder'
-  Elastic\EnterpriseSearch\Client\Client:
+  Elastic\EnterpriseSearch\Client:
     factory: SilverStripe\SearchService\Service\EnterpriseSearch\ClientFactory
     constructor:
-      endpoint: '`ENTERPRISE_SEARCH_ENDPOINT`'
-      apiKey: '`ENTERPRISE_SEARCH_API_KEY`'
+      host: '`ENTERPRISE_SEARCH_ENDPOINT`'
+      token: '`ENTERPRISE_SEARCH_API_KEY`'
 SilverStripe\SearchService\Service\IndexConfiguration:
   id_field: 'id'
   source_class_field: 'source_class'

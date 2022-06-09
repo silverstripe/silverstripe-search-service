@@ -3,6 +3,7 @@
 namespace SilverStripe\SearchService\Tests;
 
 use Elastic\EnterpriseSearch\Client;
+use PHPUnit\Framework\ExpectationFailedException;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
@@ -22,6 +23,7 @@ abstract class SearchServiceTest extends SapphireTest
     {
         Injector::inst()->registerService($config = new IndexConfigurationFake(), IndexConfiguration::class);
         SearchServiceExtension::singleton()->setConfiguration($config);
+
         return $config;
     }
 
@@ -32,6 +34,7 @@ abstract class SearchServiceTest extends SapphireTest
     {
         Injector::inst()->registerService($service = new ServiceFake(), IndexingInterface::class);
         SearchServiceExtension::singleton()->setIndexService($service);
+
         return $service;
     }
 
@@ -54,7 +57,7 @@ abstract class SearchServiceTest extends SapphireTest
     protected function mockClient(): Client
     {
         $client = $this->getMockBuilder(Client::class)
-            ->setMethods([
+            ->onlyMethods([
                 'indexDocuments',
                 'deleteDocuments',
                 'getDocuments',
@@ -85,7 +88,8 @@ abstract class SearchServiceTest extends SapphireTest
                 return true;
             }
         }
-        throw new \PHPUnit_Framework_ExpectationFailedException(sprintf(
+
+        throw new ExpectationFailedException(sprintf(
             'Failed to assert that any item in the array satisfies the callback: %s',
             print_r($arr, true)
         ));

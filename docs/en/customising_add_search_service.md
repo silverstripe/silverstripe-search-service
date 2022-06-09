@@ -151,14 +151,15 @@ This method is expected to list all documents in a given index, with some pagina
 parameters.
 
 ```php
-public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
 {
     // Your API call here    
-    return $myAPI->listDocuments(
-        static::environmentizeIndex($indexName),
-        $offset,
-        $limit
-    );
+    $request = new ListDocuments(static::environmentizeIndex($indexName));
+    $request->setPageSize($pageSize);
+    $request->setCurrentPage($currentPage);
+    
+    return $this->getClient()->appSearch()
+        ->listDocuments($request)
 }
 ```
 

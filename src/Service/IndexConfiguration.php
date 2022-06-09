@@ -121,7 +121,7 @@ class IndexConfiguration
     /**
      * @return string
      */
-    public function getIndexVariant(): string
+    public function getIndexVariant(): ?string
     {
         return $this->indexVariant;
     }

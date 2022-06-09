@@ -14,10 +14,10 @@ class ClientFactory implements Factory
      */
     public function create($service, array $params = array())
     {
-        $endPoint = $params['endpoint'] ?? null;
-        $apiKey = $params['apiKey'] ?? null;
+        $host = $params['host'] ?? null;
+        $token = $params['token'] ?? null;
 
-        if (!$endPoint || !$apiKey) {
+        if (!$host || !$token) {
             throw new Exception(sprintf(
                 'The %s implementation requires environment variables: ' .
                 'ENTERPRISE_SEARCH_ENDPOINT and ENTERPRISE_SEARCH_API_KEY',
@@ -26,9 +26,9 @@ class ClientFactory implements Factory
         }
 
         return new Client([
-            'host' => $endPoint,
+            'host' => $host,
             'app-search' => [
-                'api-key' => $apiKey,
+                'token' => $token,
             ],
         ]);
     }

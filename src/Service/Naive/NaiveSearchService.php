@@ -34,7 +34,7 @@ class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInter
         return [];
     }
 
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
     {
         return [];
     }

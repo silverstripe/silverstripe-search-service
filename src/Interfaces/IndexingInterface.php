@@ -43,12 +43,12 @@ interface IndexingInterface extends BatchDocumentInterface
 
     /**
      * @param string $indexName
-     * @param int|null $limit
-     * @param int $offset
+     * @param int|null $pageSize
+     * @param int $currentPage
      * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array;
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array;
 
     /**
      * @param string $indexName

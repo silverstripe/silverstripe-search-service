@@ -1,14 +1,15 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Service\EnterpriseSearch;
 
 use Elastic\EnterpriseSearch\Client;
+use PHPUnit\Framework\MockObject\MockObject;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
+use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\FakeFetchCreator;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
@@ -23,23 +24,24 @@ class EnterpriseSearchServiceTest extends SearchServiceTest
 
     protected static $extra_dataobjects = [
         DataObjectFake::class,
+        DataObjectFakeVersioned::class,
         TagFake::class,
         ImageFake::class,
         Member::class,
     ];
 
     /**
-     * @var IndexConfigurationFake&\PHPUnit_Framework_MockObject_MockObject
+     * @var IndexConfigurationFake|MockObject
      */
     protected $config;
 
     /**
-     * @var EnterpriseSearchService&\PHPUnit_Framework_MockObject_MockObject
+     * @var EnterpriseSearchService|MockObject
      */
     protected $enterpriseSearch;
 
     /**
-     * @var Client&\PHPUnit_Framework_MockObject_MockObject
+     * @var Client|MockObject
      */
     protected $client;
 
@@ -51,14 +53,23 @@ class EnterpriseSearchServiceTest extends SearchServiceTest
             ->addFetchCreator(new FakeFetchCreator());
 
         $this->config = $this->mockConfig();
-        $this->config->set('getIndexesForClassName', [
-            'Fake' => ['index1' => [],  'index2' => []]
-        ]);
+        $this->config->set(
+            'getIndexesForClassName',
+            [
+                'Fake' => [
+                    'index1' => [],
+                    'index2' => [],
+                ]
+            ]
+        );
         $this->config->set('getIndexVariant', 'tests');
-        $this->config->set('indexes', [
-            'index1' => [],
-            'index2' => []
-        ]);
+        $this->config->set(
+            'indexes',
+            [
+                'index1' => [],
+                'index2' => []
+            ]
+        );
 
         $this->client = $this->mockClient();
         $this->enterpriseSearch = new EnterpriseSearchService(

@@ -47,7 +47,7 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
         if ($this->shouldError) {
             return 0;
         }
-        
+
         $numDocs = sizeof($this->documents);
         $this->documents = [];
 
@@ -82,9 +82,9 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
         return $results;
     }
 
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
     {
-        $docs = array_slice($this->documents, $offset, $limit);
+        $docs = array_slice($this->documents, $currentPage, $pageSize);
         return array_map(function ($arr) {
             return DocumentBuilder::singleton()->fromArray($arr);
         }, $docs);

@@ -28,6 +28,7 @@ trait ServiceAware
     public function setIndexService(IndexingInterface $indexService): self
     {
         $this->indexService = $indexService;
+
         return $this;
     }
 
