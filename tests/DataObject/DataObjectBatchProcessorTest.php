@@ -34,21 +34,25 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
             ->getMock();
         $cb = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
-            $this->assertCount(1, $arg->indexer->getDocuments());
+            $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->document);
             $this->assertEquals(Indexer::METHOD_ADD, $arg->indexer->getMethod());
             $this->assertEquals(900, $arg->timestamp);
+
+            return true;
         };
 
         $syncRunnerMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-                $this->callback(function (IndexJob $arg) {
+                [$this->callback(function (IndexJob $arg) {
                     $this->assertInstanceOf(IndexJob::class, $arg);
                     $this->assertCount(2, $arg->indexer->getDocuments());
                     $this->assertEquals(Indexer::METHOD_DELETE, $arg->indexer->getMethod());
-                }),
-                $this->callback($cb),
-                $this->callback($cb)
+
+                    return true;
+                })],
+                [$this->callback($cb)],
+                [$this->callback($cb)]
             );
 
         Injector::inst()->registerService($syncRunnerMock, SyncJobRunner::class);

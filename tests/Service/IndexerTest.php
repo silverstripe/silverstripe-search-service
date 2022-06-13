@@ -6,8 +6,10 @@ namespace SilverStripe\SearchService\Tests\Service;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\Indexer;
+use SilverStripe\SearchService\Tests\Fake\DataObjectDocumentFake;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\ServiceFake;
+use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class IndexerTest extends SearchServiceTest
@@ -140,16 +142,16 @@ class IndexerTest extends SearchServiceTest
         Injector::inst()->registerService($service = new ServiceFake(), IndexingInterface::class);
         $config = $this->mockConfig();
         $config->set('isClassIndexed', [
-            'Blog' => true,
+            DataObjectDocumentFake::class => true,
         ]);
         $config->set('auto_dependency_tracking', true);
 
-        $blog1 = new DocumentFake('Blog', ['id' => 'blog-1']);
-        $blog2 = new DocumentFake('Blog', ['id' => 'blog-2']);
+        $blog1 = new DocumentFake(DataObjectDocumentFake::class, ['id' => 'blog-1']);
+        $blog2 = new DocumentFake(DataObjectDocumentFake::class, ['id' => 'blog-2']);
 
         $tagDocs = [
-            $tag1 = new DocumentFake('Tag', ['id' => 'tag-1']),
-            $tag2 = new DocumentFake('Tag', ['id' => 'tag-2']),
+            $tag1 = new DocumentFake(TagFake::class, ['id' => 'tag-1']),
+            $tag2 = new DocumentFake(TagFake::class, ['id' => 'tag-2']),
         ];
         $tag2->dependentDocuments = [
             $blog1,
