@@ -14,7 +14,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class BatchProcessorTest extends SearchServiceTest
 {
-    public function testAddDocumentsSync()
+    public function testAddDocumentsSync(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -38,7 +38,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testRemoveDocumentsSync()
+    public function testRemoveDocumentsSync(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -62,7 +62,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testAddDocumentsQueued()
+    public function testAddDocumentsQueued(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', false);
@@ -87,7 +87,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testRemoveDocumentsQueued()
+    public function testRemoveDocumentsQueued(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', false);

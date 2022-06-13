@@ -24,7 +24,7 @@ class RemoveDataObjectJobTest extends SearchServiceTest
         Member::class,
     ];
 
-    public function testJob()
+    public function testJob(): void
     {
         $config = $this->mockConfig();
         $service = $this->mockService();

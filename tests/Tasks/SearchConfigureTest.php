@@ -14,7 +14,7 @@ use SilverStripe\SearchService\Tests\Fake\ServiceFake;
 
 class SearchConfigureTest extends SapphireTest
 {
-    public function testTask()
+    public function testTask(): void
     {
         $mock = $this->getMockBuilder(ServiceFake::class)
             ->setMethods(['configure'])

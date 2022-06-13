@@ -20,7 +20,7 @@ use SilverStripe\View\ViewableData;
 
 class IndexConfigurationTest extends SapphireTest
 {
-    public function testIndexesForClassName()
+    public function testIndexesForClassName(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -76,7 +76,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertEmpty($config->getIndexesForClassName(FakeAppsearchClient::class));
     }
 
-    public function testGetIndexesForDocument()
+    public function testGetIndexesForDocument(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -120,7 +120,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertEmpty($config->getIndexesForDocument(new DocumentFake(FakeAppsearchClient::class)));
     }
 
-    public function testIsClassIndexed()
+    public function testIsClassIndexed(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -135,7 +135,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertFalse($config->isClassIndexed(FakeAppsearchClient::class));
     }
 
-    public function testGetClassesForIndex()
+    public function testGetClassesForIndex(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -171,7 +171,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertEmpty($result);
     }
 
-    public function testSearchableClasses()
+    public function testSearchableClasses(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -185,7 +185,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertContains(ViewableData::class, $classes);
     }
 
-    public function testSearchableBaseClasses()
+    public function testSearchableBaseClasses(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -213,7 +213,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertContains(Member::class, $classes);
     }
 
-    public function testGetFieldsForClass()
+    public function testGetFieldsForClass(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();
@@ -277,7 +277,7 @@ class IndexConfigurationTest extends SapphireTest
         $this->assertContains('field11', $names);
     }
 
-    public function testGetFieldsForIndex()
+    public function testGetFieldsForIndex(): void
     {
         $this->bootstrapIndexes();
         $config = new IndexConfiguration();

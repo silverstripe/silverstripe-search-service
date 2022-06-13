@@ -8,7 +8,7 @@ use SilverStripe\SearchService\Schema\Field;
 
 class FieldTest extends SapphireTest
 {
-    public function testValueObject()
+    public function testValueObject(): void
     {
         $field = new Field('foo', 'bar', ['baz' => 'qux']);
         $this->assertEquals('foo', $field->getSearchFieldName());

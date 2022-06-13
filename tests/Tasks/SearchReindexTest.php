@@ -16,7 +16,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class SearchReindexTest extends SearchServiceTest
 {
-    public function testTask()
+    public function testTask(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);

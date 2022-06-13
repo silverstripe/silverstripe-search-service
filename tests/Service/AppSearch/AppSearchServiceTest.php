@@ -43,7 +43,7 @@ class AppSearchServiceTest extends SearchServiceTest
      */
     protected $client;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         DocumentFake::$count = 0;
@@ -71,7 +71,7 @@ class AppSearchServiceTest extends SearchServiceTest
     /**
      * @dataProvider provideShouldIndex
      */
-    public function testAddDocument($shouldIndex)
+    public function testAddDocument($shouldIndex): void
     {
         $fake1 = new DocumentFake('Fake', ['field' => 'value1']);
         $fake1->index = $shouldIndex;
@@ -96,7 +96,7 @@ class AppSearchServiceTest extends SearchServiceTest
     /**
      * @dataProvider provideShouldIndex
      */
-    public function testAddDocuments($shouldIndex)
+    public function testAddDocuments($shouldIndex): void
     {
         $fake1 = new DocumentFake('Fake', ['field' => 'value1']);
         $fake2 = new DocumentFake('Fake', ['field' => 'value2']);
@@ -115,8 +115,8 @@ class AppSearchServiceTest extends SearchServiceTest
 
         $this->appSearch->addDocuments([$fake1, $fake2]);
     }
-    
-    public function testRemoveAllDocuments()
+
+    public function testRemoveAllDocuments(): void
     {
         $this->client->expects($this->exactly(2))
             ->method('listDocuments')
@@ -144,7 +144,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertSame(3, $this->appSearch->removeAllDocuments('test'));
     }
 
-    public function testRemoveDocuments()
+    public function testRemoveDocuments(): void
     {
         $fake1 = new DocumentFake('Fake', ['field' => 'value1']);
         $fake2 = new DocumentFake('Fake', ['field' => 'value2']);
@@ -159,7 +159,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->appSearch->removeDocuments([$fake1, $fake2]);
     }
 
-    public function testRemoveDocument()
+    public function testRemoveDocument(): void
     {
         $fake1 = new DocumentFake('Fake', ['field' => 'value1']);
         $this->client->expects($this->exactly(2))
@@ -172,7 +172,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->appSearch->removeDocument($fake1);
     }
 
-    public function testGetDocuments()
+    public function testGetDocuments(): void
     {
         $this->client->expects($this->exactly(2))
             ->method('getDocuments')
@@ -194,7 +194,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertEquals('value2', $result[1]->fields['field']);
     }
 
-    public function testGetDocument()
+    public function testGetDocument(): void
     {
         $this->client->expects($this->exactly(2))
             ->method('getDocuments')
@@ -212,7 +212,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertEquals('value2', $result->fields['field']);
     }
 
-    public function testListDocuments()
+    public function testListDocuments(): void
     {
         $this->client->expects($this->once())
             ->method('listDocuments')
@@ -235,7 +235,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertEquals('value2', $result[1]->fields['field']);
     }
 
-    public function testGetDocumentTotal()
+    public function testGetDocumentTotal(): void
     {
         $this->client->expects($this->once())
             ->method('listDocuments')
@@ -251,7 +251,7 @@ class AppSearchServiceTest extends SearchServiceTest
         $this->assertEquals(9, $result);
     }
 
-    public function testConfigure()
+    public function testConfigure(): void
     {
         $this->config->set('indexes', [
             'index1' => [],

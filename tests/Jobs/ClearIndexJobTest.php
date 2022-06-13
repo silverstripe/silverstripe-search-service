@@ -15,7 +15,7 @@ class ClearIndexJobTest extends SearchServiceTest
         DataObjectFake::class,
     ];
 
-    public function testConstruct()
+    public function testConstruct(): void
     {
         $config = $this->mockConfig();
 
@@ -39,7 +39,7 @@ class ClearIndexJobTest extends SearchServiceTest
         $this->assertNull($job->batchOffset);
     }
 
-    public function testSetup()
+    public function testSetup(): void
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
@@ -52,16 +52,16 @@ class ClearIndexJobTest extends SearchServiceTest
         $this->assertFalse($job->jobFinished());
     }
 
-    public function testGetTitle()
+    public function testGetTitle(): void
     {
         $job = ClearIndexJob::create('indexName');
-        $this->assertContains('indexName', $job->getTitle());
+        $this->assertStringContainsString('indexName', $job->getTitle());
 
         $job = ClearIndexJob::create('random_index_name');
-        $this->assertContains('random_index_name', $job->getTitle());
+        $this->assertStringContainsString('random_index_name', $job->getTitle());
     }
 
-    public function testProcess()
+    public function testProcess(): void
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
@@ -89,7 +89,7 @@ class ClearIndexJobTest extends SearchServiceTest
         // The 6th time we process should fail with a RuntimeException
         $msg = 'ClearIndexJob was unable to delete all documents after 5 attempts. Finished all steps and the document'
             .   ' total is still 10';
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage($msg);
         $job->process();

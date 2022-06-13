@@ -17,7 +17,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class DataObjectBatchProcessorTest extends SearchServiceTest
 {
-    public function testRemoveDocuments()
+    public function testRemoveDocuments(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -30,7 +30,7 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         DBDatetime::set_mock_now(1000);
 
         $syncRunnerMock = $this->getMockBuilder(SyncJobRunner::class)
-            ->setMethods(['runJob'])
+            ->onlyMethods(['runJob'])
             ->getMock();
         $cb = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);

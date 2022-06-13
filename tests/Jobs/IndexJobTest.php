@@ -14,7 +14,7 @@ class IndexJobTest extends SearchServiceTest
         DataObjectFake::class,
     ];
 
-    public function testJob()
+    public function testJob(): void
     {
         $config = $this->mockConfig();
         $config->set('isClassIndexed', [

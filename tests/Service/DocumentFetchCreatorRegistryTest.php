@@ -13,7 +13,7 @@ use SilverStripe\SearchService\Tests\Fake\FakeFetcher;
 
 class DocumentFetchCreatorRegistryTest extends SapphireTest
 {
-    public function testRegistry()
+    public function testRegistry(): void
     {
         $registry = new DocumentFetchCreatorRegistry(
             $fake = new FakeFetchCreator(),

@@ -12,7 +12,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class IndexerTest extends SearchServiceTest
 {
-    public function testConstructor()
+    public function testConstructor(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -24,7 +24,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals(7, $indexer->getBatchSize());
     }
 
-    public function testChunking()
+    public function testChunking(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -49,7 +49,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals(1, $indexer->getChunkCount());
     }
 
-    public function testIndexing()
+    public function testIndexing(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -80,7 +80,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertCount(19, $service->documents);
     }
 
-    public function testCleanup()
+    public function testCleanup(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -135,7 +135,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals('2', $service->documents['node-1']['updated']);
     }
 
-    public function testDependentDocuments()
+    public function testDependentDocuments(): void
     {
         Injector::inst()->registerService($service = new ServiceFake(), IndexingInterface::class);
         $config = $this->mockConfig();
