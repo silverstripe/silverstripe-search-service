@@ -13,7 +13,11 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  * Index an item (or multiple items) into search async. This method works well
  * for performance and batching large indexes
  *
- * @property Indexer $indexer
+ * @property array $documents
+ * @property array $remainingDocuments
+ * @property int $method
+ * @property int $batchSize
+ * @property bool $processDependencies
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -32,15 +36,29 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         ?int $batchSize = null,
         bool $processDependencies = true
     ) {
+        $this->documents = $documents;
+        $this->method = $method;
+        $this->batchSize = $batchSize;
+        $this->processDependencies = $processDependencies;
+
         parent::__construct();
-        $this->indexer = Indexer::create($documents, $method, $batchSize);
-        $this->indexer->setProcessDependencies($processDependencies);
     }
 
     public function setup()
     {
-        $this->totalSteps = $this->indexer->getChunkCount();
+        if (!$this->batchSize) {
+            // If we don't have a batchSize, then we're just processing everything in one go
+            $this->totalSteps = 1;
+        } else {
+            // There could be 0 documents. If that's the case, then there's zero steps
+            $this->totalSteps = $this->documents
+                ? ceil(count($this->documents) / $this->batchSize)
+                : 0;
+        }
+
         $this->currentStep = 0;
+        $this->remainingDocuments = $this->documents;
+
         parent::setup();
     }
 
@@ -53,8 +71,8 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     {
         return sprintf(
             'Search service %s %s documents',
-            $this->indexer->getMethod() === Indexer::METHOD_DELETE ? 'removing' : 'adding',
-            sizeof($this->indexer->getDocuments())
+            $this->method === Indexer::METHOD_DELETE ? 'removing' : 'adding',
+            sizeof($this->documents)
         );
     }
 
@@ -71,12 +89,29 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
      */
     public function process()
     {
+        // It is possible that this Job is queued with no documents to be updated. If so, just mark it as complete
+        if ($this->totalSteps === 0) {
+            $this->isComplete = true;
+
+            return;
+        }
+
+        $remainingDocuments = $this->remainingDocuments;
+        // Splice a bunch of Documents from the start of the remaining documents
+        $documentToProcess = array_splice($remainingDocuments, 0, $this->batchSize);
+
+        $indexer = Indexer::create($documentToProcess, $this->method, $this->batchSize);
+        $indexer->setProcessDependencies($this->processDependencies);
+
         $this->extend('onBeforeProcess');
-        $this->currentStep++;
-        $this->indexer->processNode();
+        $indexer->processNode();
         $this->extend('onAfterProcess');
 
-        if ($this->indexer->finished()) {
+        // Save away whatever Documents are still remaining
+        $this->remainingDocuments = $remainingDocuments;
+        $this->currentStep++;
+
+        if ($this->currentStep >= $this->totalSteps) {
             $this->isComplete = true;
         }
     }

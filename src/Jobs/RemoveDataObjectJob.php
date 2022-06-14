@@ -3,13 +3,13 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use Exception;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
-use Exception;
 
 /**
  * Class RemoveDataObjectJob
@@ -29,12 +29,14 @@ class RemoveDataObjectJob extends IndexJob
     public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
-        $this->timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
+
         if ($document !== null) {
             // We do this so that if the Dataobject is deleted, not just unpublished, we can still act upon it
             $document->setShouldFallbackToLatestVersion();
         }
+
         $this->document = $document;
+        $this->timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
     }
 
     /**
@@ -67,6 +69,7 @@ class RemoveDataObjectJob extends IndexJob
 
             // refetch everything on the live stage
             Versioned::set_stage(Versioned::LIVE);
+
             return array_map(function (DataObjectDocument $doc) {
                 return DataObjectDocument::create(
                     DataObject::get_by_id(
@@ -77,7 +80,7 @@ class RemoveDataObjectJob extends IndexJob
             }, $dependentDocs);
         });
 
-        $this->indexer->setDocuments($documents);
+        $this->documents = $documents;
 
         parent::setup();
     }

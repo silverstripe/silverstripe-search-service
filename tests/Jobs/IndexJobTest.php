@@ -31,8 +31,8 @@ class IndexJobTest extends SearchServiceTest
             false
         );
         $job->setup();
-        $this->assertEquals(6, $job->indexer->getBatchSize());
-        $this->assertCount(20, $job->indexer->getDocuments());
+        $this->assertEquals(6, $job->batchSize);
+        $this->assertCount(20, $job->documents);
 
         $job->process();
         $this->assertFalse($job->jobFinished());
