@@ -16,7 +16,7 @@
     "require": {
         "php": "^7.4 || ^8.0",
         "symbiote/silverstripe-queuedjobs": "^4.0.0",
-        "silverstripe-terraformers/app-search-php-8": "dev-master",
+        "silverstripe-terraformers/app-search-php-8": "^7.14.0",
         "silverstripe/versioned": "^1"
     },
     "require-dev": {
