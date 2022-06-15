@@ -100,6 +100,9 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         // Splice a bunch of Documents from the start of the remaining documents
         $documentToProcess = array_splice($remainingDocuments, 0, $this->batchSize);
 
+        // Indexer is being instantiated in process() rather that __construct() to prevent the following exception:
+        // Uncaught Exception: Serialization of 'CurlHandle' is not allowed
+        // The CurlHandle is created in a third-party dependency
         $indexer = Indexer::create($documentToProcess, $this->method, $this->batchSize);
         $indexer->setProcessDependencies($this->processDependencies);
 
