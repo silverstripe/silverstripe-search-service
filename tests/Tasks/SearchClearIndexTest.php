@@ -22,7 +22,7 @@ class SearchClearIndexTest extends SearchServiceTest
         $mock->expects($this->once())
             ->method('runJob')
             ->with($this->callback(function (ClearIndexJob $job) {
-                return $job->indexName === 'foo';
+                return $job->getIndexName() === 'foo';
             }));
 
         $task = SearchClearIndex::create();

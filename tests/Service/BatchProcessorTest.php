@@ -26,8 +26,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('runJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->documents) === 2 &&
-                    $job->method === Indexer::METHOD_ADD;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_ADD;
             }));
         Injector::inst()->registerService($mock, SyncJobRunner::class);
 
@@ -50,8 +50,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('runJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->documents) === 2 &&
-                    $job->method === Indexer::METHOD_DELETE;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_DELETE;
             }));
         Injector::inst()->registerService($mock, SyncJobRunner::class);
 
@@ -74,8 +74,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('queueJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->documents) === 2 &&
-                    $job->method === Indexer::METHOD_ADD;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_ADD;
             }));
 
         Injector::inst()->registerService($mock, QueuedJobService::class);
@@ -99,8 +99,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('queueJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->documents) === 2 &&
-                    $job->method === Indexer::METHOD_DELETE;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_DELETE;
             }));
 
         Injector::inst()->registerService($mock, QueuedJobService::class);

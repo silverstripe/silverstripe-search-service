@@ -2,31 +2,40 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use InvalidArgumentException;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
-use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Indexer;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
-use InvalidArgumentException;
 
-/**
- * @property DocumentFetcherInterface[] $fetchers
- * @property int $fetchIndex
- * @property int $fetchOffset
- * @property int $batchSize
- * @property array $onlyClasses
- * @property array $onlyIndexes
- */
 class ReindexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ConfigurationAware;
     use Extensible;
+
+    protected ?int $batchSize;
+
+    /**
+     * @var DocumentFetcherInterface[]
+     */
+    protected array $fetchers = [];
+
+    protected int $fetchIndex = 0;
+
+    protected int $fetchOffset = 0;
+
+    protected ?array $onlyClasses = [];
+
+    protected ?array $onlyIndexes = [];
+
+    protected ?DocumentFetchCreatorRegistry $registry = null;
 
     /**
      * @var array
@@ -36,40 +45,31 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
-    /**
-     * @var DocumentFetchCreatorRegistry
-     */
-    private $registry;
-
-    /**
-     * @param array|null $onlyClasses
-     * @param array|null $onlyIndexes
-     * @param int|null $batchSize
-     */
     public function __construct(?array $onlyClasses = [], ?array $onlyIndexes = [], ?int $batchSize = null)
     {
         parent::__construct();
-        $this->onlyClasses = $onlyClasses;
-        $this->onlyIndexes = $onlyIndexes;
-        $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
-        if ($this->batchSize < 1) {
+
+        $this->setOnlyClasses($onlyClasses);
+        $this->setOnlyIndexes($onlyIndexes);
+        $batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
+
+        $this->setBatchSize($batchSize);
+
+        if ($this->getBatchSize() < 1) {
             throw new InvalidArgumentException('Batch size must be greater than 0');
         }
     }
 
-    /**
-     * Defines the title of the job.
-     *
-     * @return string
-     */
     public function getTitle()
     {
         $title = 'Search service reindex all documents';
-        if (!empty($this->onlyIndexes)) {
-            $title .= ' in index ' . implode(',', $this->onlyIndexes);
+
+        if (!empty($this->getOnlyIndexes())) {
+            $title .= ' in index ' . implode(',', $this->getOnlyIndexes());
         }
-        if (!empty($this->onlyClasses)) {
-            $title .= ' of class ' . implode(',', $this->onlyClasses);
+
+        if (!empty($this->getOnlyClasses())) {
+            $title .= ' of class ' . implode(',', $this->getOnlyClasses());
         }
 
         return $title;
@@ -87,18 +87,19 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     {
         Versioned::set_stage(Versioned::LIVE);
 
-        if ($this->onlyIndexes && count($this->onlyIndexes)) {
-            $this->getConfiguration()->setOnlyIndexes($this->onlyIndexes);
+        if ($this->getOnlyIndexes() && count($this->getOnlyIndexes())) {
+            $this->getConfiguration()->setOnlyIndexes($this->getOnlyIndexes());
         }
 
-        $classes = $this->onlyClasses && count($this->onlyClasses) ?
-            $this->onlyClasses :
+        $classes = $this->getOnlyClasses() && count($this->getOnlyClasses()) ?
+            $this->getOnlyClasses() :
             $this->getConfiguration()->getSearchableBaseClasses();
 
-        /* @var DocumentFetcherInterface[] $fetchers */
         $fetchers = [];
+
         foreach ($classes as $class) {
             $fetcher = $this->getRegistry()->getFetcher($class);
+
             if ($fetcher) {
                 $fetchers[$class] = $fetcher;
             }
@@ -106,15 +107,14 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
 
         $steps = array_reduce($fetchers, function ($total, $fetcher) {
             /* @var DocumentFetcherInterface $fetcher */
-            return $total + ceil($fetcher->getTotalDocuments() / $this->batchSize);
+            return $total + ceil($fetcher->getTotalDocuments() / $this->getBatchSize());
         }, 0);
 
         $this->totalSteps = $steps;
         $this->isComplete = $steps === 0;
         $this->currentStep = 0;
-        $this->fetchers = array_values($fetchers);
-        $this->fetchIndex = 0;
-        $this->fetchOffset = 0;
+        $this->setFetchers(array_values($fetchers));
+        $this->setFetchOffset(0);
     }
 
     /**
@@ -124,57 +124,106 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     {
         $this->extend('onBeforeProcess');
         /* @var DocumentFetcherInterface $fetcher */
-        $fetcher = $this->fetchers[$this->fetchIndex] ?? null;
+        $fetcher = $this->getFetchers()[$this->getFetchIndex()] ?? null;
+
         if (!$fetcher) {
             $this->isComplete = true;
+
             return;
         }
 
-        $documents = $fetcher->fetch($this->batchSize, $this->fetchOffset);
+        $documents = $fetcher->fetch($this->getBatchSize(), $this->getFetchOffset());
 
-        $indexer = Indexer::create($documents, Indexer::METHOD_ADD, $this->batchSize);
+        $indexer = Indexer::create($documents, Indexer::METHOD_ADD, $this->getBatchSize());
         $indexer->setProcessDependencies(false);
+
         while (!$indexer->finished()) {
             $indexer->processNode();
         }
 
-        $nextOffset = $this->fetchOffset + $this->batchSize;
+        $nextOffset = $this->getFetchOffset() + $this->getBatchSize();
+
         if ($nextOffset >= $fetcher->getTotalDocuments()) {
-            $this->fetchIndex++;
-            $this->fetchOffset = 0;
+            $this->incrementFetchIndex();
+            $this->setFetchOffset(0);
         } else {
-            $this->fetchOffset = $nextOffset;
+            $this->setFetchOffset($nextOffset);
         }
+
         $this->currentStep++;
 
         $this->extend('onAfterProcess');
     }
 
-    /**
-     * @param int $batchSize
-     * @return ReindexJob
-     */
-    public function setBatchSize(int $batchSize): ReindexJob
+    public function getBatchSize(): int
     {
-        $this->batchSize = $batchSize;
-        return $this;
+        return $this->batchSize;
     }
 
-    /**
-     * @return DocumentFetchCreatorRegistry
-     */
+    public function getFetchers(): array
+    {
+        return $this->fetchers;
+    }
+
+    public function getFetchIndex(): int
+    {
+        return $this->fetchIndex;
+    }
+
+    public function getFetchOffset(): int
+    {
+        return $this->fetchOffset;
+    }
+
+    public function getOnlyClasses(): ?array
+    {
+        return $this->onlyClasses;
+    }
+
+    public function getOnlyIndexes(): ?array
+    {
+        return $this->onlyIndexes;
+    }
+
     public function getRegistry(): DocumentFetchCreatorRegistry
     {
         return $this->registry;
     }
 
-    /**
-     * @param DocumentFetchCreatorRegistry $registry
-     * @return ReindexJob
-     */
     public function setRegistry(DocumentFetchCreatorRegistry $registry): ReindexJob
     {
         $this->registry = $registry;
+
         return $this;
+    }
+
+    protected function incrementFetchIndex(): void
+    {
+        $this->fetchIndex++;
+    }
+
+    protected function setBatchSize(int $batchSize): void
+    {
+        $this->batchSize = $batchSize;
+    }
+
+    protected function setFetchers(array $fetchers): void
+    {
+        $this->fetchers = $fetchers;
+    }
+
+    protected function setFetchOffset(int $fetchOffset): void
+    {
+        $this->fetchOffset = $fetchOffset;
+    }
+
+    protected function setOnlyClasses(?array $onlyClasses): void
+    {
+        $this->onlyClasses = $onlyClasses;
+    }
+
+    protected function setOnlyIndexes(?array $onlyIndexes): void
+    {
+        $this->onlyIndexes = $onlyIndexes;
     }
 }

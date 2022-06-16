@@ -21,11 +21,11 @@ class ClearIndexJobTest extends SearchServiceTest
 
         // Batch size of 0 is the same as not specifying a batch size, so we should get the batch size from config
         $job = ClearIndexJob::create('myindex', 0);
-        $this->assertSame($config->getBatchSize(), $job->batchSize);
+        $this->assertSame($config->getBatchSize(), $job->getBatchSize());
 
         // Same with not specifying a batch size at all
         $job = ClearIndexJob::create('myindex');
-        $this->assertSame($config->getBatchSize(), $job->batchSize);
+        $this->assertSame($config->getBatchSize(), $job->getBatchSize());
 
         // Specifying a batch size under 0 should throw an exception
         $this->expectException(InvalidArgumentException::class);
@@ -34,9 +34,9 @@ class ClearIndexJobTest extends SearchServiceTest
 
         // If no index name is provided, then other config options should not be applied
         $job = ClearIndexJob::create();
-        $this->assertNull($job->indexName);
-        $this->assertNull($job->batchSize);
-        $this->assertNull($job->batchOffset);
+        $this->assertNull($job->getIndexName());
+        $this->assertNull($job->getBatchSize());
+        $this->assertNull($job->getBatchOffset());
     }
 
     public function testSetup(): void

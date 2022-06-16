@@ -10,14 +10,8 @@ use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
 /**
- * Index an item (or multiple items) into search async. This method works well
- * for performance and batching large indexes
- *
- * @property array $documents
- * @property array $remainingDocuments
- * @property int $method
- * @property int $batchSize
- * @property bool $processDependencies
+ * Index an item (or multiple items) into search async. This method works well for performance and batching large
+ * indexes
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -25,10 +19,23 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     use Extensible;
 
     /**
+     * @var DocumentInterface[]
+     */
+    protected array $documents;
+
+    /**
+     * @var DocumentInterface[]
+     */
+    protected array $remainingDocuments;
+
+    protected int $method;
+
+    protected ?int $batchSize;
+
+    protected bool $processDependencies;
+
+    /**
      * @param DocumentInterface[] $documents
-     * @param int $method
-     * @param int $batchSize
-     * @param bool $processDependencies
      */
     public function __construct(
         array $documents = [],
@@ -36,17 +43,17 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         ?int $batchSize = null,
         bool $processDependencies = true
     ) {
-        $this->documents = $documents;
-        $this->method = $method;
-        $this->batchSize = $batchSize;
-        $this->processDependencies = $processDependencies;
+        $this->setDocuments($documents);
+        $this->setMethod($method);
+        $this->setBatchSize($batchSize);
+        $this->setProcessDependencies($processDependencies);
 
         parent::__construct();
     }
 
     public function setup()
     {
-        if (!$this->batchSize) {
+        if (!$this->getBatchSize()) {
             // If we don't have a batchSize, then we're just processing everything in one go
             $this->totalSteps = 1;
         } else {
@@ -57,21 +64,16 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         }
 
         $this->currentStep = 0;
-        $this->remainingDocuments = $this->documents;
+        $this->setRemainingDocuments($this->documents);
 
         parent::setup();
     }
 
-    /**
-     * Defines the title of the job.
-     *
-     * @return string
-     */
     public function getTitle()
     {
         return sprintf(
             'Search service %s %s documents',
-            $this->method === Indexer::METHOD_DELETE ? 'removing' : 'adding',
+            $this->getMethod() === Indexer::METHOD_DELETE ? 'removing' : 'adding',
             sizeof($this->documents)
         );
     }
@@ -84,9 +86,6 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         return QueuedJob::IMMEDIATE;
     }
 
-    /**
-     * Lets process a single node
-     */
     public function process()
     {
         // It is possible that this Job is queued with no documents to be updated. If so, just mark it as complete
@@ -96,26 +95,76 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
             return;
         }
 
-        $remainingDocuments = $this->remainingDocuments;
+        $remainingDocuments = $this->getRemainingDocuments();
         // Splice a bunch of Documents from the start of the remaining documents
-        $documentToProcess = array_splice($remainingDocuments, 0, $this->batchSize);
+        $documentToProcess = array_splice($remainingDocuments, 0, $this->getBatchSize());
 
         // Indexer is being instantiated in process() rather that __construct() to prevent the following exception:
         // Uncaught Exception: Serialization of 'CurlHandle' is not allowed
         // The CurlHandle is created in a third-party dependency
-        $indexer = Indexer::create($documentToProcess, $this->method, $this->batchSize);
-        $indexer->setProcessDependencies($this->processDependencies);
+        $indexer = Indexer::create($documentToProcess, $this->getMethod(), $this->getBatchSize());
+        $indexer->setProcessDependencies($this->shouldProcessDependencies());
 
         $this->extend('onBeforeProcess');
         $indexer->processNode();
         $this->extend('onAfterProcess');
 
         // Save away whatever Documents are still remaining
-        $this->remainingDocuments = $remainingDocuments;
+        $this->setRemainingDocuments($remainingDocuments);
         $this->currentStep++;
 
         if ($this->currentStep >= $this->totalSteps) {
             $this->isComplete = true;
         }
+    }
+
+    public function getDocuments(): array
+    {
+        return $this->documents;
+    }
+
+    public function getRemainingDocuments(): array
+    {
+        return $this->remainingDocuments;
+    }
+
+    public function getMethod(): int
+    {
+        return $this->method;
+    }
+
+    public function getBatchSize(): ?int
+    {
+        return $this->batchSize;
+    }
+
+    public function shouldProcessDependencies(): bool
+    {
+        return $this->processDependencies;
+    }
+
+    protected function setBatchSize(?int $batchSize): void
+    {
+        $this->batchSize = $batchSize;
+    }
+
+    protected function setDocuments(array $documents): void
+    {
+        $this->documents = $documents;
+    }
+
+    protected function setMethod(int $method): void
+    {
+        $this->method = $method;
+    }
+
+    protected function setRemainingDocuments(array $remainingDocuments): void
+    {
+        $this->remainingDocuments = $remainingDocuments;
+    }
+
+    protected function setProcessDependencies(bool $processDependencies): void
+    {
+        $this->processDependencies = $processDependencies;
     }
 }

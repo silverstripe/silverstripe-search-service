@@ -52,11 +52,11 @@ class ReindexJobTest extends SearchServiceTest
         // 10 Fake documents in batches of six = 2
         $this->assertEquals(6, $totalSteps);
 
-        $this->assertCount(2, $job->fetchers);
-        $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
+        $this->assertCount(2, $job->getFetchers());
+        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
             return $fetcher instanceof DataObjectFetcher;
         });
-        $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
+        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
             return $fetcher instanceof FakeFetcher;
         });
     }

@@ -11,21 +11,13 @@ use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
 
-/**
- * Class RemoveDataObjectJob
- * @package SilverStripe\SearchService\Jobs
- *
- * @property DataObjectDocument $document
- * @property int $timestamp
- */
 class RemoveDataObjectJob extends IndexJob
 {
 
-    /**
-     * @param DataObjectDocument|null $document
-     * @param int|null $timestamp
-     * @param int|null $batchSize
-     */
+    protected ?DataObjectDocument $document = null;
+
+    protected ?int $timestamp = null;
+
     public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
@@ -35,21 +27,18 @@ class RemoveDataObjectJob extends IndexJob
             $document->setShouldFallbackToLatestVersion();
         }
 
-        $this->document = $document;
-        $this->timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
+        $timestamp = $timestamp ?: DBDatetime::now()->getTimestamp();
+
+        $this->setDocument($document);
+        $this->setTimestamp($timestamp);
     }
 
-    /**
-     * Defines the title of the job.
-     *
-     * @return string
-     */
     public function getTitle()
     {
         return sprintf(
             'Search service unpublishing document "%s" (ID: %s)',
-            $this->document->getDataObject()->getTitle(),
-            $this->document->getIdentifier()
+            $this->getDocument()->getDataObject()->getTitle(),
+            $this->getDocument()->getIdentifier()
         );
     }
 
@@ -59,7 +48,7 @@ class RemoveDataObjectJob extends IndexJob
     public function setup()
     {
         // Set the documents in setup to ensure async
-        $datetime = DBField::create_field('Datetime', $this->timestamp);
+        $datetime = DBField::create_field('Datetime', $this->getTimestamp());
         $archiveDate = $datetime->format($datetime->getISOFormat());
         $documents = Versioned::withVersionedMode(function () use ($archiveDate) {
             Versioned::reading_archived_date($archiveDate);
@@ -80,8 +69,28 @@ class RemoveDataObjectJob extends IndexJob
             }, $dependentDocs);
         });
 
-        $this->documents = $documents;
+        $this->setDocuments($documents);
 
         parent::setup();
+    }
+
+    public function getDocument(): ?DataObjectDocument
+    {
+        return $this->document;
+    }
+
+    public function getTimestamp(): ?int
+    {
+        return $this->timestamp;
+    }
+
+    protected function setDocument(?DataObjectDocument $document): void
+    {
+        $this->document = $document;
+    }
+
+    protected function setTimestamp(?int $timestamp): void
+    {
+        $this->timestamp = $timestamp;
     }
 }

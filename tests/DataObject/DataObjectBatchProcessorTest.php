@@ -35,7 +35,7 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         $cb = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
             $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->document);
-            $this->assertEquals(Indexer::METHOD_ADD, $arg->method);
+            $this->assertEquals(Indexer::METHOD_ADD, $arg->getMethod());
             $this->assertEquals(900, $arg->timestamp);
 
             return true;
@@ -46,8 +46,8 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
             ->withConsecutive(
                 [$this->callback(function (IndexJob $arg) {
                     $this->assertInstanceOf(IndexJob::class, $arg);
-                    $this->assertCount(2, $arg->documents);
-                    $this->assertEquals(Indexer::METHOD_DELETE, $arg->method);
+                    $this->assertCount(2, $arg->getDocuments());
+                    $this->assertEquals(Indexer::METHOD_DELETE, $arg->getMethod());
 
                     return true;
                 })],
