@@ -18,7 +18,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class DocumentBuilderTest extends SearchServiceTest
 {
-    public function testToArray()
+    public function testToArray(): void
     {
         DocumentFake::$count = 0;
         $config = $this->mockConfig();
@@ -39,7 +39,7 @@ class DocumentBuilderTest extends SearchServiceTest
         $this->assertEquals('value2', $arr['field2']);
     }
 
-    public function testFromArray()
+    public function testFromArray(): void
     {
         $config = $this->mockConfig();
         $registry = DocumentFetchCreatorRegistry::singleton();
@@ -64,7 +64,7 @@ class DocumentBuilderTest extends SearchServiceTest
         $this->assertNull($document);
     }
 
-    public function testDocumentTruncation()
+    public function testDocumentTruncation(): void
     {
         $fake = new ServiceFake();
         $fake->maxDocSize = 100;

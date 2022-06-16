@@ -14,7 +14,7 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class BatchProcessorTest extends SearchServiceTest
 {
-    public function testAddDocumentsSync()
+    public function testAddDocumentsSync(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -26,8 +26,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('runJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->indexer->getDocuments()) === 2 &&
-                    $job->indexer->getMethod() === Indexer::METHOD_ADD;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_ADD;
             }));
         Injector::inst()->registerService($mock, SyncJobRunner::class);
 
@@ -38,7 +38,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testRemoveDocumentsSync()
+    public function testRemoveDocumentsSync(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -50,8 +50,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('runJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->indexer->getDocuments()) === 2 &&
-                    $job->indexer->getMethod() === Indexer::METHOD_DELETE;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_DELETE;
             }));
         Injector::inst()->registerService($mock, SyncJobRunner::class);
 
@@ -62,7 +62,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testAddDocumentsQueued()
+    public function testAddDocumentsQueued(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', false);
@@ -74,8 +74,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('queueJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->indexer->getDocuments()) === 2 &&
-                    $job->indexer->getMethod() === Indexer::METHOD_ADD;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_ADD;
             }));
 
         Injector::inst()->registerService($mock, QueuedJobService::class);
@@ -87,7 +87,7 @@ class BatchProcessorTest extends SearchServiceTest
         ]);
     }
 
-    public function testRemoveDocumentsQueued()
+    public function testRemoveDocumentsQueued(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', false);
@@ -99,8 +99,8 @@ class BatchProcessorTest extends SearchServiceTest
             ->method('queueJob')
             ->with($this->callback(function (IndexJob $job) {
                 return $job instanceof IndexJob &&
-                    count($job->indexer->getDocuments()) === 2 &&
-                    $job->indexer->getMethod() === Indexer::METHOD_DELETE;
+                    count($job->getDocuments()) === 2 &&
+                    $job->getMethod() === Indexer::METHOD_DELETE;
             }));
 
         Injector::inst()->registerService($mock, QueuedJobService::class);

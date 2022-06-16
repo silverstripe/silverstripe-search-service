@@ -19,6 +19,9 @@ class DBHTMLFieldExtension extends Extension
         if (SearchServiceExtension::singleton()->getConfiguration()->shouldIncludePageHTML()) {
             return $this->owner->forTemplate();
         }
-        return preg_replace('/\s+/S', " ", strip_tags($this->owner->forTemplate()));
+
+        $value = $this->owner->forTemplate() ?? '';
+
+        return preg_replace('/\s+/S', " ", strip_tags($value));
     }
 }

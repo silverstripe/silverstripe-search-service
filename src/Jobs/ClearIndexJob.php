@@ -3,27 +3,23 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
-use RuntimeException;
-use InvalidArgumentException;
 
 /**
- * Class ClearIndexJob
- * @package SilverStripe\SearchService\Jobs
- *
- * @property string $indexName
- * @property int $batchSize
- * @property int $batchOffset
+ * @property int|null $batchOffset
+ * @property int|null $batchSize
+ * @property string|null $indexName
  */
 class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 {
@@ -34,11 +30,6 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         'IndexService' => '%$' . IndexingInterface::class,
     ];
 
-    /**
-     * ClearIndexJob constructor.
-     * @param string|null $indexName
-     * @param int|null $batchSize
-     */
     public function __construct(?string $indexName = null, ?int $batchSize = null)
     {
         parent::__construct();
@@ -47,18 +38,17 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
             return;
         }
 
-        $this->indexName = $indexName;
-        $this->batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
-        $this->batchOffset = 0;
+        $batchSize = $batchSize ?: IndexConfiguration::singleton()->getBatchSize();
 
-        if ($this->batchSize < 1) {
+        $this->setIndexName($indexName);
+        $this->setBatchSize($batchSize);
+        $this->setBatchOffset(0);
+
+        if ($this->getBatchSize() < 1) {
             throw new InvalidArgumentException('Batch size must be greater than 0');
         }
     }
 
-    /**
-     * @throws IndexingServiceException
-     */
     public function setup()
     {
         // Attempt to remove all documents up to 5 times to allow for eventually-consistent data stores
@@ -67,12 +57,9 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 
     public function getTitle()
     {
-        return sprintf('Search clear index %s', $this->indexName);
+        return sprintf('Search clear index %s', $this->getIndexName());
     }
 
-    /**
-     * @throws IndexingServiceException
-     */
     public function process()
     {
         Environment::increaseMemoryLimitTo();
@@ -90,9 +77,9 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         }
 
         $this->currentStep++;
-        $total = $this->getIndexService()->getDocumentTotal($this->indexName);
-        $numRemoved = $this->getIndexService()->removeAllDocuments($this->indexName);
-        $totalAfter = $this->getIndexService()->getDocumentTotal($this->indexName);
+        $total = $this->getIndexService()->getDocumentTotal($this->getIndexName());
+        $numRemoved = $this->getIndexService()->removeAllDocuments($this->getIndexName());
+        $totalAfter = $this->getIndexService()->getDocumentTotal($this->getIndexName());
 
         Injector::inst()->get(LoggerInterface::class)->notice(sprintf(
             '[Step %d]: Before there were %d documents. We removed %d documents this iteration, leaving %d remaining.',
@@ -106,7 +93,7 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
             $this->isComplete = true;
             Injector::inst()->get(LoggerInterface::class)->notice(sprintf(
                 'Successfully removed all documents from index %s',
-                $this->indexName
+                $this->getIndexName()
             ));
 
             return;
@@ -120,5 +107,35 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
                 $totalAfter
             ));
         }
+    }
+
+    public function getBatchOffset(): ?int
+    {
+        return $this->batchOffset;
+    }
+
+    public function getBatchSize(): ?int
+    {
+        return $this->batchSize;
+    }
+
+    public function getIndexName(): ?string
+    {
+        return $this->indexName;
+    }
+
+    private function setBatchOffset(?int $batchOffset): void
+    {
+        $this->batchOffset = $batchOffset;
+    }
+
+    private function setBatchSize(?int $batchSize): void
+    {
+        $this->batchSize = $batchSize;
+    }
+
+    private function setIndexName(?string $indexName): void
+    {
+        $this->indexName = $indexName;
     }
 }

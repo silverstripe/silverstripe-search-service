@@ -19,19 +19,20 @@ class ReindexJobTest extends SearchServiceTest
         DataObjectFake::class,
     ];
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
+
         FakeFetcher::load(10);
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
         FakeFetcher::$records = [];
     }
 
-    public function testJob()
+    public function testJob(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', [
@@ -51,11 +52,11 @@ class ReindexJobTest extends SearchServiceTest
         // 10 Fake documents in batches of six = 2
         $this->assertEquals(6, $totalSteps);
 
-        $this->assertCount(2, $job->fetchers);
-        $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
+        $this->assertCount(2, $job->getFetchers());
+        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
             return $fetcher instanceof DataObjectFetcher;
         });
-        $this->assertArrayContainsCallback($job->fetchers, function (DocumentFetcherInterface $fetcher) {
+        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
             return $fetcher instanceof FakeFetcher;
         });
     }

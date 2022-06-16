@@ -9,6 +9,8 @@ class DBFieldExtension extends Extension
 {
     public function getSearchValue()
     {
-        return preg_replace('/\s+/S', " ", strip_tags($this->owner->getValue()));
+        $value = $this->owner->getValue() ?? '';
+
+        return preg_replace('/\s+/S', " ", strip_tags($value));
     }
 }

@@ -24,7 +24,7 @@ class RemoveDataObjectJobTest extends SearchServiceTest
         Member::class,
     ];
 
-    public function testJob()
+    public function testJob(): void
     {
         $config = $this->mockConfig();
         $service = $this->mockService();
@@ -55,7 +55,7 @@ class RemoveDataObjectJobTest extends SearchServiceTest
             DataObjectDocument::create($tag)
         );
         $job->setup();
-        $docs = $job->indexer->getDocuments();
+        $docs = $job->getDocuments();
         $this->assertCount(2, $docs);
         foreach (['Dataobject one', 'Dataobject three'] as $title) {
             $this->assertArrayContainsCallback($docs, function (DataObjectDocument $doc) use ($title) {

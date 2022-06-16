@@ -6,13 +6,15 @@ namespace SilverStripe\SearchService\Tests\Service;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\Indexer;
+use SilverStripe\SearchService\Tests\Fake\DataObjectDocumentFake;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\ServiceFake;
+use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class IndexerTest extends SearchServiceTest
 {
-    public function testConstructor()
+    public function testConstructor(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -24,7 +26,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals(7, $indexer->getBatchSize());
     }
 
-    public function testChunking()
+    public function testChunking(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -49,7 +51,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals(1, $indexer->getChunkCount());
     }
 
-    public function testIndexing()
+    public function testIndexing(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -80,7 +82,7 @@ class IndexerTest extends SearchServiceTest
         $this->assertCount(19, $service->documents);
     }
 
-    public function testCleanup()
+    public function testCleanup(): void
     {
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
@@ -135,21 +137,21 @@ class IndexerTest extends SearchServiceTest
         $this->assertEquals('2', $service->documents['node-1']['updated']);
     }
 
-    public function testDependentDocuments()
+    public function testDependentDocuments(): void
     {
         Injector::inst()->registerService($service = new ServiceFake(), IndexingInterface::class);
         $config = $this->mockConfig();
         $config->set('isClassIndexed', [
-            'Blog' => true,
+            DataObjectDocumentFake::class => true,
         ]);
         $config->set('auto_dependency_tracking', true);
 
-        $blog1 = new DocumentFake('Blog', ['id' => 'blog-1']);
-        $blog2 = new DocumentFake('Blog', ['id' => 'blog-2']);
+        $blog1 = new DocumentFake(DataObjectDocumentFake::class, ['id' => 'blog-1']);
+        $blog2 = new DocumentFake(DataObjectDocumentFake::class, ['id' => 'blog-2']);
 
         $tagDocs = [
-            $tag1 = new DocumentFake('Tag', ['id' => 'tag-1']),
-            $tag2 = new DocumentFake('Tag', ['id' => 'tag-2']),
+            $tag1 = new DocumentFake(TagFake::class, ['id' => 'tag-1']),
+            $tag2 = new DocumentFake(TagFake::class, ['id' => 'tag-2']),
         ];
         $tag2->dependentDocuments = [
             $blog1,

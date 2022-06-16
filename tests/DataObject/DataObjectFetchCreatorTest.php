@@ -12,7 +12,7 @@ use SilverStripe\Security\Member;
 
 class DataObjectFetchCreatorTest extends SapphireTest
 {
-    public function testAppliesTo()
+    public function testAppliesTo(): void
     {
         $creator = DataObjectFetchCreator::create();
         $this->assertTrue($creator->appliesTo(DataObjectFake::class));
@@ -23,7 +23,7 @@ class DataObjectFetchCreatorTest extends SapphireTest
         $this->assertFalse($creator->appliesTo('DateTime'));
     }
 
-    public function testCreateFetcher()
+    public function testCreateFetcher(): void
     {
         $creator = DataObjectFetchCreator::create();
         $fetcher = $creator->createFetcher(DataObjectFake::class);

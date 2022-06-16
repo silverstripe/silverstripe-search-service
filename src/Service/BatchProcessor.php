@@ -33,7 +33,7 @@ class BatchProcessor implements BatchDocumentInterface
      */
     public function addDocuments(array $documents): BatchDocumentInterface
     {
-        $job = IndexJob::create($documents, Indexer::METHOD_ADD);
+        $job = IndexJob::create($documents);
         $this->run($job);
 
         return $this;

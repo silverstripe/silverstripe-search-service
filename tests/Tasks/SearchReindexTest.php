@@ -16,7 +16,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class SearchReindexTest extends SearchServiceTest
 {
-    public function testTask()
+    public function testTask(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -26,7 +26,7 @@ class SearchReindexTest extends SearchServiceTest
         $mock->expects($this->once())
             ->method('runJob')
             ->with($this->callback(function (ReindexJob $job) {
-                return count($job->onlyClasses) === 1 && $job->onlyClasses[0] === 'foo';
+                return count($job->getOnlyClasses()) === 1 && $job->getOnlyClasses()[0] === 'foo';
             }));
 
         $task = SearchReindex::create();
@@ -42,7 +42,7 @@ class SearchReindexTest extends SearchServiceTest
         $mock->expects($this->once())
             ->method('runJob')
             ->with($this->callback(function (ReindexJob $job) {
-                return empty($job->onlyClasses);
+                return empty($job->getOnlyClasses());
             }));
 
         $task = SearchReindex::create();

@@ -101,7 +101,7 @@ class DocumentBuilder
                 }
 
                 // Make sure we don't chop any characters in the middle making them UTF-8 invalid and non-jsonable
-                $data[$key] = mb_substr($data[$key], 0, -(mb_strlen($data[$key]) / 2));
+                $data[$key] = mb_substr($data[$key], 0, -(floor(mb_strlen($data[$key]) / 2)));
             }
         }
 

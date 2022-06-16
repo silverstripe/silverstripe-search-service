@@ -15,17 +15,17 @@ class ClearIndexJobTest extends SearchServiceTest
         DataObjectFake::class,
     ];
 
-    public function testConstruct()
+    public function testConstruct(): void
     {
         $config = $this->mockConfig();
 
         // Batch size of 0 is the same as not specifying a batch size, so we should get the batch size from config
         $job = ClearIndexJob::create('myindex', 0);
-        $this->assertSame($config->getBatchSize(), $job->batchSize);
+        $this->assertSame($config->getBatchSize(), $job->getBatchSize());
 
         // Same with not specifying a batch size at all
         $job = ClearIndexJob::create('myindex');
-        $this->assertSame($config->getBatchSize(), $job->batchSize);
+        $this->assertSame($config->getBatchSize(), $job->getBatchSize());
 
         // Specifying a batch size under 0 should throw an exception
         $this->expectException(InvalidArgumentException::class);
@@ -34,12 +34,12 @@ class ClearIndexJobTest extends SearchServiceTest
 
         // If no index name is provided, then other config options should not be applied
         $job = ClearIndexJob::create();
-        $this->assertNull($job->indexName);
-        $this->assertNull($job->batchSize);
-        $this->assertNull($job->batchOffset);
+        $this->assertNull($job->getIndexName());
+        $this->assertNull($job->getBatchSize());
+        $this->assertNull($job->getBatchOffset());
     }
 
-    public function testSetup()
+    public function testSetup(): void
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
@@ -52,16 +52,16 @@ class ClearIndexJobTest extends SearchServiceTest
         $this->assertFalse($job->jobFinished());
     }
 
-    public function testGetTitle()
+    public function testGetTitle(): void
     {
         $job = ClearIndexJob::create('indexName');
-        $this->assertContains('indexName', $job->getTitle());
+        $this->assertStringContainsString('indexName', $job->getTitle());
 
         $job = ClearIndexJob::create('random_index_name');
-        $this->assertContains('random_index_name', $job->getTitle());
+        $this->assertStringContainsString('random_index_name', $job->getTitle());
     }
 
-    public function testProcess()
+    public function testProcess(): void
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
@@ -89,7 +89,7 @@ class ClearIndexJobTest extends SearchServiceTest
         // The 6th time we process should fail with a RuntimeException
         $msg = 'ClearIndexJob was unable to delete all documents after 5 attempts. Finished all steps and the document'
             .   ' total is still 10';
-        
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage($msg);
         $job->process();

@@ -12,7 +12,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class SearchClearIndexTest extends SearchServiceTest
 {
-    public function testTask()
+    public function testTask(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
@@ -22,7 +22,7 @@ class SearchClearIndexTest extends SearchServiceTest
         $mock->expects($this->once())
             ->method('runJob')
             ->with($this->callback(function (ClearIndexJob $job) {
-                return $job->indexName === 'foo';
+                return $job->getIndexName() === 'foo';
             }));
 
         $task = SearchClearIndex::create();

@@ -16,7 +16,7 @@ class DataObjectFetcherTest extends SearchServiceTest
         DataObjectFake::class
     ];
 
-    public function testFetch()
+    public function testFetch(): void
     {
         $fetcher = DataObjectFetcher::create(DataObjectFake::class);
         $result = $fetcher->fetch();
@@ -33,13 +33,13 @@ class DataObjectFetcherTest extends SearchServiceTest
         $this->assertCount(2, $result);
     }
 
-    public function testTotalDocuments()
+    public function testTotalDocuments(): void
     {
         $fetcher = DataObjectFetcher::create(DataObjectFake::class);
         $this->assertEquals(3, $fetcher->getTotalDocuments());
     }
 
-    public function testCreateDocument()
+    public function testCreateDocument(): void
     {
         $dataobject = $this->objFromFixture(DataObjectFake::class, 'one');
         $id = $dataobject->ID;

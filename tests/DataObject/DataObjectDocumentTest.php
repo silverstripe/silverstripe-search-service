@@ -34,21 +34,21 @@ class DataObjectDocumentTest extends SearchServiceTest
         DataObjectFakeVersioned::class,
     ];
 
-    public function testGetIdentifier()
+    public function testGetIdentifier(): void
     {
         $dataobject = new DataObjectFake(['ID' => 5]);
         $doc = DataObjectDocument::create($dataobject);
         $this->assertEquals('silverstripe_searchservice_tests_fake_dataobjectfake_5', $doc->getIdentifier());
     }
 
-    public function testGetSourceClass()
+    public function testGetSourceClass(): void
     {
         $dataobject = new DataObjectFake(['ID' => 5]);
         $doc = DataObjectDocument::create($dataobject);
         $this->assertEquals(DataObjectFake::class, $doc->getSourceClass());
     }
 
-    public function testShouldIndex()
+    public function testShouldIndex(): void
     {
         $config = $this->mockConfig();
         /** @var Versioned $dataobject */
@@ -85,7 +85,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertFalse($doc->shouldIndex());
     }
 
-    public function testMarkIndexed()
+    public function testMarkIndexed(): void
     {
         $dataobject = new DataObjectFake(['ShowInSearch' => true]);
         $dataobject->write();
@@ -102,7 +102,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertNull($result->SearchIndexed);
     }
 
-    public function testGetIndexes()
+    public function testGetIndexes(): void
     {
         $config = $this->mockConfig();
         $config->set('getIndexesForClassName', [DataObjectFake::class => ['one', 'two']]);
@@ -112,7 +112,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals(['one', 'two'], $doc->getIndexes());
     }
 
-    public function testToArray()
+    public function testToArray(): void
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
@@ -173,11 +173,11 @@ class DataObjectDocumentTest extends SearchServiceTest
 //            ]
 //        ]);
 //        $this->expectException(IndexConfigurationException::class);
-//        $this->expectExceptionMessageRegExp('/associative/');
+//        $this->expectExceptionMessageMatches('/associative/');
 //        $doc->toArray();
 //
 //        $this->expectException(IndexConfigurationException::class);
-//        $this->expectExceptionMessageRegExp('/non scalar/');
+//        $this->expectExceptionMessageMatches('/non scalar/');
 //        $config->set('getFieldsForClass', [
 //            DataObjectFake::class => [
 //                new Field('customgettermixed', 'CustomGetterMixedArray'),
@@ -186,7 +186,7 @@ class DataObjectDocumentTest extends SearchServiceTest
 //        $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/DataObject or RelationList/');
+        $this->expectExceptionMessageMatches('/DataObject or RelationList/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('tags', 'Tags'),
@@ -195,7 +195,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/DataObject or RelationList/');
+        $this->expectExceptionMessageMatches('/DataObject or RelationList/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterdataobject', 'CustomGetterDataObj'),
@@ -204,7 +204,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc->toArray();
 
         $this->expectException(IndexConfigurationException::class);
-        $this->expectExceptionMessageRegExp('/cannot be resolved/');
+        $this->expectExceptionMessageMatches('/cannot be resolved/');
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterobj', 'CustomGetterObj'),
@@ -213,18 +213,18 @@ class DataObjectDocumentTest extends SearchServiceTest
         $doc->toArray();
     }
 
-    public function testProvideMeta()
+    public function testProvideMeta(): void
     {
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
         $doc = DataObjectDocument::create($dataObject);
         $meta = $doc->provideMeta();
-        $this->assertArrayHasKey('record_base_class', $meta);
+        $this->assertArrayHasKey('recordBaseClass', $meta);
         $this->assertArrayHasKey('record_id', $meta);
-        $this->assertEquals(DataObjectFake::class, $meta['record_base_class']);
+        $this->assertEquals(DataObjectFake::class, $meta['recordBaseClass']);
         $this->assertEquals($dataObject->ID, $meta['record_id']);
     }
 
-    public function testGetIndexedFields()
+    public function testGetIndexedFields(): void
     {
         $config = $this->mockConfig();
         $doc = DataObjectDocument::create(new DataObjectSubclassFake());
@@ -253,7 +253,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEmpty($fields);
     }
 
-    public function testGetFieldDependency()
+    public function testGetFieldDependency(): void
     {
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
         $doc = DataObjectDocument::create($dataObject);
@@ -272,7 +272,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals(['Tag two', 'Tag three'], $dependency->column('Title'));
     }
 
-    public function testGetFieldValue()
+    public function testGetFieldValue(): void
     {
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
         $doc = DataObjectDocument::create($dataObject);
@@ -290,7 +290,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals(['Tag two', 'Tag three'], $value);
     }
 
-    public function testGetSearchValueNoHTML()
+    public function testGetSearchValueNoHTML(): void
     {
         $config = $this->mockConfig();
         $config->set('getFieldsForClass', [
@@ -335,7 +335,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals('a multi line string', $array['multi']);
     }
 
-    public function testGetDependentDocuments()
+    public function testGetDependentDocuments(): void
     {
         $config = $this->mockConfig();
         $config->set('getSearchableClasses', [
@@ -384,7 +384,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         });
     }
 
-    public function testExtensionRequired()
+    public function testExtensionRequired(): void
     {
         $this->expectException('InvalidArgumentException');
         $doc = DataObjectDocument::create(new Member());
@@ -395,7 +395,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals($fake, $doc->getDataObject());
     }
 
-    public function testEvents()
+    public function testEvents(): void
     {
         $mock = $this->getMockBuilder(DataObjectDocument::class)
             ->setMethods(['markIndexed'])
@@ -410,7 +410,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $mock->onRemoveFromSearchIndexes(DocumentRemoveHandler::AFTER_REMOVE);
     }
 
-    public function testDeletedDataObject()
+    public function testDeletedDataObject(): void
     {
         $dataObject = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
         $dataObject->Title = 'Published';
