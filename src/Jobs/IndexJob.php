@@ -12,27 +12,17 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
 /**
  * Index an item (or multiple items) into search async. This method works well for performance and batching large
  * indexes
+ *
+ * @property DocumentInterface[] $documents
+ * @property DocumentInterface[] $remainingDocuments
+ * @property int $method
+ * @property int|null $batchSize
+ * @property bool $processDependencies
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use Extensible;
-
-    /**
-     * @var DocumentInterface[]
-     */
-    private array $documents;
-
-    /**
-     * @var DocumentInterface[]
-     */
-    private array $remainingDocuments;
-
-    private int $method;
-
-    private ?int $batchSize;
-
-    private bool $processDependencies;
 
     /**
      * @param DocumentInterface[] $documents

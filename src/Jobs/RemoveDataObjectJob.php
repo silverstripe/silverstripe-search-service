@@ -11,12 +11,12 @@ use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\Versioned\Versioned;
 
+/**
+ * @property DataObjectDocument|null $document
+ * @property int|null $timestamp
+ */
 class RemoveDataObjectJob extends IndexJob
 {
-
-    private ?DataObjectDocument $document = null;
-
-    private ?int $timestamp = null;
 
     public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {

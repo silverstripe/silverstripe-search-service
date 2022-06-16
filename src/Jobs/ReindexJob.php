@@ -14,26 +14,19 @@ use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
+/**
+ * @property int|null $batchSize
+ * @property array|null $fetchers
+ * @property int|null $fetchIndex
+ * @property int|null $fetchOffset
+ * @property array|null $onlyClasses
+ * @property array|null $onlyIndexes
+ */
 class ReindexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ConfigurationAware;
     use Extensible;
-
-    private ?int $batchSize;
-
-    /**
-     * @var DocumentFetcherInterface[]
-     */
-    private array $fetchers = [];
-
-    private int $fetchIndex = 0;
-
-    private int $fetchOffset = 0;
-
-    private ?array $onlyClasses = [];
-
-    private ?array $onlyIndexes = [];
 
     private ?DocumentFetchCreatorRegistry $registry = null;
 

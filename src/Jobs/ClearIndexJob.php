@@ -16,16 +16,15 @@ use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
+/**
+ * @property int|null $batchOffset
+ * @property int|null $batchSize
+ * @property string|null $indexName
+ */
 class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 {
     use Injectable;
     use ServiceAware;
-
-    private ?int $batchOffset = null;
-
-    private ?int $batchSize = null;
-
-    private ?string $indexName = null;
 
     private static $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,

@@ -24,12 +24,7 @@ class IndexJobTest extends SearchServiceTest
         $docs = $service->listDocuments('test', 100);
         $this->assertCount(20, $docs);
 
-        $job = IndexJob::create(
-            $docs,
-            Indexer::METHOD_ADD,
-            6,
-            false
-        );
+        $job = IndexJob::create($docs, Indexer::METHOD_ADD, 6, false);
         $job->setup();
         $this->assertEquals(6, $job->getBatchSize());
         $this->assertCount(20, $job->getDocuments());
