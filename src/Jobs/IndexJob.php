@@ -143,14 +143,14 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         return $this->processDependencies;
     }
 
+    protected function setDocuments(array $documents): void
+    {
+        $this->documents = $documents;
+    }
+
     private function setBatchSize(?int $batchSize): void
     {
         $this->batchSize = $batchSize;
-    }
-
-    private function setDocuments(array $documents): void
-    {
-        $this->documents = $documents;
     }
 
     private function setMethod(int $method): void
