@@ -21,18 +21,18 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     /**
      * @var DocumentInterface[]
      */
-    protected array $documents;
+    private array $documents;
 
     /**
      * @var DocumentInterface[]
      */
-    protected array $remainingDocuments;
+    private array $remainingDocuments;
 
-    protected int $method;
+    private int $method;
 
-    protected ?int $batchSize;
+    private ?int $batchSize;
 
-    protected bool $processDependencies;
+    private bool $processDependencies;
 
     /**
      * @param DocumentInterface[] $documents
@@ -143,27 +143,27 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         return $this->processDependencies;
     }
 
-    protected function setBatchSize(?int $batchSize): void
+    private function setBatchSize(?int $batchSize): void
     {
         $this->batchSize = $batchSize;
     }
 
-    protected function setDocuments(array $documents): void
+    private function setDocuments(array $documents): void
     {
         $this->documents = $documents;
     }
 
-    protected function setMethod(int $method): void
+    private function setMethod(int $method): void
     {
         $this->method = $method;
     }
 
-    protected function setRemainingDocuments(array $remainingDocuments): void
+    private function setRemainingDocuments(array $remainingDocuments): void
     {
         $this->remainingDocuments = $remainingDocuments;
     }
 
-    protected function setProcessDependencies(bool $processDependencies): void
+    private function setProcessDependencies(bool $processDependencies): void
     {
         $this->processDependencies = $processDependencies;
     }

@@ -9,7 +9,6 @@ use RuntimeException;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\IndexConfiguration;
@@ -22,11 +21,11 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
     use Injectable;
     use ServiceAware;
 
-    protected ?int $batchOffset = null;
+    private ?int $batchOffset = null;
 
-    protected ?int $batchSize = null;
+    private ?int $batchSize = null;
 
-    protected ?string $indexName = null;
+    private ?string $indexName = null;
 
     private static $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,
@@ -126,17 +125,17 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         return $this->indexName;
     }
 
-    protected function setBatchOffset(?int $batchOffset): void
+    private function setBatchOffset(?int $batchOffset): void
     {
         $this->batchOffset = $batchOffset;
     }
 
-    protected function setBatchSize(?int $batchSize): void
+    private function setBatchSize(?int $batchSize): void
     {
         $this->batchSize = $batchSize;
     }
 
-    protected function setIndexName(?string $indexName): void
+    private function setIndexName(?string $indexName): void
     {
         $this->indexName = $indexName;
     }

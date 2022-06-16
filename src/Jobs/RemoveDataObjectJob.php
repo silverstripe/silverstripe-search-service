@@ -14,9 +14,9 @@ use SilverStripe\Versioned\Versioned;
 class RemoveDataObjectJob extends IndexJob
 {
 
-    protected ?DataObjectDocument $document = null;
+    private ?DataObjectDocument $document = null;
 
-    protected ?int $timestamp = null;
+    private ?int $timestamp = null;
 
     public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
     {
@@ -84,12 +84,12 @@ class RemoveDataObjectJob extends IndexJob
         return $this->timestamp;
     }
 
-    protected function setDocument(?DataObjectDocument $document): void
+    private function setDocument(?DataObjectDocument $document): void
     {
         $this->document = $document;
     }
 
-    protected function setTimestamp(?int $timestamp): void
+    private function setTimestamp(?int $timestamp): void
     {
         $this->timestamp = $timestamp;
     }

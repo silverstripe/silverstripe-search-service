@@ -20,22 +20,22 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
     use ConfigurationAware;
     use Extensible;
 
-    protected ?int $batchSize;
+    private ?int $batchSize;
 
     /**
      * @var DocumentFetcherInterface[]
      */
-    protected array $fetchers = [];
+    private array $fetchers = [];
 
-    protected int $fetchIndex = 0;
+    private int $fetchIndex = 0;
 
-    protected int $fetchOffset = 0;
+    private int $fetchOffset = 0;
 
-    protected ?array $onlyClasses = [];
+    private ?array $onlyClasses = [];
 
-    protected ?array $onlyIndexes = [];
+    private ?array $onlyIndexes = [];
 
-    protected ?DocumentFetchCreatorRegistry $registry = null;
+    private ?DocumentFetchCreatorRegistry $registry = null;
 
     /**
      * @var array
@@ -197,32 +197,32 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
         return $this;
     }
 
-    protected function incrementFetchIndex(): void
+    private function incrementFetchIndex(): void
     {
         $this->fetchIndex++;
     }
 
-    protected function setBatchSize(int $batchSize): void
+    private function setBatchSize(int $batchSize): void
     {
         $this->batchSize = $batchSize;
     }
 
-    protected function setFetchers(array $fetchers): void
+    private function setFetchers(array $fetchers): void
     {
         $this->fetchers = $fetchers;
     }
 
-    protected function setFetchOffset(int $fetchOffset): void
+    private function setFetchOffset(int $fetchOffset): void
     {
         $this->fetchOffset = $fetchOffset;
     }
 
-    protected function setOnlyClasses(?array $onlyClasses): void
+    private function setOnlyClasses(?array $onlyClasses): void
     {
         $this->onlyClasses = $onlyClasses;
     }
 
-    protected function setOnlyIndexes(?array $onlyIndexes): void
+    private function setOnlyIndexes(?array $onlyIndexes): void
     {
         $this->onlyIndexes = $onlyIndexes;
     }

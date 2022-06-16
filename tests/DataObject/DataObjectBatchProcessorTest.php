@@ -34,9 +34,9 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
             ->getMock();
         $cb = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
-            $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->document);
+            $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->getDocument());
             $this->assertEquals(Indexer::METHOD_ADD, $arg->getMethod());
-            $this->assertEquals(900, $arg->timestamp);
+            $this->assertEquals(900, $arg->getTimestamp());
 
             return true;
         };
