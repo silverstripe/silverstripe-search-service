@@ -2,6 +2,7 @@
 
 namespace SilverStripe\SearchService\Jobs;
 
+use Exception;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -48,13 +49,13 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
             $this->totalSteps = 1;
         } else {
             // There could be 0 documents. If that's the case, then there's zero steps
-            $this->totalSteps = $this->documents
-                ? ceil(count($this->documents) / $this->batchSize)
+            $this->totalSteps = $this->getDocuments()
+                ? ceil(count($this->getDocuments()) / $this->getBatchSize())
                 : 0;
         }
 
         $this->currentStep = 0;
-        $this->setRemainingDocuments($this->documents);
+        $this->setRemainingDocuments($this->getDocuments());
 
         parent::setup();
     }
@@ -64,7 +65,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         return sprintf(
             'Search service %s %s documents',
             $this->getMethod() === Indexer::METHOD_DELETE ? 'removing' : 'adding',
-            sizeof($this->documents)
+            sizeof($this->getDocuments())
         );
     }
 
@@ -110,26 +111,48 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
 
     public function getDocuments(): array
     {
+        if (!is_array($this->documents)) {
+            return [];
+        }
+
         return $this->documents;
     }
 
     public function getRemainingDocuments(): array
     {
+        if (!is_array($this->remainingDocuments)) {
+            return [];
+        }
+
         return $this->remainingDocuments;
     }
 
     public function getMethod(): int
     {
+        if (!is_int($this->method)) {
+            // Performing the wrong method here could be disastrous, so we'd rather break
+            throw new Exception('No method provided for IndexJob');
+        }
+
         return $this->method;
     }
 
     public function getBatchSize(): ?int
     {
+        if (is_bool($this->batchSize)) {
+            return null;
+        }
+
         return $this->batchSize;
     }
 
     public function shouldProcessDependencies(): bool
     {
+        if (!is_bool($this->processDependencies)) {
+            // Default is to process dependencies, and it doesn't really hurt for us to do so
+            return true;
+        }
+
         return $this->processDependencies;
     }
 

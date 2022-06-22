@@ -76,11 +76,19 @@ class RemoveDataObjectJob extends IndexJob
 
     public function getDocument(): ?DataObjectDocument
     {
+        if (is_bool($this->document)) {
+            return null;
+        }
+
         return $this->document;
     }
 
     public function getTimestamp(): ?int
     {
+        if (is_bool($this->timestamp)) {
+            return null;
+        }
+
         return $this->timestamp;
     }
 

@@ -44,7 +44,7 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         $this->setBatchSize($batchSize);
         $this->setBatchOffset(0);
 
-        if ($this->getBatchSize() < 1) {
+        if (!$this->getBatchSize() || $this->getBatchSize() < 1) {
             throw new InvalidArgumentException('Batch size must be greater than 0');
         }
     }
@@ -111,16 +111,28 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 
     public function getBatchOffset(): ?int
     {
+        if (is_bool($this->batchOffset)) {
+            return null;
+        }
+
         return $this->batchOffset;
     }
 
     public function getBatchSize(): ?int
     {
+        if (is_bool($this->batchSize)) {
+            return null;
+        }
+
         return $this->batchSize;
     }
 
     public function getIndexName(): ?string
     {
+        if (is_bool($this->indexName)) {
+            return null;
+        }
+
         return $this->indexName;
     }
 
