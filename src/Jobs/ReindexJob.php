@@ -101,6 +101,7 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
 
         foreach ($classes as $class) {
             $fetcher = $this->getRegistry()->getFetcher($class);
+
             if ($fetcher) {
                 $fetchers[$class] = $fetcher;
             }
@@ -159,31 +160,55 @@ class ReindexJob extends AbstractQueuedJob implements QueuedJob
 
     public function getBatchSize(): ?int
     {
+        if (is_bool($this->batchSize)) {
+            return null;
+        }
+
         return $this->batchSize;
     }
 
     public function getFetchers(): ?array
     {
+        if (is_bool($this->fetchers)) {
+            return null;
+        }
+
         return $this->fetchers;
     }
 
     public function getFetchIndex(): ?int
     {
+        if (is_bool($this->fetchIndex)) {
+            return null;
+        }
+
         return $this->fetchIndex;
     }
 
     public function getFetchOffset(): ?int
     {
+        if (is_bool($this->fetchOffset)) {
+            return null;
+        }
+
         return $this->fetchOffset;
     }
 
     public function getOnlyClasses(): ?array
     {
+        if (is_bool($this->onlyClasses)) {
+            return null;
+        }
+
         return $this->onlyClasses;
     }
 
     public function getOnlyIndexes(): ?array
     {
+        if (is_bool($this->onlyIndexes)) {
+            return null;
+        }
+
         return $this->onlyIndexes;
     }
 
