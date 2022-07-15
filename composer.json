@@ -27,11 +27,6 @@
     "syntax-check": "find src/ tests/ -type f -name '*.php' -exec php -l {} \\;",
     "lint-clean": "phpcbf src/ tests/"
   },
-  "extra": {
-      "branch-alias": {
-          "dev-master": "1.x-dev"
-      }
-  },
   "autoload": {
       "psr-4": {
           "SilverStripe\\SearchService\\": "src/",
