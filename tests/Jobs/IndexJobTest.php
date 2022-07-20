@@ -20,11 +20,12 @@ class IndexJobTest extends SearchServiceTest
         $config->set('isClassIndexed', [
             DataObjectFake::class => true,
         ]);
+        $config->set('batch_size', 6);
         $service = $this->loadIndex(20);
         $docs = $service->listDocuments('test', 100);
         $this->assertCount(20, $docs);
 
-        $job = IndexJob::create($docs, Indexer::METHOD_ADD, 6, false);
+        $job = IndexJob::create($docs, Indexer::METHOD_ADD);
         $job->setup();
         $this->assertEquals(6, $job->getBatchSize());
         $this->assertCount(20, $job->getDocuments());
