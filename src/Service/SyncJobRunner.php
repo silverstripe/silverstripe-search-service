@@ -1,22 +1,16 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\SearchService\Interfaces\ChildJobProvider;
 use Symbiote\QueuedJobs\Services\QueuedJob;
 
 class SyncJobRunner
 {
+
     use Injectable;
 
-    /**
-     * @param QueuedJob $job
-     * @param bool $verbose
-     * @param int $level
-     */
-    public function runJob(QueuedJob $job, bool $verbose = true, $level = 0)
+    public function runJob(QueuedJob $job, bool $verbose = true, int $level = 0): void
     {
         if ($verbose) {
             echo sprintf(
@@ -27,9 +21,12 @@ class SyncJobRunner
                 PHP_EOL
             );
         }
+
         $job->setup();
+
         while (!$job->jobFinished()) {
             $job->process();
         }
     }
+
 }

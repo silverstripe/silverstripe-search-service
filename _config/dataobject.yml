@@ -1,8 +1,0 @@
----
-Name: silverstripe-search-service-dataobject
----
-SilverStripe\SearchService\DataObject\DataObjectDocument:
-  id_field: recordID
-  base_class_field: recordBaseClass
-  page_content_field: pageContent
-

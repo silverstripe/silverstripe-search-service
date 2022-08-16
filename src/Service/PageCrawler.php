@@ -4,12 +4,12 @@ namespace SilverStripe\SearchService\Service;
 
 use DOMDocument;
 use DOMXPath;
-use Exception;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
+use Throwable;
 
 /**
  * Fetches the main content off the page to index. This handles more complex
@@ -21,37 +21,31 @@ use SilverStripe\ORM\DataObject;
  */
 class PageCrawler
 {
+
     use Configurable;
 
-    private $item;
-
     /**
-     * Defines the xpath selector for the first element of content
-     * that should be indexed.
-     *
-     * @config
-     * @var string
+     * Defines the xpath selector for the first element of content that should be indexed.
      */
-    private static $content_xpath_selector = '//main';
+    private static string $content_xpath_selector = '//main';
 
-    /**
-     * @param DataObject $item
-     * @return string
-     */
-    public function getMainContent(DataObject $item)
+    public function getMainContent(DataObject $dataObject): string
     {
-        if (!$item->hasMethod('Link')) {
+        if (!$dataObject->hasMethod('Link')) {
             return '';
         }
 
         $page = null;
+
         try {
-            $response = Director::test($item->AbsoluteLink());
+            $response = Director::test($dataObject->AbsoluteLink());
             $page = $response->getBody();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             Injector::inst()->create(LoggerInterface::class)->error($e);
         }
+
         $output = '';
+
         // just get the internal content for the page.
         if ($page) {
             libxml_use_internal_errors(true);
@@ -68,4 +62,5 @@ class PageCrawler
 
         return $output;
     }
+
 }

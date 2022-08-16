@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Fake;
 
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -8,11 +7,13 @@ use SilverStripe\SearchService\Service\IndexConfiguration;
 
 class IndexConfigurationFake extends IndexConfiguration
 {
-    public $override = [];
 
-    public function set($setting, $value)
+    public array $override = [];
+
+    public function set(string $setting, mixed $value): IndexConfigurationFake
     {
         $this->override[$setting] = $value;
+
         return $this;
     }
 
@@ -101,8 +102,9 @@ class IndexConfigurationFake extends IndexConfiguration
         return $this->override[__FUNCTION__][$index] ?? parent::getFieldsForIndex($index);
     }
 
-    public function getIndexVariant(): string
+    public function getIndexVariant(): ?string
     {
         return $this->override[__FUNCTION__] ?? parent::getIndexVariant();
     }
+
 }

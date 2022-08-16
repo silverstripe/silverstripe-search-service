@@ -15,7 +15,7 @@
   * [Configuring the search service](usage.md#configuring-the-search-service)
   * [Dependency tracking](usage.md#dependency-tracking)
 * [Implementations](implementations.md)
-  * [AppSearch](implementations.md#appsearch)
+  * [EnterpriseSearch](implementations.md#EnterpriseSearch)
 * [Customising and extending](customising.md)
   * [Adding a new search service](customising_add_search_service.md)
       * [The IndexingInterface specification](customising_add_search_service.md#the-indexinginterface-specification)
@@ -29,4 +29,5 @@
     * [Event handling](customising_more.md#event-handling)
     * [Document metadata](customising_more.md#document-meta)
     * [Extension points](customising_more.md#extension-points)
+* [Changes in v2](changes-in-v2.md)
   

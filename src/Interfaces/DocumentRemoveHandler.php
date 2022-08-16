@@ -1,16 +1,14 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Interfaces;
 
 interface DocumentRemoveHandler
 {
-    const BEFORE_REMOVE = 'before';
 
-    const AFTER_REMOVE = 'after';
+    public const BEFORE_REMOVE = 'before';
 
-    /**
-     * @param string $event
-     */
+    public const AFTER_REMOVE = 'after';
+
     public function onRemoveFromSearchIndexes(string $event): void;
+
 }

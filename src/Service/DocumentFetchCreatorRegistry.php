@@ -1,38 +1,28 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Service;
 
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Core\Injector\InjectorNotFoundException;
 use SilverStripe\SearchService\Interfaces\DocumentFetchCreatorInterface;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 
 class DocumentFetchCreatorRegistry
 {
+
     use Injectable;
 
     /**
      * @var DocumentFetchCreatorInterface[]
      */
-    private $fetchCreators = [];
+    private array $fetchCreators = [];
 
-    /**
-     * DocumentFetchCreatorRegistry constructor.
-     * @param array $fetchCreators
-     */
-    public function __construct(...$fetchCreators)
+    public function __construct(...$fetchCreators) // phpcs:ignore SlevomatCodingStandard.TypeHints
     {
         foreach ($fetchCreators as $creator) {
             $this->addFetchCreator($creator);
         }
     }
 
-    /**
-     * @param DocumentFetchCreatorInterface $creator
-     * @return $this
-     */
     public function addFetchCreator(DocumentFetchCreatorInterface $creator): self
     {
         $this->fetchCreators[] = $creator;
@@ -40,13 +30,9 @@ class DocumentFetchCreatorRegistry
         return $this;
     }
 
-    /**
-     * @param DocumentFetchCreatorInterface $creator
-     * @return $this
-     */
     public function removeFetchCreator(DocumentFetchCreatorInterface $creator): self
     {
-        $class = get_class($creator);
+        $class = $creator::class;
         $this->fetchCreators = array_filter($this->fetchCreators, function ($creator) use ($class) {
             return !$creator instanceof $class;
         });
@@ -54,10 +40,6 @@ class DocumentFetchCreatorRegistry
         return $this;
     }
 
-    /**
-     * @param string $class
-     * @return DocumentFetchCreatorInterface|null
-     */
     public function getFetcher(string $class): ?DocumentFetcherInterface
     {
         foreach ($this->fetchCreators as $creator) {
@@ -68,4 +50,5 @@ class DocumentFetchCreatorRegistry
 
         return null;
     }
+
 }

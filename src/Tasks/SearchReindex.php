@@ -8,51 +8,42 @@ use SilverStripe\Dev\BuildTask;
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Jobs\ReindexJob;
+use SilverStripe\SearchService\Service\IndexConfiguration;
+use SilverStripe\SearchService\Service\SyncJobRunner;
 use SilverStripe\SearchService\Service\Traits\BatchProcessorAware;
 use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
-use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
-use SilverStripe\SearchService\Service\SyncJobRunner;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class SearchReindex extends BuildTask
 {
+
     use ServiceAware;
     use ConfigurationAware;
     use BatchProcessorAware;
 
-    protected $title = 'Search Service Reindex';
+    protected $title = 'Search Service Reindex'; // phpcs:ignore SlevomatCodingStandard.TypeHints
 
-    protected $description = 'Search Service Reindex';
+    protected $description = 'Search Service Reindex'; // phpcs:ignore SlevomatCodingStandard.TypeHints
 
-    private static $segment = 'SearchReindex';
+    private static $segment = 'SearchReindex'; // phpcs:ignore SlevomatCodingStandard.TypeHints
 
-    /**
-     * @var BatchDocumentInterface
-     */
-    private $batchProcessor;
-
-    /**
-     * SearchReindex constructor.
-     * @param IndexingInterface $searchService
-     * @param IndexConfiguration $config
-     * @param BatchDocumentInterface $batchProcesor
-     */
     public function __construct(
         IndexingInterface $searchService,
         IndexConfiguration $config,
-        BatchDocumentInterface $batchProcesor
+        BatchDocumentInterface $batchProcessor
     ) {
         parent::__construct();
+
         $this->setIndexService($searchService);
         $this->setConfiguration($config);
-        $this->setBatchProcessor($batchProcesor);
+        $this->setBatchProcessor($batchProcessor);
     }
 
     /**
      * @param HTTPRequest $request
      */
-    public function run($request)
+    public function run($request): void // phpcs:ignore SlevomatCodingStandard.TypeHints
     {
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
@@ -67,4 +58,5 @@ class SearchReindex extends BuildTask
             QueuedJobService::singleton()->queueJob($job);
         }
     }
+
 }

@@ -1,9 +1,7 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Fake;
 
-use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
@@ -12,34 +10,39 @@ use SilverStripe\SearchService\Service\DocumentBuilder;
 class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
 {
 
-    public $shouldError = false;
+    public bool $shouldError = false;
 
-    public $documents = [];
+    public array $documents = [];
 
-    public $maxDocSize = 1000;
+    public int $maxDocSize = 1000;
 
-    public function addDocument(DocumentInterface $item): IndexingInterface
+    public function addDocument(DocumentInterface $document): ?string
     {
-        $this->documents[$item->getIdentifier()] = DocumentBuilder::singleton()->toArray($item);
-        return $this;
+        $this->documents[$document->getIdentifier()] = DocumentBuilder::singleton()->toArray($document);
+
+        return $document->getIdentifier();
     }
 
-    public function addDocuments(array $items): BatchDocumentInterface
+    public function addDocuments(array $documents): array
     {
-        foreach ($items as $item) {
-            $this->addDocument($item);
+        $ids = [];
+
+        foreach ($documents as $document) {
+            $ids[] = $this->addDocument($document);
         }
 
-        return $this;
+        return $ids;
     }
 
-    public function removeDocuments(array $items): BatchDocumentInterface
+    public function removeDocuments(array $documents): array
     {
-        foreach ($items as $item) {
-            $this->removeDocument($item);
+        $ids = [];
+
+        foreach ($documents as $document) {
+            $ids[] = $this->removeDocument($document);
         }
 
-        return $this;
+        return $ids;
     }
 
     public function removeAllDocuments(string $indexName): int
@@ -47,22 +50,24 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
         if ($this->shouldError) {
             return 0;
         }
-        
+
         $numDocs = sizeof($this->documents);
         $this->documents = [];
 
         return $numDocs;
     }
 
-    public function removeDocument(DocumentInterface $doc): IndexingInterface
+    public function removeDocument(DocumentInterface $document): ?string
     {
-        unset($this->documents[$doc->getIdentifier()]);
-        return $this;
+        unset($this->documents[$document->getIdentifier()]);
+
+        return $document->getIdentifier();
     }
 
     public function getDocument(string $id): ?DocumentInterface
     {
         $doc = $this->documents[$id] ?? null;
+
         if (!$doc) {
             return null;
         }
@@ -73,21 +78,30 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
     public function getDocuments(array $ids): array
     {
         $results = [];
+
         foreach ($ids as $id) {
-            if ($doc = $this->getDocument($id)) {
-                $results[] = $doc;
+            $doc = $this->getDocument($id);
+
+            if (!$doc) {
+                continue;
             }
+
+            $results[] = $doc;
         }
 
         return $results;
     }
 
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
     {
-        $docs = array_slice($this->documents, $offset, $limit);
-        return array_map(function ($arr) {
-            return DocumentBuilder::singleton()->fromArray($arr);
-        }, $docs);
+        $docs = array_slice($this->documents, $currentPage, $pageSize);
+
+        return array_map(
+            function ($arr) {
+                return DocumentBuilder::singleton()->fromArray($arr);
+            },
+            $docs
+        );
     }
 
     public function getDocumentTotal(string $indexName): int
@@ -95,9 +109,9 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
         return count($this->documents);
     }
 
-    public function configure(): void
+    public function configure(): array
     {
-        return;
+        return [];
     }
 
     public function validateField(string $field): void
@@ -124,4 +138,5 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
     {
         return null;
     }
+
 }

@@ -17,6 +17,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class DataObjectBatchProcessorTest extends SearchServiceTest
 {
+
     public function testRemoveDocuments(): void
     {
         $config = $this->mockConfig();
@@ -32,7 +33,8 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         $syncRunnerMock = $this->getMockBuilder(SyncJobRunner::class)
             ->onlyMethods(['runJob'])
             ->getMock();
-        $cb = function (RemoveDataObjectJob $arg) {
+
+        $removeJobCallback = function (RemoveDataObjectJob $arg) {
             $this->assertInstanceOf(RemoveDataObjectJob::class, $arg);
             $this->assertInstanceOf(DataObjectDocumentFake::class, $arg->getDocument());
             $this->assertEquals(Indexer::METHOD_ADD, $arg->getMethod());
@@ -44,15 +46,17 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
         $syncRunnerMock->expects($this->exactly(3))
             ->method('runJob')
             ->withConsecutive(
-                [$this->callback(function (IndexJob $arg) {
-                    $this->assertInstanceOf(IndexJob::class, $arg);
-                    $this->assertCount(2, $arg->getDocuments());
-                    $this->assertEquals(Indexer::METHOD_DELETE, $arg->getMethod());
+                [
+                    $this->callback(function (IndexJob $arg) {
+                        $this->assertInstanceOf(IndexJob::class, $arg);
+                        $this->assertCount(2, $arg->getDocuments());
+                        $this->assertEquals(Indexer::METHOD_DELETE, $arg->getMethod());
 
-                    return true;
-                })],
-                [$this->callback($cb)],
-                [$this->callback($cb)]
+                        return true;
+                    }),
+                ],
+                [$this->callback($removeJobCallback)],
+                [$this->callback($removeJobCallback)]
             );
 
         Injector::inst()->registerService($syncRunnerMock, SyncJobRunner::class);
@@ -66,4 +70,5 @@ class DataObjectBatchProcessorTest extends SearchServiceTest
             ]
         );
     }
+
 }

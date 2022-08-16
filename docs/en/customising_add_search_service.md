@@ -33,21 +33,24 @@ in all these implementations that the array of documents is appropriately sized.
 
 All methods that rely on API calls should throw `IndexingServiceException` on error.
 
-### addDocument(DocumentInterface $item): self
+### addDocument(DocumentInterface $document): self
 
 This method is responsible for adding a single document to the indexes. Keep in mind, the
 `DocumentInterface` object that is passed to this function is self-aware of the indexes
 it is assigned to. Be sure to check each item's `shouldIndex()` method, as well.
 
+Return value should be the unique ID of the document.
+
 ```php
-public function addDocument(DocumentInterface $item): self
+public function addDocument(DocumentInterface $document): ?string
 {
-    if (!$item->shouldIndex()) {
-        return $this;
+    if (!$document->shouldIndex()) {
+        return null;
     }
     
-    $fields = DocumentBuilder::singleton()->toArray($item);
-    $indexes = IndexConfiguration::singleton()->getIndexesForDocument($item);
+    $fields = DocumentBuilder::singleton()->toArray($document);
+    $indexes = IndexConfiguration::singleton()->getIndexesForDocument($document);
+    
     foreach (array_keys($indexes) as $indexName) {
         // your custom API call here
         $mySearchClient->addDocuementToIndex(
@@ -55,6 +58,8 @@ public function addDocument(DocumentInterface $item): self
             $fields
         );   
     }
+    
+    return $document->getIdentifier();
 
 }
 ```
@@ -62,11 +67,11 @@ public function addDocument(DocumentInterface $item): self
 **Tip**: Consider passing `DocumentBuilder` and `IndexConfiguration` as a constructor 
 arguments to your indexing service.
 
-### addDocuments(array $items): self
+### addDocuments(array $documents): self
 
 Same as `addDocument()`, but accepts an array of `DocumentInterface` objects. It is recommended
 that the `addDocument()` method works as a proxy for `addDocuments()`, e.g. 
-`$this->addDocuments([$item])`.
+`$this->addDocuments([$document])`.
 
 **Tip**: Build a map of index names to documents to minimise calls to your API.
 
@@ -77,31 +82,36 @@ that the `addDocument()` method works as a proxy for `addDocuments()`, e.g.
 ]
 ```
 
-### removeDocument(DocumentInterface $doc): self
+### removeDocument(DocumentInterface $doc): ?string
 
 Removes a document from its indexes.
 
-```php  
-public function removeDocument(DocumentInterface $doc): self
+Return value should be the unique ID of the document.
+
+```php
+public function removeDocument(DocumentInterface $document): ?string
 {
-    $indexes = IndexConfiguration::singleton()->getIndexesForDocument($doc);
+    $indexes = IndexConfiguration::singleton()->getIndexesForDocument($document);
+    
     foreach (array_keys($indexes) as $indexName) {
         // your custom API call here
         $myAPI->removeDocumentFromIndex(
             static::environmentizeIndex($indexName),
-            $item->getIdentifier()
+            $document->getIdentifier()
         );
     }
 
-    return $this;
+    return $document->getIdentifier();
 }
 ```
 
-### removeDocuments(array $items): self
+### removeDocuments(array $documents): array
 
 Same as `removeDocument()`, but accepts an array of `DocumentInterface` objects. It is recommended
 that the `removeDocument()` method works as a proxy for `removeDocuments()`, e.g. 
-`$this->removeDocuments([$item])`.
+`$this->removeDocuments([$document])`.
+
+Return value should be an array of the Document IDs that were removed
 
 **Tip**: Build a map of index names to documents to minimise calls to your API.
 
@@ -112,7 +122,7 @@ that the `removeDocument()` method works as a proxy for `removeDocuments()`, e.g
 ]
 ```
 
-### getDocument(string $id): ?array
+### getDocument(string $id): ?DocumentInterface
 
 Gets a single document from an index. Should check each index and get the first one to match it.
 
@@ -125,6 +135,7 @@ public function getDocument(string $id): ?array
             static::environmentizeIndex($indexName),
             $id
         );
+        
         if ($result) {
             return DocumentBuilder::singleton()->fromArray($result);
         }       
@@ -139,26 +150,37 @@ public function getDocument(string $id): ?array
  to your indexing service. (See the `ConfigurationAware` trait).
 
 
-### getDocuments(array $ids): self
+### getDocuments(array $ids): array
 
 Same as `getDocument()`, but accepts an array of identifiers. It is recommended
 that the `getDocument()` method works as a proxy for `rgetDocuments()`, e.g. 
 `$this->getDocuments([$id])`.
+
+return type should be an array of `DocumentInterface`.
 
 ### listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
 
 This method is expected to list all documents in a given index, with some pagination
 parameters.
 
+return type should be an array of `DocumentInterface`.
+
 ```php
-public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
 {
     // Your API call here    
-    return $myAPI->listDocuments(
-        static::environmentizeIndex($indexName),
-        $offset,
-        $limit
-    );
+    $request = new ListDocuments(static::environmentizeIndex($indexName));
+    $request->setPageSize($pageSize);
+    $request->setCurrentPage($currentPage);
+    
+    $response = $this->getClient()->appSearch()
+        ->listDocuments($request)
+        ->asArray();
+        
+    // Convert your reponse body into DocumentInterface objects
+    $documents = [];
+    
+    return $documents;
 }
 ```
 
@@ -189,8 +211,10 @@ This method should rely heavily on the `IndexConfiguration` class to guide its o
 with the `getOptions()` method of the `Field` objects, which can be used for adding arbitrary 
 configuration data to the index (e.g. data types).
 
+Return value should be an array describing the current Schema for each index.
+
 ```php
-public function configure(): void
+public function configure(): array
 {
     foreach ($indexesToCreate as $index) {
          $myAPI->createIndex(static::environmentizeIndex($index));

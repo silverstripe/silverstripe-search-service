@@ -23,7 +23,7 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 Let's look at each relevant node:
 
 * `myindex`: The name of the index. The rules on what this can be named will vary depending
-on your service provider. For AppSearch, it should only contain lowercase letters, numbers, 
+on your service provider. For EnterpriseSearch, it should only contain lowercase letters, numbers, 
 and hyphens.
 
 * `includedClasses`: A list of content classes to index. These are just the _source_ of the
@@ -46,7 +46,7 @@ so when it finds that the property `$content` doesn't exist on the `SiteTree` in
 will use a case matching strategy as a fallback.
 
 It is important to note that the keys of `fields` can be named anything you like, so long
-as it is valid in your search service provider (for AppSearch, that's all lowercase and 
+as it is valid in your search service provider (for EnterpriseSearch, that's all lowercase and 
 underscores). There is no reason why `title` cannot be `document_title` for instance,
 in the above configuration, as we've explicitly mapped the field to `Title`.
 
@@ -96,7 +96,7 @@ This will roughly get indexed as a structure like this:
 }
 ```
 
-For more information on AppSearch specific configuration, see the [Implementations](implementations.md#appsearch)
+For more information on EnterpriseSearch specific configuration, see the [Implementations](implementations.md#EnterpriseSearch)
 document.
 
 ## Advanced configuration
@@ -122,7 +122,7 @@ Let's look at all the settings on the `IndexConfiguration` class:
         <tr>
             <td>batch_size</td>
             <td>int</td>
-            <td>The default size of a batch of documents (e.g. when bulk indexing) AppSearch
+            <td>The default size of a batch of documents (e.g. when bulk indexing) EnterpriseSearch
             limit is `100`</td>
             <td>100</td>
         </tr>

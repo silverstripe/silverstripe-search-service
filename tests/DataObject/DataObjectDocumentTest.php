@@ -6,32 +6,35 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
+use SilverStripe\SearchService\Exception\IndexConfigurationException;
 use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Schema\Field;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
+use SilverStripe\SearchService\Tests\Fake\DataObjectFakePrivate;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
-use SilverStripe\SearchService\Tests\Fake\VersionedDataObjectFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
-use SilverStripe\Security\Permission;
-use SilverStripe\SearchService\Exception\IndexConfigurationException;
-use SilverStripe\Versioned\Versioned;
 
 class DataObjectDocumentTest extends SearchServiceTest
 {
-    protected static $fixture_file = '../fixtures.yml';
 
+    protected static $fixture_file = '../fixtures.yml'; // phpcs:ignore
+
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
+     * @var array
+     */
     protected static $extra_dataobjects = [
-        VersionedDataObjectFake::class,
         DataObjectFake::class,
         TagFake::class,
         ImageFake::class,
         DataObjectSubclassFake::class,
         DataObjectFakeVersioned::class,
+        DataObjectFakePrivate::class,
     ];
 
     public function testGetIdentifier(): void
@@ -51,38 +54,45 @@ class DataObjectDocumentTest extends SearchServiceTest
     public function testShouldIndex(): void
     {
         $config = $this->mockConfig();
-        /** @var Versioned $dataobject */
-        $dataobject = new VersionedDataObjectFake(['ID' => 5, 'ShowInSearch' => true]);
-        $dataobject->publishSingle();
-        $doc = DataObjectDocument::create($dataobject);
+
+        $dataObjectOne = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
+        $dataObjectTwo = $this->objFromFixture(DataObjectFakeVersioned::class, 'two');
+        $dataObjectThree = $this->objFromFixture(DataObjectFakePrivate::class, 'one');
+
+        // DocOne and Two represent DOs that have not yet been published
+        $docOne = DataObjectDocument::create($dataObjectOne);
+        $docTwo = DataObjectDocument::create($dataObjectTwo);
+        $docThree = DataObjectDocument::create($dataObjectThree);
+
+        // All should be unavailable to index initially
+        $this->assertFalse($docOne->shouldIndex());
+        $this->assertFalse($docTwo->shouldIndex());
+        $this->assertFalse($docThree->shouldIndex());
+
+        // Make sure both Versioned DOs are now published
+        $dataObjectOne->publishRecursive();
+        $dataObjectTwo->publishRecursive();
+
+        // Need to re-fetch these DOs as their Versioned data will have changes
+        $dataObjectOne = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
+        $dataObjectTwo = $this->objFromFixture(DataObjectFakeVersioned::class, 'two');
+
+        // Recreate the Documents as well
+        $docOne = DataObjectDocument::create($dataObjectOne);
+        $docTwo = DataObjectDocument::create($dataObjectTwo);
 
         $config->set('getIndexesForDocument', [
-            $doc->getIdentifier() => [
-                'index' => 'data'
-            ]
+            $docOne->getIdentifier() => [
+                'index' => 'data',
+            ],
         ]);
 
-        $dataobject->can_view = false;
-        $this->assertFalse($doc->shouldIndex());
-        $dataobject->can_view = function () {
-            return Permission::check('ADMIN');
-        };
-        $this->assertFalse($doc->shouldIndex());
-        $dataobject->can_view = true;
-        $this->assertTrue($doc->shouldIndex());
-
-        $dataobject->ShowInSearch = false;
-        $this->assertFalse($doc->shouldIndex());
-        $dataobject->ShowInSearch = true;
-        $this->assertTrue($doc->shouldIndex());
-
-        $dataobject->doUnpublish();
-        $this->assertFalse($doc->shouldIndex());
-        $dataobject->publishSingle();
-        $this->assertTrue($doc->shouldIndex());
-
-        $config->set('enabled', false);
-        $this->assertFalse($doc->shouldIndex());
+        // Document one should be indexable (as it's published and has ShowInSearch: 1)
+        $this->assertTrue($docOne->shouldIndex());
+        // Document two should NOT be indexable (it's published but has ShowInSearch: 0)
+        $this->assertFalse($docTwo->shouldIndex());
+        // Document three should NOT be indexable (canView(): false)
+        $this->assertFalse($docThree->shouldIndex());
     }
 
     public function testMarkIndexed(): void
@@ -129,7 +139,7 @@ class DataObjectDocumentTest extends SearchServiceTest
                 new Field('tagtitles', 'Tags.Title'),
                 new Field('imageurls', 'Images.URL'),
                 new Field('imagetags', 'Images.Tags.Title'),
-            ]
+            ],
         ]);
 
         $arr = $doc->toArray();
@@ -151,7 +161,7 @@ class DataObjectDocumentTest extends SearchServiceTest
             DataObjectFake::class => [
                 new Field('noexist'),
                 new Field('title', 'Nothing'),
-            ]
+            ],
         ]);
 
         $arr = $doc->toArray();
@@ -164,7 +174,6 @@ class DataObjectDocumentTest extends SearchServiceTest
         // Currently toArray() uses obj() only, so it's not possible to return an array.
         // Should support a config for the field that allows getting the uncasted value
         // of a method, e.g. getMyArray(): array, so it isn't coerced into a DBField.
-
 
 //        // exceptions
 //        $config->set('getFieldsForClass', [
@@ -190,7 +199,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('tags', 'Tags'),
-            ]
+            ],
         ]);
         $doc->toArray();
 
@@ -199,7 +208,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterdataobject', 'CustomGetterDataObj'),
-            ]
+            ],
         ]);
         $doc->toArray();
 
@@ -208,7 +217,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('customgetterobj', 'CustomGetterObj'),
-            ]
+            ],
         ]);
         $doc->toArray();
     }
@@ -218,9 +227,10 @@ class DataObjectDocumentTest extends SearchServiceTest
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
         $doc = DataObjectDocument::create($dataObject);
         $meta = $doc->provideMeta();
-        $this->assertArrayHasKey('recordBaseClass', $meta);
+
+        $this->assertArrayHasKey('record_base_class', $meta);
         $this->assertArrayHasKey('record_id', $meta);
-        $this->assertEquals(DataObjectFake::class, $meta['recordBaseClass']);
+        $this->assertEquals(DataObjectFake::class, $meta['record_base_class']);
         $this->assertEquals($dataObject->ID, $meta['record_id']);
     }
 
@@ -231,7 +241,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
                 new Field('title'),
-            ]
+            ],
         ]);
 
         $fields = $doc->getIndexedFields();
@@ -241,7 +251,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getFieldsForClass', [
             DataObjectSubclassFake::class => [
                 new Field('title'),
-            ]
+            ],
         ]);
 
         $fields = $doc->getIndexedFields();
@@ -298,7 +308,7 @@ class DataObjectDocumentTest extends SearchServiceTest
                 new Field('htmltext', 'getDBHTMLText'),
                 new Field('htmlstring', 'getHTMLString'),
                 new Field('multi', 'getAMultiLineString'),
-            ]
+            ],
         ]);
         $config->set('include_page_html', true);
         $dataObject = $this->objFromFixture(DataObjectFake::class, 'one');
@@ -352,36 +362,40 @@ class DataObjectDocumentTest extends SearchServiceTest
             ],
             ImageFake::class => [
                 new Field('tagtitles', 'Tags.Title'),
-            ]
+            ],
         ]);
 
         $dataobject = $this->objFromFixture(TagFake::class, 'one');
         $doc = DataObjectDocument::create($dataobject);
-        $dependencies = $doc->getDependentDocuments();
+        /** @var DataObjectDocument[] $dependentDocuments */
+        $dependentDocuments = $doc->getDependentDocuments();
 
-        $this->assertCount(4, $dependencies);
+        // Quick check to make sure there is the correct number of dependent Documents
+        $this->assertCount(4, $dependentDocuments);
 
+        // Grab all the expected DataObjects
+        $dataObjectOne = $this->objFromFixture(DataObjectFake::class, 'one');
+        $dataObjectTwo = $this->objFromFixture(DataObjectFake::class, 'two');
+        $dataObjectThree = $this->objFromFixture(DataObjectFake::class, 'three');
+        $dataObjectFour = $this->objFromFixture(ImageFake::class, 'two');
 
-        $this->assertArrayContainsCallback($dependencies, function (DataObjectDocument $item) {
-            $obj = $this->objFromFixture(DataObjectFake::class, 'one');
-            return $item->getSourceClass() === DataObjectFake::class &&
-                $item->getDataObject()->ID === $obj->ID;
-        });
-        $this->assertArrayContainsCallback($dependencies, function (DataObjectDocument $item) {
-            $obj = $this->objFromFixture(DataObjectFake::class, 'two');
-            return $item->getSourceClass() === DataObjectFake::class &&
-                $item->getDataObject()->ID === $obj->ID;
-        });
-        $this->assertArrayContainsCallback($dependencies, function (DataObjectDocument $item) {
-            $obj = $this->objFromFixture(DataObjectFake::class, 'three');
-            return $item->getSourceClass() === DataObjectFake::class &&
-                $item->getDataObject()->ID === $obj->ID;
-        });
-        $this->assertArrayContainsCallback($dependencies, function (DataObjectDocument $item) {
-            $obj = $this->objFromFixture(ImageFake::class, 'two');
-            return $item->getSourceClass() === ImageFake::class &&
-                $item->getDataObject()->ID === $obj->ID;
-        });
+        // Now start building out a basic $expectedDocuments, which is just going to be a combination of the ClassName
+        // and ID
+        $expectedDocuments = [
+            sprintf('%s-%s', DataObjectFake::class, $dataObjectOne->ID),
+            sprintf('%s-%s', DataObjectFake::class, $dataObjectTwo->ID),
+            sprintf('%s-%s', DataObjectFake::class, $dataObjectThree->ID),
+            sprintf('%s-%s', ImageFake::class, $dataObjectFour->ID),
+        ];
+
+        $resultDocuments = [];
+
+        // Now let's check that each Document represents the DataObjects that we expected (above)
+        foreach ($dependentDocuments as $document) {
+            $resultDocuments[] = sprintf('%s-%s', $document->getSourceClass(), $document->getDataObject()?->ID);
+        }
+
+        $this->assertEqualsCanonicalizing($expectedDocuments, $resultDocuments);
     }
 
     public function testExtensionRequired(): void
@@ -398,7 +412,7 @@ class DataObjectDocumentTest extends SearchServiceTest
     public function testEvents(): void
     {
         $mock = $this->getMockBuilder(DataObjectDocument::class)
-            ->setMethods(['markIndexed'])
+            ->onlyMethods(['markIndexed'])
             ->disableOriginalConstructor()
             ->getMock();
         $mock->expects($this->exactly(2))
@@ -425,11 +439,11 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertEquals($id, $serialDoc->getDataObject()->ID);
 
         $doc->setShouldFallbackToLatestVersion(false);
-        $this->expectException(\Exception::class);
         $this->expectExceptionMessage(
-            sprintf("DataObject %s : %s does not exist", DataObjectFakeVersioned::class, $id)
+            sprintf('DataObject %s : %s does not exist', DataObjectFakeVersioned::class, $id)
         );
 
         unserialize(serialize($doc));
     }
+
 }

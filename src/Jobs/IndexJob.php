@@ -23,6 +23,7 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  */
 class IndexJob extends AbstractQueuedJob implements QueuedJob
 {
+
     use Injectable;
     use Extensible;
 
@@ -45,7 +46,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         parent::__construct();
     }
 
-    public function setup()
+    public function setup(): void
     {
         if (!$this->getBatchSize()) {
             // If we don't have a batchSize, then we're just processing everything in one go
@@ -63,7 +64,7 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         parent::setup();
     }
 
-    public function getTitle()
+    public function getTitle(): string
     {
         return sprintf(
             'Search service %s %s documents',
@@ -72,15 +73,12 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
         );
     }
 
-    /**
-     * @return int
-     */
-    public function getJobType()
+    public function getJobType(): int
     {
         return QueuedJob::IMMEDIATE;
     }
 
-    public function process()
+    public function process(): void
     {
         // It is possible that this Job is queued with no documents to be updated. If so, just mark it as complete
         if ($this->totalSteps === 0) {
@@ -183,4 +181,5 @@ class IndexJob extends AbstractQueuedJob implements QueuedJob
     {
         $this->processDependencies = $processDependencies;
     }
+
 }

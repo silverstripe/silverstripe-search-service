@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Extensions;
 
 use SilverStripe\Core\Extension;
@@ -11,20 +10,24 @@ use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 
 class QueuedJobsAdminExtension extends Extension
 {
+
     /**
      * Remove jobs from the list that don't make sense to create from the admin (and won't work)
      *
-     * @param Form $form
+     * @param Form|DropdownField $form
      */
-    public function updateEditForm(Form $form)
+    public function updateEditForm(Form $form): void
     {
         $field = $form->Fields()->dataFieldByName('JobType');
-        /* @var DropdownField $field */
-        if ($field) {
-            $source = $field->getSource();
-            unset($source[IndexJob::class]);
-            unset($source[RemoveDataObjectJob::class]);
-            $field->setSource($source);
+
+        if (!$field) {
+            return;
         }
+
+        $source = $field->getSource();
+        unset($source[IndexJob::class]);
+        unset($source[RemoveDataObjectJob::class]);
+        $field->setSource($source);
     }
+
 }

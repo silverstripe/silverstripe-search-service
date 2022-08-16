@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Fake;
 
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
@@ -8,14 +7,15 @@ use SilverStripe\SearchService\Interfaces\DocumentInterface;
 
 class DocumentFake implements DocumentInterface, DependencyTracker
 {
-    public $sourceClass;
-    public $index = true;
-    public $isIndexed = false;
-    public $fields = [];
-    public $id;
-    public $dependentDocuments = [];
 
-    public static $count = 0;
+    public string $sourceClass;
+    public bool $index = true;
+    public bool $isIndexed = false;
+    public array $fields = [];
+    public ?string $id;
+    public array $dependentDocuments = [];
+
+    public static int $count = 0;
 
     public function __construct(string $class, array $fields = [])
     {
@@ -54,4 +54,5 @@ class DocumentFake implements DocumentInterface, DependencyTracker
     {
         return $this->dependentDocuments;
     }
+
 }

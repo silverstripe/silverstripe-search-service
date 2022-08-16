@@ -6,7 +6,8 @@ use SilverStripe\View\ViewableData;
 
 class IndexedDocumentsResult extends ViewableData
 {
-    public function summaryFields()
+
+    public function summaryFields(): array
     {
         return [
             'IndexName' => 'Index Name',
@@ -14,4 +15,5 @@ class IndexedDocumentsResult extends ViewableData
             'RemoteDocs' => 'Documents Indexed Remotely',
         ];
     }
+
 }

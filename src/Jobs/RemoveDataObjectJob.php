@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Jobs;
 
 use Exception;
@@ -18,7 +17,7 @@ use SilverStripe\Versioned\Versioned;
 class RemoveDataObjectJob extends IndexJob
 {
 
-    public function __construct(?DataObjectDocument $document = null, int $timestamp = null, ?int $batchSize = null)
+    public function __construct(?DataObjectDocument $document = null, ?int $timestamp = null, ?int $batchSize = null)
     {
         parent::__construct([], Indexer::METHOD_ADD, $batchSize);
 
@@ -33,7 +32,7 @@ class RemoveDataObjectJob extends IndexJob
         $this->setTimestamp($timestamp);
     }
 
-    public function getTitle()
+    public function getTitle(): string
     {
         return sprintf(
             'Search service unpublishing document "%s" (ID: %s)',
@@ -45,7 +44,7 @@ class RemoveDataObjectJob extends IndexJob
     /**
      * @throws Exception
      */
-    public function setup()
+    public function setup(): void
     {
         // Set the documents in setup to ensure async
         $datetime = DBField::create_field('Datetime', $this->getTimestamp());
@@ -101,4 +100,5 @@ class RemoveDataObjectJob extends IndexJob
     {
         $this->timestamp = $timestamp;
     }
+
 }

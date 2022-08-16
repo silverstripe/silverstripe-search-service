@@ -1,11 +1,8 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Jobs;
 
-use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\DataObject\DataObjectFetcher;
-use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
@@ -15,6 +12,11 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class ReindexJobTest extends SearchServiceTest
 {
+
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
+     * @var array
+     */
     protected static $extra_dataobjects = [
         DataObjectFake::class,
     ];
@@ -29,6 +31,7 @@ class ReindexJobTest extends SearchServiceTest
     protected function tearDown(): void
     {
         parent::tearDown();
+
         FakeFetcher::$records = [];
     }
 
@@ -39,7 +42,7 @@ class ReindexJobTest extends SearchServiceTest
             DataObjectFake::class => true,
             'Fake' => true,
         ]);
-        $service = $this->loadIndex(20);
+        $this->loadIndex(20);
         $registry = DocumentFetchCreatorRegistry::singleton();
         // Add a second fetcher to complicate things
         $registry->addFetchCreator(new FakeFetchCreator());
@@ -52,12 +55,24 @@ class ReindexJobTest extends SearchServiceTest
         // 10 Fake documents in batches of six = 2
         $this->assertEquals(6, $totalSteps);
 
-        $this->assertCount(2, $job->getFetchers());
-        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
-            return $fetcher instanceof DataObjectFetcher;
-        });
-        $this->assertArrayContainsCallback($job->getFetchers(), function (DocumentFetcherInterface $fetcher) {
-            return $fetcher instanceof FakeFetcher;
-        });
+        $fetchers = $job->getFetchers();
+
+        // Quick sanity check to make sure we got both fetchers
+        $this->assertCount(2, $fetchers);
+
+        // We're expecting one of each of these Fetcher classes
+        $expectedFetchers = [
+            DataObjectFetcher::class,
+            FakeFetcher::class,
+        ];
+
+        $resultFetchers = [];
+
+        foreach ($fetchers as $fetcher) {
+            $resultFetchers[] = $fetcher::class;
+        }
+
+        $this->assertEqualsCanonicalizing($expectedFetchers, $resultFetchers);
     }
+
 }

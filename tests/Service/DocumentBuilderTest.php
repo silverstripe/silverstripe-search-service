@@ -1,16 +1,12 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Service;
 
-use PhpParser\Comment\Doc;
 use SilverStripe\Control\Controller;
-use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\DocumentBuilder;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
-use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
 use SilverStripe\SearchService\Tests\Fake\DocumentFake;
 use SilverStripe\SearchService\Tests\Fake\FakeFetchCreator;
 use SilverStripe\SearchService\Tests\Fake\ServiceFake;
@@ -18,6 +14,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class DocumentBuilderTest extends SearchServiceTest
 {
+
     public function testToArray(): void
     {
         DocumentFake::$count = 0;
@@ -109,4 +106,5 @@ class DocumentBuilderTest extends SearchServiceTest
         $this->assertNotFalse($postData, 'Document failed to successfully json_encode');
         $this->assertLessThanOrEqual($fake->maxDocSize, strlen($postData));
     }
+
 }

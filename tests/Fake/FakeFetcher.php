@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Fake;
 
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
@@ -8,14 +7,16 @@ use SilverStripe\SearchService\Interfaces\DocumentInterface;
 
 class FakeFetcher implements DocumentFetcherInterface
 {
-    public static $records = [];
 
-    public static function load(int $count)
+    public static array $records = [];
+
+    public static function load(int $count): void
     {
         for ($i = 0; $i < $count; $i++) {
             static::$records[] = new DocumentFake('Fake', ['field' => $i]);
         }
     }
+
     public function fetch(int $limit, int $offset): array
     {
         return array_slice(static::$records, $offset, $limit);
@@ -30,4 +31,5 @@ class FakeFetcher implements DocumentFetcherInterface
     {
         return count(static::$records);
     }
+
 }

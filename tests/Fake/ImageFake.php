@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Fake;
 
 use SilverStripe\Dev\TestOnly;
@@ -9,19 +8,23 @@ use SilverStripe\SearchService\Extensions\SearchServiceExtension;
 
 class ImageFake extends DataObject implements TestOnly
 {
-    private static $db = [
+
+    private static array $db = [
         'URL' => 'Varchar',
     ];
 
-    private static $has_one = [
+    private static array $has_one = [
         'Parent' => DataObjectFake::class,
     ];
 
-    private static $many_many = [
+    private static array $many_many = [
         'Tags' => TagFake::class,
     ];
 
-    private static $extensions = [
+    private static array $extensions = [
         SearchServiceExtension::class,
     ];
+
+    private static string $table_name = 'ImageFake';
+
 }

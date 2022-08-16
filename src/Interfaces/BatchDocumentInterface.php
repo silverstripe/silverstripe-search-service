@@ -1,19 +1,20 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Interfaces;
 
 interface BatchDocumentInterface
 {
-    /**
-     * @param DocumentInterface[] $items
-     * @return $this
-     */
-    public function addDocuments(array $items): BatchDocumentInterface;
 
     /**
-     * @param DocumentInterface[] $items
-     * @return $this
+     * @return array Array of IDs of the Documents added
+     * @param DocumentInterface[] $documents
      */
-    public function removeDocuments(array $items): BatchDocumentInterface;
+    public function addDocuments(array $documents): array;
+
+    /**
+     * @param DocumentInterface[] $documents
+     * @return array Array of IDs of the Documents removed
+     */
+    public function removeDocuments(array $documents): array;
+
 }

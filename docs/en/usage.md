@@ -53,7 +53,7 @@ Most of these jobs have `BuildTask` wrappers supplied for manual execution.
 
 ## Configuring the search service
 
-Most search services such as AppSearch require some level of configuration that needs
+Most search services such as EnterpriseSearch require some level of configuration that needs
  to happen separately from the indexing of content. This can include operations like 
  creating indexes, and defining a schema for an index.
  

@@ -3,6 +3,7 @@
 namespace SilverStripe\SearchService\Admin;
 
 use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\CMS\Controllers\CMSMain;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
@@ -22,7 +23,7 @@ use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Jobs\IndexJob;
 use SilverStripe\SearchService\Jobs\ReindexJob;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
-use SilverStripe\SearchService\Services\AppSearch\AppSearchService;
+use SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService;
 use SilverStripe\SearchService\Tasks\SearchReindex;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
@@ -31,23 +32,27 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
 
 class SearchAdmin extends LeftAndMain implements PermissionProvider
 {
-    private static $url_segment = 'search-service';
 
-    private static $menu_title = 'Search Service';
+    private const PERMISSION_ACCESS = 'CMS_ACCESS_SearchAdmin';
+    private const PERMISSION_REINDEX = 'SearchAdmin_ReIndex';
 
-    private static $menu_icon_class = 'font-icon-search';
+    private static string $url_segment = 'search-service';
 
-    private static $required_permission_codes = 'CMS_ACCESS_SearchAdmin';
+    private static string $menu_title = 'Search Service';
+
+    private static string $menu_icon_class = 'font-icon-search';
+
+    private static string $required_permission_codes = self::PERMISSION_ACCESS;
 
     /**
      * @param null $id
      * @param null $fields
-     * @return Form
      * @throws IndexingServiceException
      */
     public function getEditForm($id = null, $fields = null): Form
     {
         $form = parent::getEditForm($id, $fields);
+        $canReindex = Permission::check(self::PERMISSION_REINDEX);
 
         /** @var IndexingInterface $indexService */
         $indexService = Injector::inst()->get(IndexingInterface::class);
@@ -55,6 +60,7 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
         $docsURL = $indexService->getDocumentationURL();
 
         $fields = [];
+
         if ($externalURL !== null || $docsURL !== null) {
             $fields[] = HeaderField::create('ExternalLinksHeader', 'External Links')
                 ->setAttribute('style', 'font-weight: 300;');
@@ -86,32 +92,51 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
             );
         }
 
-        $docsGrid = GridField::create('IndexedDocuments', 'Documents by Index', $this->buildIndexedDocumentsList());
-        $docsGrid->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
-        $isAdmin = Permission::check('ADMIN');
-        if ($isAdmin) {
-            $docsGrid->getConfig()->addComponent(new SearchReindexFormAction());
-        }
+        $indexedDocumentsList = $this->buildIndexedDocumentsList();
 
-        $fields[] = $docsGrid;
+        if (!$indexedDocumentsList->count() && !$indexedDocumentsList->dataClass()) {
+            // No indexes have been configured
 
-        if ($isAdmin) {
-            $fullReindexBaseURL = Director::absoluteURL("/dev/tasks/" . SearchReindex::config()->get('segment'));
-            $fields[] = LiteralField::create(
-                'ReindexAllURL',
-                sprintf(
-                    '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
-                    <a href="%s" target="_blank" style="
-                        font-size: small;
-                        background-color: #da273b;
-                        color: white;
-                        padding: 7px;
-                        border-radius: 3px;"
-                    >Trigger Full Reindex on All</a>
-                </div>',
-                    $fullReindexBaseURL
-                )
+            // Indexed documents warning field
+            $indexedDocumentsWarningField = LiteralField::create(
+                'IndexedDocumentsWarning',
+                '<div class="alert alert-warning">' .
+                '<strong>No indexes found.</strong>' .
+                'Indexes must be configured before indexed documents can be listed or re-indexed' .
+                '</div>'
             );
+
+            $fields[] = $indexedDocumentsWarningField;
+        } else {
+            // Indexed documents field
+            $indexDocumentsField = GridField::create('IndexedDocuments', 'Documents by Index', $indexedDocumentsList);
+            $indexDocumentsField->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
+
+            if ($canReindex) {
+                $indexDocumentsField->getConfig()->addComponent(new SearchReindexFormAction());
+            }
+
+            $fields[] = $indexDocumentsField;
+
+            // Reindex all URL field
+            if ($canReindex) {
+                $fullReindexBaseURL = Director::absoluteURL('/dev/tasks/' . SearchReindex::config()->get('segment'));
+                $fields[] = LiteralField::create(
+                    'ReindexAllURL',
+                    sprintf(
+                        '<div style="padding-bottom: 30px; margin-top: -30px; position: relative;">
+                            <a href="%s" target="_blank" style="
+                                font-size: small;
+                                background-color: #da273b;
+                                color: white;
+                                padding: 7px;
+                                border-radius: 3px;"
+                            >Trigger Full Reindex on All</a>
+                        </div>',
+                        $fullReindexBaseURL
+                    )
+                );
+            }
         }
 
         $fields[] = HeaderField::create('QueuedJobsHeader', 'Queued Jobs Status')
@@ -124,7 +149,7 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
                     IndexJob::class,
                     RemoveDataObjectJob::class,
                     ClearIndexJob::class,
-                ]
+                ],
             ]);
 
         $inProgressStatuses = [
@@ -141,22 +166,21 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
             'In Progress',
             $rootQJQuery->filter(['JobStatus' => $inProgressStatuses])->count()
         )
-        ->setReadonly(true)
-        ->setRightTitle('i.e. status is one of: ' . implode(', ', $inProgressStatuses));
+            ->setReadonly(true)
+            ->setRightTitle('i.e. status is one of: ' . implode(', ', $inProgressStatuses));
 
         $fields[] = NumericField::create(
             'StoppedJobs',
             'Stopped',
             $rootQJQuery->filter(['JobStatus' => $stoppedStatuses])->count()
         )
-        ->setReadonly(true)
-        ->setRightTitle('i.e. status is one of: ' . implode(', ', $stoppedStatuses));
+            ->setReadonly(true)
+            ->setRightTitle('i.e. status is one of: ' . implode(', ', $stoppedStatuses));
 
         return $form->setFields(FieldList::create($fields));
     }
 
     /**
-     * @return ArrayList
      * @throws IndexingServiceException
      */
     private function buildIndexedDocumentsList(): ArrayList
@@ -170,18 +194,21 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
 
         foreach ($configuration->getIndexes() as $index => $data) {
             $localCount = 0;
+
             foreach ($configuration->getClassesForIndex($index) as $class) {
                 $query = new DataQuery($class);
                 $query->where('SearchIndexed IS NOT NULL');
+
                 if (property_exists($class, 'ShowInSearch')) {
                     $query->where('ShowInSearch = 1');
                 }
+
                 $this->extend('updateQuery', $query, $data);
                 $localCount += $query->count();
             }
 
             $result = new IndexedDocumentsResult();
-            $result->IndexName = AppSearchService::environmentizeIndex($index);
+            $result->IndexName = EnterpriseSearchService::environmentizeIndex($index);
             $result->DBDocs = $localCount;
             $result->RemoteDocs = $indexer->getDocumentTotal($index);
             $list->push($result);
@@ -194,20 +221,30 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
 
     public function providePermissions(): array
     {
-        $title = $this->menu_title();
         return [
-            'CMS_ACCESS_SearchAdmin' => [
+            self::PERMISSION_ACCESS => [
                 'name' => _t(
-                    'SilverStripe\\CMS\\Controllers\\CMSMain.ACCESS',
+                    CMSMain::class . '.ACCESS',
                     "Access to '{title}' section",
-                    ['title' => $title]
+                    ['title' => $this->menu_title()]
                 ),
-                'category' => _t('SilverStripe\\Security\\Permission.CMS_ACCESS_CATEGORY', 'CMS Access'),
+                'category' => _t(Permission::class . '.CMS_ACCESS_CATEGORY', 'CMS Access'),
                 'help' => _t(
-                    __CLASS__ . '.ACCESS_HELP',
+                    self::class . '.ACCESS_HELP',
                     'Allow viewing of search configuration and status, and links to external resources.'
-                )
+                ),
+            ],
+            self::PERMISSION_REINDEX => [
+                'name' => _t(
+                    self::class . '.ReIndexLabel',
+                    'Trigger Full ReIndex'
+                ),
+                'category' => _t(
+                    self::class . '.Category',
+                    'Search Service'
+                ),
             ],
         ];
     }
+
 }

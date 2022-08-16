@@ -4,7 +4,6 @@ namespace SilverStripe\SearchService\Tests\Tasks;
 
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Dev\SapphireTest;
 use SilverStripe\SearchService\Jobs\ClearIndexJob;
 use SilverStripe\SearchService\Service\SyncJobRunner;
 use SilverStripe\SearchService\Tasks\SearchClearIndex;
@@ -12,12 +11,13 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class SearchClearIndexTest extends SearchServiceTest
 {
+
     public function testTask(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
         $mock = $this->getMockBuilder(SyncJobRunner::class)
-            ->setMethods(['runJob'])
+            ->onlyMethods(['runJob'])
             ->getMock();
         $mock->expects($this->once())
             ->method('runJob')
@@ -37,4 +37,5 @@ class SearchClearIndexTest extends SearchServiceTest
         $this->expectException('InvalidArgumentException');
         $task->run($request);
     }
+
 }

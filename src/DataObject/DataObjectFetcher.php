@@ -1,46 +1,34 @@
 <?php
 
-
 namespace SilverStripe\SearchService\DataObject;
 
+use InvalidArgumentException;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\FieldType\DBDatetime;
-use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\SearchService\Interfaces\DocumentFetcherInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
-use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
-use InvalidArgumentException;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 
 class DataObjectFetcher implements DocumentFetcherInterface
 {
+
     use Extensible;
     use Configurable;
     use Injectable;
     use ConfigurationAware;
 
-    /**
-     * @var string
-     */
-    private $dataObjectClass;
+    private ?string $dataObjectClass = null;
 
-    /**
-     * @var array
-     */
-    private static $dependencies = [
+    private static array $dependencies = [
         'Configuration' => '%$' . IndexConfiguration::class,
         'Registry' => '%$' . DocumentFetchCreatorRegistry::class,
     ];
 
-    /**
-     * DataObjectFetcher constructor.
-     * @param string $class
-     */
     public function __construct(string $class)
     {
         if (!is_subclass_of($class, DataObject::class)) {
@@ -55,14 +43,13 @@ class DataObjectFetcher implements DocumentFetcherInterface
     }
 
     /**
-     * @param int|null $limit
-     * @param int|null $offset
      * @return DocumentInterface[]
      */
     public function fetch(?int $limit = 20, ?int $offset = 0): array
     {
         $list = $this->createDataList($limit, $offset);
         $docs = [];
+
         foreach ($list as $record) {
             $docs[] = DataObjectDocument::create($record);
         }
@@ -70,18 +57,11 @@ class DataObjectFetcher implements DocumentFetcherInterface
         return $docs;
     }
 
-    /**
-     * @return int
-     */
     public function getTotalDocuments(): int
     {
         return $this->createDataList()->count();
     }
 
-    /**
-     * @param array $data
-     * @return DocumentInterface|null
-     */
     public function createDocument(array $data): ?DocumentInterface
     {
         $idField = DataObjectDocument::config()->get('record_id_field');
@@ -96,6 +76,7 @@ class DataObjectFetcher implements DocumentFetcherInterface
         }
 
         $dataObject = DataObject::get_by_id($this->dataObjectClass, $ID);
+
         if (!$dataObject) {
             return null;
         }
@@ -103,14 +84,11 @@ class DataObjectFetcher implements DocumentFetcherInterface
         return DataObjectDocument::create($dataObject);
     }
 
-    /**
-     * @param int|null $limit
-     * @param int|null $offset
-     * @return DataList
-     */
     private function createDataList(?int $limit = null, ?int $offset = null): DataList
     {
         $list = DataList::create($this->dataObjectClass);
+
         return $list->limit($limit, $offset);
     }
+
 }

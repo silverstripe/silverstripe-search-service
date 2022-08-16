@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Service;
 
 use SilverStripe\Core\Injector\Injector;
@@ -14,13 +13,14 @@ use Symbiote\QueuedJobs\Services\QueuedJobService;
 
 class BatchProcessorTest extends SearchServiceTest
 {
+
     public function testAddDocumentsSync(): void
     {
         $config = $this->mockConfig();
         $config->set('use_sync_jobs', true);
 
         $mock = $this->getMockBuilder(SyncJobRunner::class)
-            ->setMethods(['runJob'])
+            ->onlyMethods(['runJob'])
             ->getMock();
         $mock->expects($this->once())
             ->method('runJob')
@@ -34,7 +34,7 @@ class BatchProcessorTest extends SearchServiceTest
         $processor = new BatchProcessor($config);
         $processor->addDocuments([
             new DocumentFake('Fake', ['test' => 'foo']),
-            new DocumentFake('Fake', ['test' => 'bar'])
+            new DocumentFake('Fake', ['test' => 'bar']),
         ]);
     }
 
@@ -44,7 +44,7 @@ class BatchProcessorTest extends SearchServiceTest
         $config->set('use_sync_jobs', true);
 
         $mock = $this->getMockBuilder(SyncJobRunner::class)
-            ->setMethods(['runJob'])
+            ->onlyMethods(['runJob'])
             ->getMock();
         $mock->expects($this->once())
             ->method('runJob')
@@ -58,7 +58,7 @@ class BatchProcessorTest extends SearchServiceTest
         $processor = new BatchProcessor($config);
         $processor->removeDocuments([
             new DocumentFake('Fake', ['test' => 'foo']),
-            new DocumentFake('Fake', ['test' => 'bar'])
+            new DocumentFake('Fake', ['test' => 'bar']),
         ]);
     }
 
@@ -68,7 +68,7 @@ class BatchProcessorTest extends SearchServiceTest
         $config->set('use_sync_jobs', false);
 
         $mock = $this->getMockBuilder(QueuedJobService::class)
-            ->setMethods(['queueJob'])
+            ->onlyMethods(['queueJob'])
             ->getMock();
         $mock->expects($this->once())
             ->method('queueJob')
@@ -83,7 +83,7 @@ class BatchProcessorTest extends SearchServiceTest
         $processor = new BatchProcessor($config);
         $processor->addDocuments([
             new DocumentFake('Fake', ['test' => 'foo']),
-            new DocumentFake('Fake', ['test' => 'bar'])
+            new DocumentFake('Fake', ['test' => 'bar']),
         ]);
     }
 
@@ -93,7 +93,7 @@ class BatchProcessorTest extends SearchServiceTest
         $config->set('use_sync_jobs', false);
 
         $mock = $this->getMockBuilder(QueuedJobService::class)
-            ->setMethods(['queueJob'])
+            ->onlyMethods(['queueJob'])
             ->getMock();
         $mock->expects($this->once())
             ->method('queueJob')
@@ -108,7 +108,8 @@ class BatchProcessorTest extends SearchServiceTest
         $processor = new BatchProcessor($config);
         $processor->removeDocuments([
             new DocumentFake('Fake', ['test' => 'foo']),
-            new DocumentFake('Fake', ['test' => 'bar'])
+            new DocumentFake('Fake', ['test' => 'bar']),
         ]);
     }
+
 }

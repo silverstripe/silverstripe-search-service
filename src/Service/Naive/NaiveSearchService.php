@@ -1,27 +1,27 @@
 <?php
 
-namespace SilverStripe\SearchService\Services\Naive;
+namespace SilverStripe\SearchService\Service\Naive;
 
-use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 
 class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInterface
 {
-    public function addDocument(DocumentInterface $item): IndexingInterface
+
+    public function addDocument(DocumentInterface $document): ?string
     {
-        return $this;
+        return null;
     }
 
-    public function addDocuments(array $items): BatchDocumentInterface
+    public function addDocuments(array $documents): array
     {
-        return $this;
+        return [];
     }
 
-    public function removeDocuments(array $items): BatchDocumentInterface
+    public function removeDocuments(array $documents): array
     {
-        return $this;
+        return [];
     }
 
     public function removeAllDocuments(string $indexName): int
@@ -34,19 +34,19 @@ class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInter
         return [];
     }
 
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
     {
         return [];
     }
 
     public function validateField(string $field): void
     {
-        return;
+        // No value required
     }
 
-    public function configure(): void
+    public function configure(): array
     {
-        return;
+        return [];
     }
 
     public function getDocument(string $id): ?DocumentInterface
@@ -59,9 +59,9 @@ class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInter
         return 0;
     }
 
-    public function removeDocument(DocumentInterface $doc): IndexingInterface
+    public function removeDocument(DocumentInterface $document): ?string
     {
-        return $this;
+        return null;
     }
 
     public function getMaxDocumentSize(): int
@@ -83,4 +83,5 @@ class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInter
     {
         return null;
     }
+
 }

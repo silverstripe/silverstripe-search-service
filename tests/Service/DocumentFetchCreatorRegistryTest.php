@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Service;
 
 use SilverStripe\Dev\SapphireTest;
@@ -13,6 +12,7 @@ use SilverStripe\SearchService\Tests\Fake\FakeFetcher;
 
 class DocumentFetchCreatorRegistryTest extends SapphireTest
 {
+
     public function testRegistry(): void
     {
         $registry = new DocumentFetchCreatorRegistry(
@@ -37,4 +37,5 @@ class DocumentFetchCreatorRegistryTest extends SapphireTest
         $fetcher = $registry->getFetcher('Fake');
         $this->assertNull($fetcher);
     }
+
 }

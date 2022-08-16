@@ -5,10 +5,15 @@ namespace SilverStripe\SearchService\Tests\Fake;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Extensions\SearchServiceExtension;
-use SilverStripe\Versioned\Versioned;
 
-class TagFake extends DataObject implements TestOnly
+/**
+ * @property string $Title
+ * @mixin SearchServiceExtension
+ */
+class DataObjectFakePrivate extends DataObject implements TestOnly
 {
+
+    private static string $table_name = 'DataObjectFakePrivate';
 
     private static array $db = [
         'Title' => 'Varchar',
@@ -16,7 +21,11 @@ class TagFake extends DataObject implements TestOnly
 
     private static array $extensions = [
         SearchServiceExtension::class,
-        Versioned::class,
     ];
+
+    public function canView(mixed $member = null): bool
+    {
+        return false;
+    }
 
 }

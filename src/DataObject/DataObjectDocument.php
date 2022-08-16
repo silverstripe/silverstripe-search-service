@@ -1,8 +1,10 @@
 <?php
 
-
 namespace SilverStripe\SearchService\DataObject;
 
+use Exception;
+use InvalidArgumentException;
+use LogicException;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
@@ -26,28 +28,24 @@ use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Schema\Field;
-use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentChunkFetcher;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
-use Exception;
-use Serializable;
-use LogicException;
-use InvalidArgumentException;
 
 class DataObjectDocument implements
     DocumentInterface,
     DependencyTracker,
-    Serializable,
     DocumentRemoveHandler,
     DocumentAddHandler,
     DocumentMetaProvider
 {
+
     use Injectable;
     use Extensible;
     use Configurable;
@@ -58,56 +56,43 @@ class DataObjectDocument implements
      * @var string
      * @config
      */
-    private static $record_id_field = 'record_id';
+    private static string $record_id_field = 'record_id';
 
     /**
      * @var string
      * @config
      */
-    private static $base_class_field = 'record_base_class';
+    private static string $base_class_field = 'record_base_class';
 
     /**
      * @var string
      * @config
      */
-    private static $page_content_field = 'page_content';
+    private static string $page_content_field = 'page_content';
 
     /**
-     * @var DataObject&SearchServiceExtension
+     * @var DataObject|SearchServiceExtension|null
      */
-    private $dataObject;
+    private ?DataObject $dataObject = null;
 
     /**
-     * @var PageCrawler
+     * @var PageCrawler|null
      */
-    private $pageCrawler;
+    private ?PageCrawler $pageCrawler = null;
 
-    /**
-     * @var bool
-     */
-    private $shouldFallbackToLatestVersion = false;
+    private bool $shouldFallbackToLatestVersion = false;
 
-    /**
-     * @var array
-     */
-    private static $dependencies = [
+    private static array $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,
         'PageCrawler' => '%$' . PageCrawler::class,
         'Configuration' => '%$' . IndexConfiguration::class,
     ];
 
-    /**
-     * DataObjectDocument constructor.
-     * @param DataObject $dataObject
-     */
     public function __construct(DataObject $dataObject)
     {
         $this->setDataObject($dataObject);
     }
 
-    /**
-     * @return string
-     */
     public function getIdentifier(): string
     {
         $type = str_replace('\\', '_', $this->getDataObject()->baseClass());
@@ -124,20 +109,13 @@ class DataObjectDocument implements
         return $this->getDataObject()->ClassName;
     }
 
-    /**
-     * @param bool $fallback
-     * @return $this
-     */
-    public function setShouldFallbackToLatestVersion(bool $fallback = true): DataObjectDocument
+    public function setShouldFallbackToLatestVersion(bool $fallback = true): self
     {
         $this->shouldFallbackToLatestVersion = $fallback;
 
         return $this;
     }
 
-    /**
-     * @return bool
-     */
     public function shouldIndex(): bool
     {
         $dataObject = $this->getDataObject();
@@ -166,51 +144,43 @@ class DataObjectDocument implements
             return false;
         }
 
-        if (empty($this->getConfiguration()->getIndexesForDocument($this))) {
+        if (!$this->getConfiguration()->getIndexesForDocument($this)) {
             return false;
         }
 
         // Extension override
-        $results = $dataObject->invokeWithExtensions('canIndexInSearch');
+        $results = $dataObject->invokeWithExtensions('canIndexInSearch') ?? [];
 
-        if (!empty($results)) {
-            return min($results) != false;
-        }
-
-        return true;
+        return !in_array(false, $results, true);
     }
 
-    /**
-     * @param bool $isDeleted
-     */
     public function markIndexed(bool $isDeleted = false): void
     {
         $schema = DataObject::getSchema();
         $table = $schema->tableForField($this->getDataObject()->ClassName, 'SearchIndexed');
 
-        if ($table) {
-            $newValue = $isDeleted ? 'null' : "'" . DBDatetime::now()->Rfc2822() . "'";
+        if (!$table) {
+            return;
+        }
+
+        $newValue = $isDeleted ? 'null' : "'" . DBDatetime::now()->Rfc2822() . "'";
+        DB::query(sprintf(
+            'UPDATE %s SET SearchIndexed = %s WHERE ID = %s',
+            $table,
+            $newValue,
+            $this->getDataObject()->ID
+        ));
+
+        if ($this->getDataObject()->hasExtension(Versioned::class) && $this->getDataObject()->hasStages()) {
             DB::query(sprintf(
-                "UPDATE %s SET SearchIndexed = %s WHERE ID = %s",
+                'UPDATE %s_Live SET SearchIndexed = %s WHERE ID = %s',
                 $table,
                 $newValue,
                 $this->getDataObject()->ID
             ));
-
-            if ($this->getDataObject()->hasExtension(Versioned::class) && $this->getDataObject()->hasStages()) {
-                DB::query(sprintf(
-                    'UPDATE %s_Live SET SearchIndexed = %s WHERE ID = %s',
-                    $table,
-                    $newValue,
-                    $this->getDataObject()->ID
-                ));
-            }
         }
     }
 
-    /**
-     * @return array
-     */
     public function getIndexes(): array
     {
         return $this->getConfiguration()->getIndexesForClassName(
@@ -219,16 +189,18 @@ class DataObjectDocument implements
     }
 
     /**
-     * Generates a map of all the fields and values which will be sent.
-     * @return array
+     * Generates a map of all the fields and values which will be sent
+     *
      * @throws IndexConfigurationException
      */
     public function toArray(): array
     {
         $pageContentField = $this->config()->get('page_content_field');
+
         if ($this->getDataObject()->hasExtension(Versioned::class)) {
             $dataObject = Versioned::withVersionedMode(function () {
                 Versioned::set_stage(Versioned::LIVE);
+
                 return DataObject::get_by_id($this->getSourceClass(), $this->getDataObject()->ID);
             });
         } else {
@@ -241,7 +213,7 @@ class DataObjectDocument implements
         if (!$dataObject || !$dataObject->exists()) {
             throw new IndexConfigurationException(
                 sprintf(
-                    "Unable to index %s with ID %d: dataobject not found",
+                    'Unable to index %s with ID %d: dataobject not found',
                     $this->getSourceClass(),
                     $this->getDataObject()->ID
                 )
@@ -252,9 +224,11 @@ class DataObjectDocument implements
 
         if ($this->getPageCrawler() && $this->getConfiguration()->shouldCrawlPageContent()) {
             $content = $this->getPageCrawler()->getMainContent($dataObject);
+
             if (!$this->getConfiguration()->shouldIncludePageHTML()) {
                 $content = strip_tags($content);
             }
+
             $toIndex[$pageContentField] = $content;
         }
 
@@ -269,11 +243,13 @@ class DataObjectDocument implements
 
         foreach ($this->getIndexedFields() as $field) {
             $this->getIndexService()->validateField($field->getSearchFieldName());
-            /* @var DBField&DBFieldExtension $dbField */
+            /** @var DBField&DBFieldExtension $dbField */
             $dbField = $this->getFieldValue($field);
+
             if (!$dbField) {
                 continue;
             }
+
             if (is_array($dbField)) {
                 if (ArrayLib::is_associative($dbField)) {
                     throw new IndexConfigurationException(sprintf(
@@ -292,26 +268,32 @@ class DataObjectDocument implements
                 }
 
                 $attributes[$field->getSearchFieldName()] = $dbField;
+
                 continue;
-            } elseif ($dbField instanceof ViewableData) {
-                if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
-                    throw new IndexConfigurationException(sprintf(
-                        'Field "%s" returns a DataObject or RelationList. To index fields from relationships,
-                        use the "property" node to specify dot notation for the fields you want. For instance,
-                        blogTags: { property: Tags.Title }',
-                        $field->getSearchFieldName()
-                    ));
-                } elseif ($dbField instanceof DBField) {
-                    $value = $dbField->getSearchValue();
-                    $attributes[$field->getSearchFieldName()] = $value;
-                    continue;
-                }
             }
 
-            throw new IndexConfigurationException(sprintf(
-                'Field "%s" returns value that cannot be resolved',
-                $field->getSearchFieldName()
-            ));
+            if (!$dbField instanceof ViewableData) {
+                throw new IndexConfigurationException(sprintf(
+                    'Field "%s" returns value that cannot be resolved',
+                    $field->getSearchFieldName()
+                ));
+            }
+
+            if ($dbField instanceof DBField) {
+                $value = $dbField->getSearchValue();
+                $attributes[$field->getSearchFieldName()] = $value;
+
+                continue;
+            }
+
+            if ($dbField instanceof RelationList || $dbField instanceof DataObject) {
+                throw new IndexConfigurationException(sprintf(
+                    'Field "%s" returns a DataObject or RelationList. To index fields from relationships,
+                        use the "property" node to specify dot notation for the fields you want. For instance,
+                        blogTags: { property: Tags.Title }',
+                    $field->getSearchFieldName()
+                ));
+            }
         }
 
         // DataObject specific customisation
@@ -323,9 +305,6 @@ class DataObjectDocument implements
         return $attributes;
     }
 
-    /**
-     * @return array
-     */
     public function provideMeta(): array
     {
         $baseClassField = $this->config()->get('base_class_field');
@@ -344,6 +323,7 @@ class DataObjectDocument implements
     {
         $candidate = get_class($this->dataObject);
         $fields = null;
+
         while (!$fields && $candidate !== DataObject::class) {
             $fields = $this->getConfiguration()->getFieldsForClass($candidate);
             $candidate = get_parent_class($candidate);
@@ -352,13 +332,10 @@ class DataObjectDocument implements
         return $fields;
     }
 
-    /**
-     * @param Field $field
-     * @return ViewableData|null
-     */
     public function getFieldDependency(Field $field): ?ViewableData
     {
         $tuple = $this->getFieldTuple($field);
+
         if ($tuple) {
             return $tuple[0];
         }
@@ -367,12 +344,12 @@ class DataObjectDocument implements
     }
 
     /**
-     * @param Field $field
      * @return mixed|null
      */
-    public function getFieldValue(Field $field)
+    public function getFieldValue(Field $field): mixed
     {
         $tuple = $this->getFieldTuple($field);
+
         if ($tuple) {
             return $tuple[1];
         }
@@ -381,7 +358,7 @@ class DataObjectDocument implements
     }
 
     /**
-     * @return array
+     * @return DocumentInterface[]
      */
     public function getDependentDocuments(): array
     {
@@ -391,6 +368,7 @@ class DataObjectDocument implements
         });
         $ownedDataObject = $this->getDataObject();
         $docs = [];
+
         foreach ($dataObjectClasses as $class) {
             // Start with a singleton to look at the model first, then get real records if needed
             $owningDataObject = Injector::inst()->get($class);
@@ -400,55 +378,70 @@ class DataObjectDocument implements
 
             $registry = DocumentFetchCreatorRegistry::singleton();
             $fetcher = $registry->getFetcher($class);
+
             if (!$fetcher) {
                 continue;
             }
+
             $chunker = DocumentChunkFetcher::create($fetcher);
+
             foreach ($fields as $field) {
                 $dependency = $document->getFieldDependency($field);
+
                 if (!$dependency) {
                     continue;
                 }
+
                 if ($dependency instanceof RelationList || $dependency instanceof UnsavedRelationList) {
-                    /* @var RelationList $dbField */
+                    /** @var RelationList $relatedObj */
                     $relatedObj = Injector::inst()->get($dependency->dataClass());
+
                     if (!$relatedObj instanceof $ownedDataObject) {
                         continue;
                     }
-                    // Now that we know a record of this type could possibly own this one,
-                    // we can fetch.
-                    /* @var DataObjectDocument $candidateDocument */
-                    foreach ($chunker->chunk(100) as $candidateDocument) {
+
+                    // Now that we know a record of this type could possibly own this one, we can fetch.
+
+                    /** @var DataObjectDocument $candidateDocument */
+                    foreach ($chunker->chunk() as $candidateDocument) {
                         $list = $candidateDocument->getFieldDependency($field);
+
                         // Singleton returns a list, but record doesn't. Conceivable, but rare.
                         if (!$list || !$list instanceof RelationList) {
                             continue;
                         }
+
                         // Now test if this record actually appears in the list.
                         if ($list->filter('ID', $ownedDataObject->ID)->exists()) {
                             $docs[$candidateDocument->getIdentifier()] = $candidateDocument;
                         }
                     }
                 } elseif ($dependency instanceof DataObject) {
-                    $objectClass = get_class($dependency);
+                    $objectClass = $dependency::class;
+
                     if (!$ownedDataObject instanceof $objectClass) {
                         continue;
                     }
+
                     // Now that we have a static confirmation, test each record.
-                    /* @var DataObjectDocument $candidateDocument */
-                    foreach ($chunker->chunk(100) as $candidateDocument) {
+
+                    /** @var DataObjectDocument $candidateDocument */
+                    foreach ($chunker->chunk() as $candidateDocument) {
                         $relatedObj = $candidateDocument->getFieldValue($field);
+
                         // Singleton returned a dataobject, but this record did not. Rare, but possible.
                         if (!$relatedObj instanceof $objectClass) {
                             continue;
                         }
-                        if ($relatedObj->ID == $ownedDataObject->ID) {
+
+                        if ($relatedObj->ID === $ownedDataObject->ID) {
                             $docs[$document->getIdentifier()] = $document;
                         }
                     }
                 }
             }
         }
+
         $dependentDocs = array_values($docs);
         $this->getDataObject()->invokeWithExtensions('updateSearchDependentDocuments', $dependentDocs);
 
@@ -456,7 +449,7 @@ class DataObjectDocument implements
     }
 
     /**
-     * @return DataObject&SearchServiceExtension
+     * @return DataObject&SearchServiceExtension|Versioned
      */
     public function getDataObject(): DataObject
     {
@@ -465,27 +458,23 @@ class DataObjectDocument implements
 
     /**
      * @param DataObject&SearchServiceExtension $dataObject
-     * @return DataObjectDocument
      * @throws InvalidArgumentException
      */
-    public function setDataObject(DataObject $dataObject)
+    public function setDataObject(DataObject $dataObject): self
     {
         if (!$dataObject->hasExtension(SearchServiceExtension::class)) {
             throw new InvalidArgumentException(sprintf(
                 'DataObject %s does not have the %s extension',
-                get_class($dataObject),
+                $dataObject::class,
                 SearchServiceExtension::class
             ));
         }
+
         $this->dataObject = $dataObject;
 
         return $this;
     }
 
-    /**
-     * @param PageCrawler $crawler
-     * @return $this
-     */
     public function setPageCrawler(PageCrawler $crawler): self
     {
         $this->pageCrawler = $crawler;
@@ -493,30 +482,30 @@ class DataObjectDocument implements
         return $this;
     }
 
-    /**
-     * @return PageCrawler|null
-     */
     public function getPageCrawler(): ?PageCrawler
     {
         return $this->pageCrawler;
     }
 
     /**
-     * @param array $path
-     * @param DataObject|DataList|null $context
-     * @return array
      * @throws LogicException
      */
-    private function parsePath(array $path, $context = null): ?array
+    private function parsePath(array $path, mixed $context = null): ?array
     {
         $subject = $context ?: $this->getDataObject();
         $nextField = array_shift($path);
+
         if ($subject instanceof DataObject) {
             $result = $subject->obj($nextField);
+
             if ($result instanceof DBField) {
-                $dependency = $subject === $this->getDataObject() ? null : $subject;
+                $dependency = $subject === $this->getDataObject()
+                    ? null
+                    : $subject;
+
                 return [$dependency, $result];
             }
+
             return $this->parsePath($path, $result);
         }
 
@@ -524,13 +513,17 @@ class DataObjectDocument implements
             if (!$nextField) {
                 return [$subject, $subject];
             }
+
             $singleton = DataObject::singleton($subject->dataClass());
+
             if ($singleton->hasField($nextField)) {
                 $value = $subject->column($nextField);
+
                 return [$subject, $value];
             }
 
             $maybeList = $singleton->obj($nextField);
+
             if ($maybeList instanceof RelationList || $maybeList instanceof UnsavedRelationList) {
                 return $this->parsePath($path, $subject->relation($nextField));
             }
@@ -543,10 +536,6 @@ class DataObjectDocument implements
         ));
     }
 
-    /**
-     * @param string $field
-     * @return ViewableData|null
-     */
     private function resolveField(string $field): ?ViewableData
     {
         $subject = $this->getDataObject();
@@ -576,37 +565,30 @@ class DataObjectDocument implements
         return $fieldName ? $subject->obj($fieldName) : null;
     }
 
-    /**
-     * @param Field $field
-     * @return array
-     */
     private function getFieldTuple(Field $field): array
     {
         if ($field->getProperty()) {
             $path = explode('.', $field->getProperty());
+
             return $this->parsePath($path);
         }
 
         return [null, $this->resolveField($field->getSearchFieldName())];
     }
 
-    public function serialize(): ?string
+    public function __serialize(): array
     {
-        return serialize([
+        return [
             'className' => $this->getDataObject()->baseClass(),
             'id' => $this->getDataObject()->ID ?: $this->getDataObject()->OldID,
             'fallback' => $this->shouldFallbackToLatestVersion,
-        ]);
+        ];
     }
 
-    /**
-     * @param string $serialized
-     * @throws Exception
-     */
-    public function unserialize($serialized): void
+    public function __unserialize(array $data): void
     {
-        $data = unserialize($serialized);
         $dataObject = DataObject::get_by_id($data['className'], $data['id']);
+
         if (!$dataObject && DataObject::has_extension($data['className'], Versioned::class) && $data['fallback']) {
             // get the latest version - usually this is an object that has been deleted
             $dataObject = Versioned::get_latest_version(
@@ -614,19 +596,19 @@ class DataObjectDocument implements
                 $data['id']
             );
         }
+
         if (!$dataObject) {
             throw new Exception(sprintf('DataObject %s : %s does not exist', $data['className'], $data['id']));
         }
+
         $this->setDataObject($dataObject);
+
         foreach (static::config()->get('dependencies') as $name => $service) {
             $method = 'set' . $name;
             $this->$method(Injector::inst()->get($service));
         }
     }
 
-    /**
-     * @param string $event
-     */
     public function onAddToSearchIndexes(string $event): void
     {
         if ($event === DocumentAddHandler::AFTER_ADD) {
@@ -634,13 +616,11 @@ class DataObjectDocument implements
         }
     }
 
-    /**
-     * @param string $event
-     */
     public function onRemoveFromSearchIndexes(string $event): void
     {
         if ($event === DocumentRemoveHandler::AFTER_REMOVE) {
             $this->markIndexed(true);
         }
     }
+
 }
