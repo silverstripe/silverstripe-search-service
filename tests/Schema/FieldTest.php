@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Schema;
 
 use SilverStripe\Dev\SapphireTest;
@@ -8,6 +7,7 @@ use SilverStripe\SearchService\Schema\Field;
 
 class FieldTest extends SapphireTest
 {
+
     public function testValueObject(): void
     {
         $field = new Field('foo', 'bar', ['baz' => 'qux']);
@@ -24,4 +24,5 @@ class FieldTest extends SapphireTest
         $field->setOption('option', 'test');
         $this->assertEquals('test', $field->getOption('option'));
     }
+
 }

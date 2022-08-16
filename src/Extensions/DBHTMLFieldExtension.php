@@ -1,20 +1,18 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Extensions;
 
 use SilverStripe\Core\Extension;
-use SilverStripe\SearchService\Service\IndexConfiguration;
-use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 
 class DBHTMLFieldExtension extends Extension
 {
+
     /**
      * For HTML fields, we have to call ->forTemplate() so that shortcodes get processed
      *
-     * @return string|string[]|null
+     * @return string|array|null
      */
-    public function getSearchValue()
+    public function getSearchValue() // phpcs:ignore SlevomatCodingStandard.TypeHints
     {
         if (SearchServiceExtension::singleton()->getConfiguration()->shouldIncludePageHTML()) {
             return $this->owner->forTemplate();
@@ -22,6 +20,7 @@ class DBHTMLFieldExtension extends Extension
 
         $value = $this->owner->forTemplate() ?? '';
 
-        return preg_replace('/\s+/S', " ", strip_tags($value));
+        return preg_replace('/\s+/S', ' ', strip_tags($value));
     }
+
 }

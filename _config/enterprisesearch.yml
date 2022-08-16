@@ -1,28 +1,29 @@
 ---
-Name: silverstripe-search-service-appsearch
+Name: silverstripe-search-service-enterprisesearch
 Only:
-  envvarset: 'APP_SEARCH_API_KEY'
+  envvarset: 'ENTERPRISE_SEARCH_API_KEY'
 After:
   - 'silverstripe-search-service-dataobject'
   - 'search-service-default'
 ---
 SilverStripe\Core\Injector\Injector:
   SilverStripe\SearchService\Interfaces\IndexingInterface:
-    class: SilverStripe\SearchService\Services\AppSearch\AppSearchService
+    class: SilverStripe\SearchService\Service\EnterpriseSearch\EnterpriseSearchService
     constructor:
-      client: '%$Elastic\AppSearch\Client\Client'
+      client: '%$Elastic\EnterpriseSearch\Client'
       configuration: '%$SilverStripe\SearchService\Service\IndexConfiguration'
       builder: '%$SilverStripe\SearchService\Service\DocumentBuilder'
-  Elastic\AppSearch\Client\Client:
-    factory: SilverStripe\SearchService\Services\AppSearch\ClientFactory
+  Elastic\EnterpriseSearch\Client:
+    factory: SilverStripe\SearchService\Service\EnterpriseSearch\ClientFactory
     constructor:
-      endpoint: '`APP_SEARCH_ENDPOINT`'
-      apiKey: '`APP_SEARCH_API_KEY`'
+      host: '`ENTERPRISE_SEARCH_ENDPOINT`'
+      token: '`ENTERPRISE_SEARCH_API_KEY`'
+      http_client: '%$GuzzleHttp\Client'
 SilverStripe\SearchService\Service\IndexConfiguration:
   id_field: 'id'
   source_class_field: 'source_class'
 
-## customise the dataobject fields for AppSearch compatability
+## customise the dataobject fields for EnterpriseSearch compatability
 SilverStripe\SearchService\DataObject\DataObjectDocument:
   id_field: record_id
   base_class_field: record_base_class

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Jobs;
 
 use SilverStripe\SearchService\Jobs\IndexJob;
@@ -10,6 +9,11 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class IndexJobTest extends SearchServiceTest
 {
+
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
+     * @var array
+     */
     protected static $extra_dataobjects = [
         DataObjectFake::class,
     ];
@@ -39,4 +43,5 @@ class IndexJobTest extends SearchServiceTest
         $job->process();
         $this->assertTrue($job->jobFinished());
     }
+
 }

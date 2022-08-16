@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Jobs;
 
 use InvalidArgumentException;
@@ -23,10 +22,11 @@ use Symbiote\QueuedJobs\Services\QueuedJob;
  */
 class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
 {
+
     use Injectable;
     use ServiceAware;
 
-    private static $dependencies = [
+    private static array $dependencies = [
         'IndexService' => '%$' . IndexingInterface::class,
     ];
 
@@ -49,18 +49,18 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
         }
     }
 
-    public function setup()
+    public function setup(): void
     {
         // Attempt to remove all documents up to 5 times to allow for eventually-consistent data stores
         $this->totalSteps = 5;
     }
 
-    public function getTitle()
+    public function getTitle(): string
     {
         return sprintf('Search clear index %s', $this->getIndexName());
     }
 
-    public function process()
+    public function process(): void
     {
         Environment::increaseMemoryLimitTo();
         Environment::increaseTimeLimitTo();
@@ -73,6 +73,7 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
             ));
 
             $this->isComplete = true;
+
             return;
         }
 
@@ -150,4 +151,5 @@ class ClearIndexJob extends AbstractQueuedJob implements QueuedJob
     {
         $this->indexName = $indexName;
     }
+
 }

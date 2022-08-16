@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Service;
 
 use SilverStripe\Core\Injector\Injector;
@@ -14,6 +13,7 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class IndexerTest extends SearchServiceTest
 {
+
     public function testConstructor(): void
     {
         $config = $this->mockConfig();
@@ -31,9 +31,11 @@ class IndexerTest extends SearchServiceTest
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
         $docs = [];
+
         for ($i = 0; $i < 20; $i++) {
             $docs[] = new DocumentFake('Fake');
         }
+
         $indexer = new Indexer($docs);
         $this->assertEquals(3, $indexer->getChunkCount());
         $docs[] = new DocumentFake('Fake');
@@ -56,13 +58,15 @@ class IndexerTest extends SearchServiceTest
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
         $config->set('isClassIndexed', [
-            'Fake' => true
+            'Fake' => true,
         ]);
 
         $docs = [];
+
         for ($i = 0; $i < 20; $i++) {
             $docs[] = new DocumentFake('Fake');
         }
+
         $docs[0]->index = false;
 
         $indexer = new Indexer($docs);
@@ -87,13 +91,15 @@ class IndexerTest extends SearchServiceTest
         $config = $this->mockConfig();
         $config->set('batch_size', 7);
         $config->set('isClassIndexed', [
-            'Fake' => true
+            'Fake' => true,
         ]);
 
         $docs = [];
+
         for ($i = 0; $i < 20; $i++) {
             $docs[] = new DocumentFake('Fake', ['id' => 'node-' . $i]);
         }
+
         $indexer = new Indexer($docs);
         $indexer->setIndexService($service = new ServiceFake());
         $indexer->setBatchSize(50);
@@ -174,4 +180,5 @@ class IndexerTest extends SearchServiceTest
         $this->assertCount(1, $service->documents);
         $this->assertArrayHasKey('blog-2', $service->documents);
     }
+
 }

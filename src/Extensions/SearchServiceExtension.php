@@ -13,90 +13,82 @@ use SilverStripe\SearchService\DataObject\DataObjectBatchProcessor;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Exception\IndexingServiceException;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\BatchProcessorAware;
 use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
-use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\Versioned\Versioned;
+use Throwable;
 
 /**
  * The extension that provides implicit indexing features to dataobjects
  *
  * @property DataObject|SearchServiceExtension $owner
+ * @property string $SearchIndexed
  */
 class SearchServiceExtension extends DataExtension
 {
+
     use Configurable;
     use Injectable;
     use ServiceAware;
     use ConfigurationAware;
     use BatchProcessorAware;
 
-    /**
-     * @var array
-     */
-    private static $db = [
-        'SearchIndexed' => 'Datetime'
+    private static array $db = [
+        'SearchIndexed' => 'Datetime',
     ];
 
-    /**
-     * @var bool
-     */
-    private $hasConfigured = false;
+    private bool $hasConfigured = false;
 
-    /**
-     * SearchServiceExtension constructor.
-     * @param IndexingInterface $searchService
-     * @param IndexConfiguration $config
-     * @param DataObjectBatchProcessor $batchProcessor
-     */
     public function __construct(
         IndexingInterface $searchService,
         IndexConfiguration $config,
         DataObjectBatchProcessor $batchProcessor
     ) {
         parent::__construct();
+
         $this->setIndexService($searchService);
         $this->setConfiguration($config);
         $this->setBatchProcessor($batchProcessor);
     }
 
-    /**
-     * @param FieldList $fields
-     */
-    public function updateCMSFields(FieldList $fields)
+    public function updateCMSFields(FieldList $fields): void
     {
-        if ($this->getConfiguration()->isEnabled()) {
-            $field = ReadonlyField::create('SearchIndexed', _t(__CLASS__.'.LastIndexed', 'Last indexed in search'));
+        if (!$this->getConfiguration()->isEnabled()) {
+            return;
+        }
 
-            if ($fields->hasTabSet()) {
-                $fields->addFieldToTab('Root.Main', $field);
-            } else {
-                $fields->push($field);
-            }
+        $field = ReadonlyField::create('SearchIndexed', _t(self::class.'.LastIndexed', 'Last indexed in search'));
+
+        if ($fields->hasTabSet()) {
+            $fields->addFieldToTab('Root.Main', $field);
+        } else {
+            $fields->push($field);
         }
     }
 
     /**
-     * On dev/build ensure that the indexer settings are up to date.
+     * On dev/build ensure that the indexer settings are up to date
+     *
      * @throws IndexingServiceException
      */
-    public function requireDefaultRecords()
+    public function requireDefaultRecords(): void
     {
-        // Wrap this in a try-catch so that dev/build can continue (with warnings) when APP_SEARCH_ENDPOINT isn't set
+        // Wrap this in a try-catch so that dev/build can continue (with
+        // warnings) when ENTERPRISE_SEARCH_ENDPOINT isn't set
         try {
             if (!$this->hasConfigured) {
                 $this->getIndexService()->configure();
                 $this->hasConfigured = true;
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             user_error(sprintf('Unable to configure search indexes: %s', $e->getMessage()), E_USER_WARNING);
         }
     }
+
     /**
      * Index this record into search or queue if configured to do so
-     *
-     * @return void
      */
     public function addToIndexes(): void
     {
@@ -114,11 +106,12 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * When publishing the page, push this data to Indexer. The data
-     * which is sent to search is the rendered template from the front end.
+     * When publishing the page, push this data to Indexer. The data which is sent to search is the rendered template
+     * from the front end
+     *
      * @throws Exception
      */
-    public function onAfterPublish()
+    public function onAfterPublish(): void
     {
         $this->owner->addToIndexes();
     }
@@ -132,13 +125,17 @@ class SearchServiceExtension extends DataExtension
     }
 
     /**
-     * Before deleting this record ensure that it is removed from search.
+     * Before deleting this record ensure that it is removed from search
+     *
      * @throws Exception
      */
-    public function onAfterDelete()
+    public function onAfterDelete(): void
     {
-        if (!$this->owner->hasExtension(Versioned::class)) {
-            $this->owner->removeFromIndexes();
+        if ($this->owner->hasExtension(Versioned::class)) {
+            return;
         }
+
+        $this->owner->removeFromIndexes();
     }
+
 }

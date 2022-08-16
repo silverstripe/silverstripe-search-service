@@ -9,26 +9,26 @@ This is the service that is enabled by default. It does not interact with any sp
 there to fill the whole in the abstraction layer when search is not yet being used. It is also a good option
 to have enabled when running tests and/or doing CI builds.
 
-## Elastic AppSearch
+## Elastic EnterpriseSearch
 
-This module comes bundled with an implementation for [Elastic AppSearch](https://www.elastic.co/app-search/).
-While most of the details are abstracted away in the `AppSearchService` class, there are some key things to
-know about configuring AppSearch.
+This module comes bundled with an implementation for [Elastic EnterpriseSearch](https://www.elastic.co/app-search/).
+While most of the details are abstracted away in the `EnterpriseSearchService` class, there are some key things to
+know about configuring EnterpriseSearch.
 
-### Activating AppSearch
+### Activating EnterpriseSearch
 
-To start using AppSearch, simply define an environment variable containing your private API key
+To start using EnterpriseSearch, simply define an environment variable containing your private API key
 and endpoint.
 
 ```
-APP_SEARCH_ENDPOINT="https://abc123.app-search.ap-southeast-2.aws.found.io"
-APP_SEARCH_API_KEY="private-abc123"
+ENTERPRISE_SEARCH_ENDPOINT="https://abc123.app-search.ap-southeast-2.aws.found.io"
+ENTERPRISE_SEARCH_API_KEY="private-abc123"
 ```
 
-### Configuring AppSearch
+### Configuring EnterpriseSearch
 
-The most notable configuration surface for AppSearch is the schema, which determines how data
-is stored in your AppSearch index (engine). There are four types of data in AppSearch:
+The most notable configuration surface for EnterpriseSearch is the schema, which determines how data
+is stored in your EnterpriseSearch index (engine). There are four types of data in EnterpriseSearch:
 
 * Text (default)
 * Date
@@ -50,7 +50,7 @@ SilverStripe\SearchService\Service\IndexConfiguration:
                 type: text
 ```
 
-**Note**: Be careful about whimsically changing your schema. AppSearch may need to be fully
+**Note**: Be careful about whimsically changing your schema. EnterpriseSearch may need to be fully
 reindexed if you change the data type of a field.
 
 ## More information

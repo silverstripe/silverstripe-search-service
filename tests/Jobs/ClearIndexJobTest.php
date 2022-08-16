@@ -1,6 +1,5 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Tests\Jobs;
 
 use InvalidArgumentException;
@@ -11,6 +10,11 @@ use SilverStripe\SearchService\Tests\SearchServiceTest;
 
 class ClearIndexJobTest extends SearchServiceTest
 {
+
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
+     * @var array
+     */
     protected static $extra_dataobjects = [
         DataObjectFake::class,
     ];
@@ -43,7 +47,7 @@ class ClearIndexJobTest extends SearchServiceTest
     {
         $config = $this->mockConfig();
         $config->set('crawl_page_content', false);
-        $this->loadIndex(10);
+
         $job = ClearIndexJob::create('myindex', 1);
         $job->setup();
 
@@ -88,10 +92,11 @@ class ClearIndexJobTest extends SearchServiceTest
 
         // The 6th time we process should fail with a RuntimeException
         $msg = 'ClearIndexJob was unable to delete all documents after 5 attempts. Finished all steps and the document'
-            .   ' total is still 10';
+            . ' total is still 10';
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage($msg);
         $job->process();
     }
+
 }

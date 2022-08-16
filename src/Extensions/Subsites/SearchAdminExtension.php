@@ -4,16 +4,13 @@ namespace SilverStripe\SearchService\Extensions\Subsites;
 
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataQuery;
 use SilverStripe\Subsites\Model\Subsite;
 
 class SearchAdminExtension extends Extension
 {
-    /**
-     * @var bool|null
-     */
-    private $stashValue;
+
+    private ?bool $stashValue = null;
 
     public function updateQuery(DataQuery $query, array $data): void
     {
@@ -21,8 +18,9 @@ class SearchAdminExtension extends Extension
             if ($this->stashValue === null) {
                 $this->stashValue = Subsite::$disable_subsite_filter;
             }
+
             Subsite::disable_subsite_filter(true);
-            $query->where("SubsiteID = {$data['subsite_id']}");
+            $query->where(sprintf('SubsiteID = %s', $data['subsite_id']));
         }
     }
 
@@ -33,4 +31,5 @@ class SearchAdminExtension extends Extension
             $this->stashValue = null;
         }
     }
+
 }

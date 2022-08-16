@@ -7,51 +7,42 @@ use SilverStripe\SearchService\Exception\IndexingServiceException;
 
 interface IndexingInterface extends BatchDocumentInterface
 {
-    /**
-     * @param DocumentInterface $item
-     * @return $this
-     * @throws IndexingServiceException
-     */
-    public function addDocument(DocumentInterface $item): IndexingInterface;
 
     /**
-     * @param DocumentInterface $doc
-     * @return $this
+     * @return string|null ID of the Document added
      * @throws IndexingServiceException
      */
-    public function removeDocument(DocumentInterface $doc): IndexingInterface;
+    public function addDocument(DocumentInterface $document): ?string;
 
     /**
-     * @return int
+     * @return string|null ID of the Document removed
+     * @throws IndexingServiceException
+     */
+    public function removeDocument(DocumentInterface $document): ?string;
+
+    /**
      * @throws IndexingServiceException
      */
     public function getMaxDocumentSize(): int;
 
     /**
-     * @param string $id
-     * @return DocumentInterface
      * @throws IndexingServiceException
      */
     public function getDocument(string $id): ?DocumentInterface;
 
     /**
-     * @param array $ids
      * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
     public function getDocuments(array $ids): array;
 
     /**
-     * @param string $indexName
-     * @param int|null $limit
-     * @param int $offset
      * @return DocumentInterface[]
      * @throws IndexingServiceException
      */
-    public function listDocuments(string $indexName, ?int $limit = null, int $offset = 0): array;
+    public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array;
 
     /**
-     * @param string $indexName
      * @return int
      * @throws IndexingServiceException
      */
@@ -59,31 +50,30 @@ interface IndexingInterface extends BatchDocumentInterface
 
     /**
      * A hook for configuring the index service
+     *
+     * @return array Current Schemas from Elastic [indexName: [field configuration]]
      * @throws IndexingServiceException
      */
-    public function configure(): void;
+    public function configure(): array;
 
     /**
-     * @param string $field
      * @throws IndexConfigurationException
      */
     public function validateField(string $field): void;
 
     /**
      * For display in the CMS
-     * @return string|null
      */
     public function getExternalURL(): ?string;
 
     /**
      * Text to display for the above URL
-     * @return string|null
      */
     public function getExternalURLDescription(): ?string;
 
     /**
      * URL to display in the CMS to link to documentation
-     * @return string|null
      */
     public function getDocumentationURL(): ?string;
+
 }

@@ -1,21 +1,14 @@
 <?php
 
-
 namespace SilverStripe\SearchService\Service\Traits;
 
 use SilverStripe\SearchService\Interfaces\BatchDocumentInterface;
 
 trait BatchProcessorAware
 {
-    /**
-     * @var BatchDocumentInterface
-     */
-    private $batchProcessor;
 
-    /**
-     * @param BatchDocumentInterface $processor
-     * @return $this
-     */
+    private ?BatchDocumentInterface $batchProcessor = null;
+
     public function setBatchProcessor(BatchDocumentInterface $processor): self
     {
         $this->batchProcessor = $processor;
@@ -23,11 +16,9 @@ trait BatchProcessorAware
         return $this;
     }
 
-    /**
-     * @return BatchDocumentInterface
-     */
     public function getBatchProcessor(): BatchDocumentInterface
     {
         return $this->batchProcessor;
     }
+
 }
