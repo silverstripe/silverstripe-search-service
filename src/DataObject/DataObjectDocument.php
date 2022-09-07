@@ -151,6 +151,7 @@ class DataObjectDocument implements
                 $liveDataObject = DataObject::get($dataObject->ClassName)->byID($dataObject->ID);
 
                 if (!$liveDataObject || !$liveDataObject->exists()) {
+                    // Nothing to index
                     return false;
                 }
 
