@@ -3,6 +3,10 @@
 
 namespace SilverStripe\SearchService\DataObject;
 
+use Exception;
+use InvalidArgumentException;
+use LogicException;
+use Serializable;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
@@ -26,19 +30,15 @@ use SilverStripe\SearchService\Interfaces\DocumentMetaProvider;
 use SilverStripe\SearchService\Interfaces\DocumentRemoveHandler;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Schema\Field;
-use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\DocumentChunkFetcher;
 use SilverStripe\SearchService\Service\DocumentFetchCreatorRegistry;
 use SilverStripe\SearchService\Service\IndexConfiguration;
 use SilverStripe\SearchService\Service\PageCrawler;
+use SilverStripe\SearchService\Service\Traits\ConfigurationAware;
 use SilverStripe\SearchService\Service\Traits\ServiceAware;
 use SilverStripe\Security\Member;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\ViewableData;
-use Exception;
-use Serializable;
-use LogicException;
-use InvalidArgumentException;
 
 class DataObjectDocument implements
     DocumentInterface,
@@ -144,7 +144,18 @@ class DataObjectDocument implements
 
         // If an anonymous user can't view it
         $isPublic = Member::actAs(null, function () use ($dataObject) {
-            return $dataObject->canView();
+            // Need to make sure that the version of the DataObject that we access is always the LIVE version
+            return Versioned::withVersionedMode(function () use ($dataObject): bool {
+                Versioned::set_stage(Versioned::LIVE);
+
+                $liveDataObject = DataObject::get($dataObject->ClassName)->byID($dataObject->ID);
+
+                if (!$liveDataObject || !$liveDataObject->exists()) {
+                    return false;
+                }
+
+                return $liveDataObject->canView();
+            });
         });
 
         if (!$isPublic) {
@@ -477,6 +488,7 @@ class DataObjectDocument implements
                 SearchServiceExtension::class
             ));
         }
+
         $this->dataObject = $dataObject;
 
         return $this;

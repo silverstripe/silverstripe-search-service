@@ -1,0 +1,12 @@
+Page:
+  page1:
+    Title: Parent Page
+    ShowInSearch: 1
+  page2:
+    Title: Child Page 1
+    Parent: =>Page.page1
+    ShowInSearch: 1
+  page3:
+    Title: Child Page 2
+    Parent: =>Page.page1
+    ShowInSearch: 1
