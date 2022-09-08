@@ -2,6 +2,7 @@
 
 namespace SilverStripe\SearchService\Tests\DataObject;
 
+use Page;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\RelationList;
@@ -23,7 +24,10 @@ use SilverStripe\Versioned\Versioned;
 
 class DataObjectDocumentTest extends SearchServiceTest
 {
-    protected static $fixture_file = '../fixtures.yml';
+    protected static $fixture_file = [
+        '../fixtures.yml',
+        '../pages.yml',
+    ];
 
     protected static $extra_dataobjects = [
         VersionedDataObjectFake::class,
@@ -83,6 +87,68 @@ class DataObjectDocumentTest extends SearchServiceTest
 
         $config->set('enabled', false);
         $this->assertFalse($doc->shouldIndex());
+    }
+
+    public function testShouldIndexChild(): void
+    {
+        $config = $this->mockConfig();
+
+        $parent = $this->objFromFixture(Page::class, 'page1');
+        // Make sure our Parent is published before we fetch our child pages
+        $parent->publishRecursive();
+
+        $childOne = $this->objFromFixture(Page::class, 'page2');
+        $childTwo = $this->objFromFixture(Page::class, 'page3');
+        $childThree = $this->objFromFixture(Page::class, '  page5');
+
+        // Publish childOne and childThree
+        $childOne->publishRecursive();
+        $childThree->publishRecursive();
+        // Need to re-fetch childOne and childThree so that our Versioned state is up-to-date with what we just
+        // published
+        $childOne = $this->objFromFixture(Page::class, 'page2');
+        $childThree = $this->objFromFixture(Page::class, '  page5');
+
+        // $docOne has a published page
+        $docOne = DataObjectDocument::create($childOne);
+        // $docTwo has an unpublished page
+        $docTwo = DataObjectDocument::create($childTwo);
+        // $docThree has a published page
+        $docThree = DataObjectDocument::create($childThree);
+
+        // Add both documents to our indexes, as this isn't the functionality we're testing here
+        $config->set(
+            'getIndexesForDocument',
+            [
+                $docOne->getIdentifier() => [
+                    'index' => 'data',
+                ],
+                $docTwo->getIdentifier() => [
+                    'index' => 'data',
+                ],
+                $docThree->getIdentifier() => [
+                    'index' => 'data',
+                ],
+            ]
+        );
+
+        // Our parent page has been published, and so has our child page, so this should be indexable
+        $this->assertTrue($docOne->shouldIndex());
+        // Our parent page has been published, but the child has not
+        $this->assertFalse($docTwo->shouldIndex());
+        // Our parent page has not been published, even though the child has
+        $this->assertFalse($docThree->shouldIndex());
+
+        // Now trigger a change on our parent page (so that the draft and live versions no longer match)
+        $parent->Title = 'Parent Page Changed';
+        $parent->write();
+
+        // Need to re-fetch childOne so that we re-fetch the Parent when we request canView()
+        $childOne = $this->objFromFixture(Page::class, 'page2');
+        // Recreate the Document with our new child page
+        $docOne = DataObjectDocument::create($childOne);
+        // Check that our child page is still indexable, even after our parent page was given a different draft version
+        $this->assertTrue($docOne->shouldIndex());
     }
 
     public function testMarkIndexed(): void
