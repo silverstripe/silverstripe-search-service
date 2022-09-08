@@ -1,6 +1,6 @@
 Page:
   page1:
-    Title: Parent Page
+    Title: Parent Page 1
     ShowInSearch: 1
   page2:
     Title: Child Page 1
@@ -9,4 +9,11 @@ Page:
   page3:
     Title: Child Page 2
     Parent: =>Page.page1
+    ShowInSearch: 1
+  page4:
+    Title: Parent Page 2
+    ShowInSearch: 1
+  page5:
+    Title: Child Page 3
+    Parent: =>Page.page4
     ShowInSearch: 1

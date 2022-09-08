@@ -99,16 +99,22 @@ class DataObjectDocumentTest extends SearchServiceTest
 
         $childOne = $this->objFromFixture(Page::class, 'page2');
         $childTwo = $this->objFromFixture(Page::class, 'page3');
+        $childThree = $this->objFromFixture(Page::class, '  page5');
 
-        // Publish childOne
+        // Publish childOne and childThree
         $childOne->publishRecursive();
-        // Need to re-fetch childOne so that our Versioned state is up-to-date with what we just published
+        $childThree->publishRecursive();
+        // Need to re-fetch childOne and childThree so that our Versioned state is up-to-date with what we just
+        // published
         $childOne = $this->objFromFixture(Page::class, 'page2');
+        $childThree = $this->objFromFixture(Page::class, '  page5');
 
         // $docOne has a published page
         $docOne = DataObjectDocument::create($childOne);
         // $docTwo has an unpublished page
         $docTwo = DataObjectDocument::create($childTwo);
+        // $docThree has a published page
+        $docThree = DataObjectDocument::create($childThree);
 
         // Add both documents to our indexes, as this isn't the functionality we're testing here
         $config->set(
@@ -120,6 +126,9 @@ class DataObjectDocumentTest extends SearchServiceTest
                 $docTwo->getIdentifier() => [
                     'index' => 'data',
                 ],
+                $docThree->getIdentifier() => [
+                    'index' => 'data',
+                ],
             ]
         );
 
@@ -127,6 +136,8 @@ class DataObjectDocumentTest extends SearchServiceTest
         $this->assertTrue($docOne->shouldIndex());
         // Our parent page has been published, but the child has not
         $this->assertFalse($docTwo->shouldIndex());
+        // Our parent page has not been published, even though the child has
+        $this->assertFalse($docThree->shouldIndex());
 
         // Now trigger a change on our parent page (so that the draft and live versions no longer match)
         $parent->Title = 'Parent Page Changed';

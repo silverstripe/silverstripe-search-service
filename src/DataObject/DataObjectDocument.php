@@ -143,7 +143,7 @@ class DataObjectDocument implements
         $dataObject = $this->getDataObject();
 
         // If an anonymous user can't view it
-        $isPublic = Member::actAs(null, function () use ($dataObject) {
+        $isPublic = Member::actAs(null, static function () use ($dataObject) {
             // Need to make sure that the version of the DataObject that we access is always the LIVE version
             return Versioned::withVersionedMode(static function () use ($dataObject): bool {
                 Versioned::set_stage(Versioned::LIVE);
