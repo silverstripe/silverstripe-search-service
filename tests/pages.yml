@@ -17,3 +17,7 @@ Page:
     Title: Child Page 3
     Parent: =>Page.page4
     ShowInSearch: 1
+  page6:
+    Title: Subsite Page 1
+    Subsite: =>SilverStripe\Subsites\Model\Subsite.subsite1
+    ShowInSearch: 1

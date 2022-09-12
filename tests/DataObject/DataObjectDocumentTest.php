@@ -19,6 +19,7 @@ use SilverStripe\SearchService\Tests\Fake\ImageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
+use SilverStripe\Subsites\Model\Subsite;
 
 class DataObjectDocumentTest extends SearchServiceTest
 {
@@ -173,6 +174,105 @@ class DataObjectDocumentTest extends SearchServiceTest
         $docOne = DataObjectDocument::create($childOne);
         // Check that our child page is still indexable, even after our parent page was given a different draft version
         $this->assertTrue($docOne->shouldIndex());
+    }
+
+    public function testSubsiteDataObjectShouldIndex(): void
+    {
+        $subsite2 = $this->objFromFixture(Subsite::class, 'subsite2');
+
+        $config = $this->mockConfig();
+
+        // Mocked indexes:
+        //  - index0: allows all data without subsite filter
+        //  - index1: for subsite2 and Page class and Data object that does not implement subsite
+        //  - index2: for subsite2 and Data object that does not implement subsite
+        $config->set(
+            'indexes',
+            [
+                'index0' => [
+                    'subsite_id' => 0,
+                    'includeClasses' => [
+                        Page::class => true,
+                    ],
+                ],
+                'index1' => [
+                    'subsite_id' => $subsite2->ID,
+                    'includeClasses' => [
+                        Page::class => true,
+                        DataObjectFake::class => true,
+                        DataObjectFakeVersioned::class => true,
+                    ],
+                ],
+                'index2' => [
+                    'subsite_id' => $subsite2->ID,
+                    'includeClasses' => [
+                        DataObjectFake::class => true,
+                    ],
+                ],
+            ]
+        );
+
+        // Ensure page that belongs to a subsite is published
+        $page = $this->objFromFixture(Page::class, 'page6');
+        $page->publishRecursive();
+        $page = $this->objFromFixture(Page::class, 'page6');
+
+        // Prepare page for index
+        $docOne = DataObjectDocument::create($page);
+
+        // Assert that the page can't be indexed because we don't have an index with matching subsite ID
+        $this->assertFalse($docOne->shouldIndex());
+
+        // Remove the subsite ID
+        $page->update(['SubsiteID' => null])->publishRecursive();
+        $page = $this->objFromFixture(Page::class, 'page6');
+
+        // Prepare page for reindex
+        $doc2 = DataObjectDocument::create($page);
+
+        // Assert that the subsite ID removed from the page can be indexed because we explicitly defined the ClassName
+        // in index0 configuration
+        $this->assertNull($page->SubsiteID);
+        $this->assertTrue($doc2->shouldIndex());
+
+        // Update page subsite ID with correct ID
+        $page->update(['SubsiteID' => $subsite2->ID])->publishRecursive();
+        $page = $this->objFromFixture(Page::class, 'page6');
+
+        // Prepare page for reindex
+        $doc3 = DataObjectDocument::create($page);
+
+        // Assert that the page can be indexed in index1
+        $this->assertEquals($subsite2->ID, $page->SubsiteID);
+        $this->assertTrue($doc3->shouldIndex());
+
+        // Get an object without subsite filter
+        $object1 = $this->objFromFixture(DataObjectFake::class, 'one');
+
+        // Prepare object for index
+        $doc4 = DataObjectDocument::create($object1);
+
+        // Assert that the object without subsite ID and that it can be indexed, because configuration allows it
+        $this->assertNull($object1->SubsiteID);
+        $this->assertTrue($doc4->shouldIndex());
+        $this->assertArrayHasKey('index1', $doc4->getIndexes());
+        $this->assertArrayHasKey('index2', $doc4->getIndexes());
+        $this->assertArrayNotHasKey('index0', $doc4->getIndexes());
+
+        // Get an object without subsite filter
+        $object2 = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
+        $object2->publishRecursive();
+        $object2 = $this->objFromFixture(DataObjectFakeVersioned::class, 'one');
+
+        // Prepare object for index
+        $doc5 = DataObjectDocument::create($object2);
+
+        // Assert that the object without subsite ID and that it can be indexed, because configuration allows it
+        $this->assertNull($object2->SubsiteID);
+        $this->assertTrue($doc5->shouldIndex());
+        $this->assertArrayHasKey('index1', $doc5->getIndexes());
+        $this->assertArrayNotHasKey('index2', $doc5->getIndexes());
+        $this->assertArrayNotHasKey('index0', $doc5->getIndexes());
     }
 
     public function testMarkIndexed(): void

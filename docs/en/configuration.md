@@ -27,7 +27,7 @@ on your service provider. For EnterpriseSearch, it should only contain lowercase
 and hyphens.
 
 * `includedClasses`: A list of content classes to index. These are just the _source_ of the
-content, so they have no contractual bind to the module. If they are dataobjects, they 
+content, so they have no contractual bind to the module. If they are dataobjects, they
 should have the `SearchServiceExtension` applied, however. This is discussed further below.
 
 * `SilverStripe\CMS\Model\SiteTree`: This class already has the necessary extension applied
@@ -81,8 +81,8 @@ SilverStripe\SearchService\Service\IndexConfiguration:
             property: 'Comments.Author.Name'
 ```
 
-For DataObject content, the dot syntax allows traversal of relationships. If the final 
-property in the notation is on a list, it will use the `->column()` function to derive 
+For DataObject content, the dot syntax allows traversal of relationships. If the final
+property in the notation is on a list, it will use the `->column()` function to derive
 the values as an array.
 
 This will roughly get indexed as a structure like this:
@@ -193,7 +193,7 @@ SilverStripe\Core\Injector\Injector:
     constructor:
       index_variant: '`MY_CUSTOM_VAR`'
 
-``` 
+```
 
 This is useful if you have multiple staging environments and you don't want to overcrowd
 your search instance with distinct indexes for each one.
@@ -201,7 +201,7 @@ your search instance with distinct indexes for each one.
 ## Full page indexing
 
 Page and DataObject content is eligible for full-page indexing of its content. This is
-predicated upon the object having a `Link()` method defined that can be rendered in a 
+predicated upon the object having a `Link()` method defined that can be rendered in a
 controller.
 
 The content is extracted using an XPath selector. By default, this is `//main`, but it
@@ -236,7 +236,7 @@ SilverStripe\SearchService\Service\IndexConfiguration:
             summary:
               property: Summary
     content-subsite4:
-      subsite_id: 4
+      subsite_id: 4 # or you can use environment variable such as 'NAME_OF_ENVIRONMENT_VARIABLE'
       includeClasses:
         Page:
           <<: *page_defaults
@@ -248,6 +248,9 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 Note the syntax to reduce the need for copy-paste if you want to duplicate the
 same configuration across.
 
+__Additional note__:
+> In the sample above, if the data object (My\Other\Class) does not have a subsite ID,  then it will be included in the indexing as it is explicitly defined in the index configuration
+
 This is handled via `SubsiteIndexConfigurationExtension` - this logic could be
 replicated for other scenarios like languages if required.
 
@@ -255,5 +258,5 @@ replicated for other scenarios like languages if required.
 
 * [Usage](usage.md)
 * [Implementations](implementations.md)
-* [Customising and extending](customising.md) 
+* [Customising and extending](customising.md)
 * [Overview and Rationale](overview.md)
