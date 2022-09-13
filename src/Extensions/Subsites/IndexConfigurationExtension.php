@@ -16,12 +16,11 @@ class IndexConfigurationExtension extends Extension
             return;
         }
 
-        $docSubsiteId = $doc->getDataObject()->SubsiteID ?? 0;
-
-        if ((int) $docSubsiteId === 0) {
+        // Which whether the data object has the SubsiteID
+        if (!$doc->getDataObject()->hasField('SubsiteID')) {
             $this->updateDocumentWithoutSubsite($doc, $indexes);
         } else {
-            $this->updateDocumentWithSubsite($indexes, $docSubsiteId);
+            $this->updateDocumentWithSubsite($indexes, (int)$doc->getDataObject()->SubsiteID);
         }
     }
 
