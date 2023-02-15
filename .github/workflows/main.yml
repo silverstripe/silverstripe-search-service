@@ -3,23 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   ci:
     uses: silverstripe/gha-ci/.github/workflows/ci.yml@v1
-    with:
-      composer_require_extra: silverstripe/subsites:^2.6
-      dynamic_matrix: false
-      extra_jobs: |
-        - php: 8.0
-          phplinting: true
-        - php: 8.0
-          phpunit: true
-        - php: 8.0
-          db: mysql57pdo
-          phpunit: true
-        - php: 8.0
-          db: mysql80
-          phpunit: true
-        - php: 8.1
-          phpunit: true
