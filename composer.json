@@ -15,14 +15,12 @@
     ],
     "require": {
         "php": "^8.1",
-        "guzzlehttp/guzzle": "^7",
         "silverstripe/cms": "^5",
-        "symbiote/silverstripe-queuedjobs": "^5",
-        "elastic/enterprise-search": "^8.6"
+        "symbiote/silverstripe-queuedjobs": "^5"
     },
     "require-dev": {
         "silverstripe/recipe-testing": "^3",
-        "slevomat/coding-standard": "^8.8",
+        "slevomat/coding-standard": "~8.8.0",
         "silverstripe/subsites": "^3"
     },
     "autoload": {

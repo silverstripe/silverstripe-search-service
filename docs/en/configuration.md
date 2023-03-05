@@ -214,7 +214,7 @@ SilverStripe\SearchService\Service\PageCrawler:
 
 ## Subsites
 
-Due to the way that filtering works with Elastic App Search, you may want to split
+Due to the way that filtering works with (eg) Elastic Enterprise Search, you may want to split
 each subsite's content into a separate engine. To do so, you can use the following
 configuration:
 
