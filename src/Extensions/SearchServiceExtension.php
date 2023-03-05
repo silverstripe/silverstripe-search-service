@@ -75,8 +75,7 @@ class SearchServiceExtension extends DataExtension
      */
     public function requireDefaultRecords(): void
     {
-        // Wrap this in a try-catch so that dev/build can continue (with
-        // warnings) when ENTERPRISE_SEARCH_ENDPOINT isn't set
+        // Wrap this in a try-catch so that dev/build can continue (with warnings) when no service has been set
         try {
             if (!$this->hasConfigured) {
                 $this->getIndexService()->configure();

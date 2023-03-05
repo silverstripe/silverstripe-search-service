@@ -1,6 +1,6 @@
 {
     "name": "silverstripe/silverstripe-search-service",
-    "description": "Abstract Search Service with Elastic Enterprise Search Functionality",
+    "description": "Abstract Search Service",
     "type": "silverstripe-vendormodule",
     "license": "BSD-3-Clause",
     "authors": [

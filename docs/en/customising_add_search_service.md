@@ -5,7 +5,21 @@ There are two fundamental requirements for creating a new search service integra
 * Implement the `IndexingInterface` specification
 * Be registered in `Injector` as the concretion for `IndexingInterface`
 
-Let's walk through this bit by bit. 
+Let's walk through this bit by bit.
+
+## Index Configuration
+
+`IndexConfiguration` is used in a singleton pattern throughout the service. Depending on your service you might also
+need to define an index variant whenever `IndexConfiguration` is instantiated.
+
+This could be done through setting the value of an environment variable to the contructor parameter.
+
+```yaml
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Service\IndexConfiguration:
+    constructor:
+      index_variant: '`SEARCH_ENGINE_PREFIX`'
+```
 
 ## The IndexingInterface specification
 
