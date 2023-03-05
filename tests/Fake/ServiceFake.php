@@ -6,6 +6,7 @@ use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
 use SilverStripe\SearchService\Service\DocumentBuilder;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 
 class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
 {
@@ -15,6 +16,17 @@ class ServiceFake implements IndexingInterface, BatchDocumentRemovalInterface
     public array $documents = [];
 
     public int $maxDocSize = 1000;
+
+    public function environmentizeIndex(string $indexName): string
+    {
+        $variant = IndexConfiguration::singleton()->getIndexVariant();
+
+        if ($variant) {
+            return sprintf('%s-%s', $variant, $indexName);
+        }
+
+        return $indexName;
+    }
 
     public function addDocument(DocumentInterface $document): ?string
     {
