@@ -4,14 +4,13 @@ namespace SilverStripe\SearchService\Admin;
 
 use SilverStripe\View\ViewableData;
 
+/**
+ * @property string $IndexName
+ * @property int $DBDocs
+ * @property int $RemoteDocs
+ */
 class IndexedDocumentsResult extends ViewableData
 {
-
-    public string $IndexName;
-
-    public int $DBDocs;
-
-    public int $RemoteDocs;
 
     public function summaryFields(): array
     {
