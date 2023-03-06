@@ -84,7 +84,7 @@ class DataObjectFetcher implements DocumentFetcherInterface
         return DataObjectDocument::create($dataObject);
     }
 
-    private function createDataList(?int $limit = null, ?int $offset = null): DataList
+    private function createDataList(?int $limit = null, ?int $offset = 0): DataList
     {
         $list = DataList::create($this->dataObjectClass);
 

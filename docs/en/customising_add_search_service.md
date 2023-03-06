@@ -5,7 +5,21 @@ There are two fundamental requirements for creating a new search service integra
 * Implement the `IndexingInterface` specification
 * Be registered in `Injector` as the concretion for `IndexingInterface`
 
-Let's walk through this bit by bit. 
+Let's walk through this bit by bit.
+
+## Index Configuration
+
+`IndexConfiguration` is used in a singleton pattern throughout the service. Depending on your service you might also
+need to define an index variant whenever `IndexConfiguration` is instantiated.
+
+This could be done through setting the value of an environment variable to the contructor parameter.
+
+```yaml
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\SearchService\Service\IndexConfiguration:
+    constructor:
+      index_variant: '`SEARCH_ENGINE_PREFIX`'
+```
 
 ## The IndexingInterface specification
 
@@ -54,7 +68,7 @@ public function addDocument(DocumentInterface $document): ?string
     foreach (array_keys($indexes) as $indexName) {
         // your custom API call here
         $mySearchClient->addDocuementToIndex(
-            static::environmentizeIndex($indexName),
+            $this->environmentizeIndex($indexName),
             $fields
         );   
     }
@@ -96,7 +110,7 @@ public function removeDocument(DocumentInterface $document): ?string
     foreach (array_keys($indexes) as $indexName) {
         // your custom API call here
         $myAPI->removeDocumentFromIndex(
-            static::environmentizeIndex($indexName),
+            $this->environmentizeIndex($indexName),
             $document->getIdentifier()
         );
     }
@@ -132,7 +146,7 @@ public function getDocument(string $id): ?array
     foreach (array_keys(IndexConfiguration::singleton()->getIndexes()) as $indexName) {
         // Your API call here
         $result = $myAPI->retrieveDocumentFromIndex(        
-            static::environmentizeIndex($indexName),
+            $this->environmentizeIndex($indexName),
             $id
         );
         
@@ -169,7 +183,7 @@ return type should be an array of `DocumentInterface`.
 public function listDocuments(string $indexName, ?int $pageSize = null, int $currentPage = 0): array
 {
     // Your API call here    
-    $request = new ListDocuments(static::environmentizeIndex($indexName));
+    $request = new ListDocuments($this->environmentizeIndex($indexName));
     $request->setPageSize($pageSize);
     $request->setCurrentPage($currentPage);
     
@@ -193,7 +207,7 @@ public function getDocumentTotal(string $indexName): int
 {
     // Your API call here
     $response = $myAPI->listDocuments(
-        static::environmentizeIndex($indexName)
+        $this->environmentizeIndex($indexName)
     );
 
     return $response['metadata']['total'];
@@ -217,7 +231,7 @@ Return value should be an array describing the current Schema for each index.
 public function configure(): array
 {
     foreach ($indexesToCreate as $index) {
-         $myAPI->createIndex(static::environmentizeIndex($index));
+         $myAPI->createIndex($this->environmentizeIndex($index));
     }   
 }
 ```

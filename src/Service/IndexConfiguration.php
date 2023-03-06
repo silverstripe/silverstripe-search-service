@@ -46,7 +46,7 @@ class IndexConfiguration
     private array $indexesForClassName = [];
 
     /**
-     * @param string|null $indexVariant Default: Set from environment variable ENTERPRISE_SEARCH_ENGINE_PREFIX
+     * @param string|null $indexVariant
      */
     public function __construct(?string $indexVariant = null)
     {

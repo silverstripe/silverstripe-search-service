@@ -9,6 +9,11 @@ interface IndexingInterface extends BatchDocumentInterface
 {
 
     /**
+     * Combine environment name and index name (if required for your service)
+     */
+    public function environmentizeIndex(string $indexName): string;
+
+    /**
      * @return string|null ID of the Document added
      * @throws IndexingServiceException
      */

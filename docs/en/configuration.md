@@ -23,7 +23,7 @@ SilverStripe\SearchService\Service\IndexConfiguration:
 Let's look at each relevant node:
 
 * `myindex`: The name of the index. The rules on what this can be named will vary depending
-on your service provider. For EnterpriseSearch, it should only contain lowercase letters, numbers, 
+on your service provider. EG: For EnterpriseSearch, it should only contain lowercase letters, numbers, 
 and hyphens.
 
 * `includedClasses`: A list of content classes to index. These are just the _source_ of the
@@ -96,8 +96,8 @@ This will roughly get indexed as a structure like this:
 }
 ```
 
-For more information on EnterpriseSearch specific configuration, see the [Implementations](implementations.md#EnterpriseSearch)
-document.
+For more information on EnterpriseSearch specific configuration, see the [Search- Service - Elastic](https://github.com/silverstripe/silverstripe-search-service-elastic)
+module.
 
 ## Advanced configuration
 
@@ -214,7 +214,7 @@ SilverStripe\SearchService\Service\PageCrawler:
 
 ## Subsites
 
-Due to the way that filtering works with Elastic App Search, you may want to split
+Due to the way that filtering works with (eg) Elastic Enterprise Search, you may want to split
 each subsite's content into a separate engine. To do so, you can use the following
 configuration:
 

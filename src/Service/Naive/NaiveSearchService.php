@@ -5,9 +5,21 @@ namespace SilverStripe\SearchService\Service\Naive;
 use SilverStripe\SearchService\Interfaces\BatchDocumentRemovalInterface;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 use SilverStripe\SearchService\Interfaces\IndexingInterface;
+use SilverStripe\SearchService\Service\IndexConfiguration;
 
 class NaiveSearchService implements IndexingInterface, BatchDocumentRemovalInterface
 {
+
+    public function environmentizeIndex(string $indexName): string
+    {
+        $variant = IndexConfiguration::singleton()->getIndexVariant();
+
+        if ($variant) {
+            return sprintf('%s-%s', $variant, $indexName);
+        }
+
+        return $indexName;
+    }
 
     public function addDocument(DocumentInterface $document): ?string
     {

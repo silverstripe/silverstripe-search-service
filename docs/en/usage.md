@@ -54,12 +54,12 @@ Most of these jobs have `BuildTask` wrappers supplied for manual execution.
 ## Configuring the search service
 
 Most search services such as EnterpriseSearch require some level of configuration that needs
- to happen separately from the indexing of content. This can include operations like 
- creating indexes, and defining a schema for an index.
+to happen separately from the indexing of content. This can include operations like 
+creating indexes, and defining a schema for an index.
  
- Indexing services are required to define a `configure()` method, and this method is invoked
- during the `dev/build` process, as well as in the `SearchConfigure` task, for a more direct
- approach.
+Indexing services are required to define a `configure()` method, and this method is invoked
+during the `dev/build` process, as well as in the `SearchConfigure` task, for a more direct
+approach.
  
 
 ## Dependency tracking
