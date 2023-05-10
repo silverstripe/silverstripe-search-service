@@ -144,6 +144,10 @@
         <exclude name="SlevomatCodingStandard.Complexity.Cognitive.ComplexityTooHigh"/>
         <!-- Don't require exit early -->
         <exclude name="SlevomatCodingStandard.ControlStructures.EarlyExit.EarlyExitNotUsed"/>
+        <!-- Don't require keys to be sorted alphabetically -->
+        <exclude name="SlevomatCodingStandard.Arrays.AlphabeticallySortedByKeys.IncorrectKeyOrder"/>
+        <!-- Don't deny self references -->
+        <exclude name="SlevomatCodingStandard.Classes.RequireSelfReference.RequiredSelfReference"/>
     </rule>
 
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
