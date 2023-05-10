@@ -9,6 +9,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
@@ -109,10 +110,12 @@ class SearchAdmin extends LeftAndMain implements PermissionProvider
         } else {
             // Indexed documents field
             $indexDocumentsField = GridField::create('IndexedDocuments', 'Documents by Index', $indexedDocumentsList);
-            $indexDocumentsField->getConfig()->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
+            $indexDocumentsFieldConfig = $indexDocumentsField->getConfig();
+            $indexDocumentsFieldConfig->removeComponentsByType(GridFieldFilterHeader::class);
+            $indexDocumentsFieldConfig->getComponentByType(GridFieldPaginator::class)->setItemsPerPage(5);
 
             if ($canReindex) {
-                $indexDocumentsField->getConfig()->addComponent(new SearchReindexFormAction());
+                $indexDocumentsFieldConfig->addComponent(new SearchReindexFormAction());
             }
 
             $fields[] = $indexDocumentsField;
