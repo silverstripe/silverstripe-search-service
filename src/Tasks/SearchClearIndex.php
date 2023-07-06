@@ -52,12 +52,14 @@ class SearchClearIndex extends BuildTask
         Environment::increaseTimeLimitTo();
 
         $targetIndex = $request->getVar('index');
+        $targetClasses = $request->getVar('classes');
+        $reindex = (bool)$request->getVar('reindex');
 
         if (!$targetIndex) {
             throw new InvalidArgumentException("Must specify an index in the 'index' parameter.");
         }
 
-        $job = ClearIndexJob::create($targetIndex);
+        $job = ClearIndexJob::create($targetIndex, null, $targetClasses, $reindex);
 
         if ($this->getConfiguration()->shouldUseSyncJobs()) {
             SyncJobRunner::singleton()->runJob($job, false);
