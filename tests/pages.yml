@@ -21,3 +21,11 @@ Page:
     Title: Subsite Page 1
     Subsite: =>SilverStripe\Subsites\Model\Subsite.subsite1
     ShowInSearch: 1
+  page7:
+    Title: Grandchild Page 1
+    Parent: =>Page.page2
+    ShowInSearch: 1
+  page8:
+    Title: Grandchild Page 2
+    Parent: =>Page.page2
+    ShowInSearch: 1

@@ -2,6 +2,7 @@
 
 namespace SilverStripe\SearchService\Tests\Jobs;
 
+use Page;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Schema\Field;
@@ -16,7 +17,10 @@ use SilverStripe\Security\Member;
 class RemoveDataObjectJobTest extends SearchServiceTest
 {
 
-    protected static $fixture_file = '../fixtures.yml'; // phpcs:ignore
+    protected static $fixture_file = [ // @phpcs:ignore
+        '../fixtures.yml',
+        '../pages.yml',
+    ];
 
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
@@ -72,6 +76,61 @@ class RemoveDataObjectJobTest extends SearchServiceTest
         $expectedTitles = [
             'Dataobject one',
             'Dataobject three',
+        ];
+
+        $resultTitles = [];
+
+        foreach ($documents as $document) {
+            $resultTitles[] = $document->getDataObject()?->Title;
+        }
+
+        $this->assertEqualsCanonicalizing($expectedTitles, $resultTitles);
+    }
+
+    public function testUnpublishedParentPage(): void
+    {
+        $config = $this->mockConfig();
+
+        $config->set(
+            'getSearchableClasses',
+            [
+                Page::class,
+            ]
+        );
+
+        $config->set(
+            'getFieldsForClass',
+            [
+                Page::class => [
+                    new Field('title'),
+                    new Field('content'),
+                ],
+            ]
+        );
+
+        // Publish all pages in fixtures since the internal dependency checks looks for live version
+        for ($i=1; $i<=8; $i++) {
+            $this->objFromFixture(Page::class, 'page' . $i)->publishRecursive();
+        }
+
+        // Queue up a job to remove a page with child pages are added as related documents
+        $pageOne = $this->objFromFixture(Page::class, 'page1');
+        $pageDoc = DataObjectDocument::create($pageOne);
+        $job = RemoveDataObjectJob::create($pageDoc);
+        $job->setup();
+
+        // Grab what Documents the Job determined it needed to action
+        /** @var DataObjectDocument[] $documents */
+        $documents = $job->getDocuments();
+
+        // There should be two Pages with this Tag assigned
+        $this->assertCount(4, $documents);
+
+        $expectedTitles = [
+            'Child Page 1',
+            'Child Page 2',
+            'Grandchild Page 1',
+            'Grandchild Page 2',
         ];
 
         $resultTitles = [];
