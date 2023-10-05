@@ -52,20 +52,40 @@ class RemoveDataObjectJob extends IndexJob
         $documents = Versioned::withVersionedMode(function () use ($archiveDate) {
             Versioned::reading_archived_date($archiveDate);
 
+            $currentDocument = $this->getDocument();
             // Go back in time to find out what the owners were before unpublish
-            $dependentDocs = $this->document->getDependentDocuments();
+            $dependentDocs = $currentDocument->getDependentDocuments();
 
             // refetch everything on the live stage
             Versioned::set_stage(Versioned::LIVE);
 
-            return array_map(function (DataObjectDocument $doc) {
-                return DataObjectDocument::create(
-                    DataObject::get_by_id(
-                        $doc->getSourceClass(),
-                        $doc->getDataObject()->ID
-                    )
-                );
-            }, $dependentDocs);
+            return array_reduce(
+                $dependentDocs,
+                function (array $carry, DataObjectDocument $doc) {
+                    $record = DataObject::get_by_id($doc->getSourceClass(), $doc->getDataObject()->ID);
+
+                    // Since SiteTree::onBeforeDelete recursively deletes the child pages,
+                    // they end up not found on a live environment which breaks DataObjectDocument::_constructor
+                    if ($record) {
+                        $document = DataObjectDocument::create($record);
+                        $carry[$document->getIdentifier()] = $document;
+
+                        return $carry;
+                    }
+
+                    // Taking into account that this queued job has a reference of existing child pages
+                    // We need to make sure that we are able to send these pages to ElasticSearch etc. for removal
+                    $oldRecord = $doc->getDataObject();
+
+                    if ($oldRecord->isArchived() || $oldRecord->isOnDraft()) {
+                        $document = DataObjectDocument::create($oldRecord);
+                        $carry[$document->getIdentifier()] = $document;
+                    }
+
+                    return $carry;
+                },
+                []
+            );
         });
 
         $this->setDocuments($documents);
