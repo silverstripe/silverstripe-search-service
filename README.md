@@ -6,7 +6,7 @@
 [![License](http://img.shields.io/packagist/l/silverstripe/silverstripe-search-service.svg?style=flat-square)](LICENSE)
 
 > [!IMPORTANT]
-> This module is no longer actively maintained. Please use the newer [forager module](https://github.com/silverstripeltd/silverstripe-forager) for managing search indexing. For search querying check out the [discoverer module](https://github.com/silverstripeltd/silverstripe-discoverer).
+> This module is no longer actively maintained. Please use the newer [Forager module](https://github.com/silverstripeltd/silverstripe-forager) for managing search indexing. For search querying check out the [Discoverer module](https://github.com/silverstripeltd/silverstripe-discoverer).
 
 # Silverstripe Search Service
 
