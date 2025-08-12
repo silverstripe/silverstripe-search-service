@@ -29,6 +29,7 @@
             "SilverStripe\\SearchService\\Tests\\": "tests/"
         }
     },
+    "abandoned": "silverstripe/silverstripe-forager",
     "prefer-stable": true,
     "minimum-stability": "dev",
     "config": {
