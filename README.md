@@ -10,7 +10,6 @@
 
 # Silverstripe Search Service
 
-
 This module for Silverstripe CMS provides a set of abstraction layers that integrate the CMS with a search-as-a-service
 provider, such as Elastic or Algolia.
 
